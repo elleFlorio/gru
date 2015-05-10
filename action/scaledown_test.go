@@ -12,7 +12,7 @@ func TestComputeWeight(t *testing.T) {
 
 }
 
-func createMockServices() []*service.Service {
+func createMockServices() []service.Service {
 	mockService1 := service.Service{
 		Name:   "service1",
 		CpuAvg: 0.8,
@@ -29,5 +29,5 @@ func createMockServices() []*service.Service {
 		},
 	}
 
-	return []*service.Service{&mockService1, &mockService2}
+	return []service.Service{mockService1, mockService2}
 }
