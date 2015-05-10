@@ -1,4 +1,4 @@
-package action
+package policy
 
 import (
 	"testing"

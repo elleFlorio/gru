@@ -6,18 +6,17 @@ import (
 
 type GruAction interface {
 	Name() string
-	Initialize(*service.Service) error
-	ComputeWeight() float64
-	Execute()
+	Initialize() error
 }
 
 var actions []GruAction
 
 func init() {
-	actions = []GruAction{
-		&ScaleDown{},
-		&ScaleUp{},
-	}
+	actions = []GruAction{}
+}
+
+func New(name string) (GruAction, error) {
+
 }
 
 func List() []string {
