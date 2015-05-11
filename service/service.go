@@ -31,11 +31,11 @@ type Constraints struct {
 
 var services []Service
 
-func LoadServices(path string) error {
+func LoadServices(path string) ([]Service, error) {
 	folder, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Errorln("Error opening services folder", err.Error())
-		return err
+		return nil, err
 	}
 
 	for _, file := range folder {
@@ -56,11 +56,16 @@ func LoadServices(path string) error {
 
 	log.Infoln("Services loading complete. Loaded files: ", len(services))
 
-	return nil
+	return services, nil
 }
 
-func List() []Service {
-	return services
+func List() []string {
+	names := make([]string, len(services))
+	for _, service := range services {
+		names = append(names, service.Name)
+	}
+
+	return names
 }
 
 func GetServiceByName(sName string) []Service {

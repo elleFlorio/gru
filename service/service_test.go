@@ -12,12 +12,12 @@ func TestLoadServices(t *testing.T) {
 	tmpdir := createMockFiles()
 	defer os.RemoveAll(tmpdir)
 
-	err := LoadServices(tmpdir)
+	result, err := LoadServices(tmpdir)
 	assert.NoError(t, err, "Loading should presente no errors")
-	if assert.Len(t, services, 2, "Loaded services should be 2") {
-		names := [2]string{services[0].Name, services[1].Name}
+	if assert.Len(t, result, 2, "Loaded services should be 2") {
+		names := [2]string{result[0].Name, result[1].Name}
 		assert.Contains(t, names, "service1", "The name of a service should be 'service1'")
-		assert.Empty(t, services[1].Instances, "Instances should be empty")
+		assert.Empty(t, result[1].Instances, "Instances should be empty")
 	}
 	CleanServices()
 }

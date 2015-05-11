@@ -1,13 +1,10 @@
 package autonomic
 
 import (
-	"fmt"
-
-	"github.com/elleFlorio/gru/action"
+	log "github.com/Sirupsen/logrus"
 )
 
-func execute(act action.Action) {
+func execute() {
 	//Execute stuff
-	fmt.Println("I'm executing...")
-	act.Execute()
+	log.Debugln("I'm executing")
 }

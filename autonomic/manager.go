@@ -6,39 +6,26 @@ import (
 )
 
 type autoManager struct {
-	Timer  float32
-	Client *dockerclient.DockerClient
+	Docker           *dockerclient.DockerClient
+	LoopTimeInterval int
 }
 
 var manager autoManager
 
-func NewAutoManager(timer float32, client *dockerclient.DockerClient) *autoManager {
+func NewAutoManager(docker *dockerclient.DockerClient, loopTimeInternval int) *autoManager {
 	manager = autoManager{
-		timer,
-		client,
+		docker,
+		loopTimeInternval,
 	}
 	return &manager
 }
 
 func (man *autoManager) RunLoop() {
+	log.WithField("status", "start").Debugln("Running autonomic loop")
 	man.loop()
+
+	log.WithField("status", "done").Debugln("Running autonomic loop")
 }
 
 func (man *autoManager) loop() {
-	log.Debugln("Started autonomic loop")
-	//Channels initialization
-	//TODO channel type
-	monitorChannel := make(chan *monitorData)
-
-	//Start the loop. Monitor works in the background
-	go monitor(monitorChannel)
-
-	for {
-		select {
-		case m_stats := <-monitorChannel:
-			a_data := analyze(m_stats)
-			p_act := plan(a_data)
-			execute(p_act)
-		}
-	}
 }

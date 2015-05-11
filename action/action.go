@@ -1,22 +1,38 @@
 package action
 
 import (
-	"github.com/elleFlorio/gru/service"
+	"errors"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type GruAction interface {
 	Name() string
 	Initialize() error
+	Run(*GruActionConfig) error
 }
 
-var actions []GruAction
+var (
+	actions         []GruAction
+	ErrNotSupported = errors.New("action not supported")
+)
 
 func init() {
-	actions = []GruAction{}
+	actions = []GruAction{
+		&Start{},
+	}
 }
 
 func New(name string) (GruAction, error) {
+	for _, action := range actions {
+		if action.Name() == name {
+			log.WithField("name", name).Debugln("Initializing action")
+			err := action.Initialize()
+			return action, err
+		}
+	}
 
+	return nil, ErrNotSupported
 }
 
 func List() []string {
