@@ -4,7 +4,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-func plan() {
+type Plan struct{}
+
+func (p *Plan) run() {
 	//Plan stuff
 	log.Debugln("I'm planning")
 }

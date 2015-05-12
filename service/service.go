@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"path/filepath"
 
@@ -13,13 +14,13 @@ type Service struct {
 	Type        string
 	Image       string
 	CpuAvg      float64
-	Instances   []Instance
+	Instances   map[string]Instance
 	Constraints Constraints
 }
 
 type Instance struct {
 	Id  string
-	Cpu float64
+	Cpu uint64
 }
 
 type Constraints struct {
@@ -29,7 +30,10 @@ type Constraints struct {
 	MaxActive int
 }
 
-var services []Service
+var (
+	services         []Service
+	ErrNoSuchService = errors.New("Service not exists")
+)
 
 func LoadServices(path string) ([]Service, error) {
 	folder, err := ioutil.ReadDir(path)
@@ -41,7 +45,7 @@ func LoadServices(path string) ([]Service, error) {
 	for _, file := range folder {
 		filep := path + string(filepath.Separator) + file.Name()
 		log.Debugln("reading file ", filep)
-		service := Service{}
+		service := Service{Instances: make(map[string]Instance)}
 		tmp, _ := ioutil.ReadFile(filep)
 		err = json.Unmarshal(tmp, &service)
 		if err != nil {
@@ -68,16 +72,15 @@ func List() []string {
 	return names
 }
 
-func GetServiceByName(sName string) []Service {
-	byName := make([]Service, 0)
+func GetServiceByName(sName string) (*Service, error) {
 
 	for _, service := range services {
 		if service.Name == sName {
-			byName = append(byName, service)
+			return &service, nil
 		}
 	}
 
-	return byName
+	return nil, ErrNoSuchService
 }
 
 func GetServiceByType(sType string) []Service {
@@ -92,16 +95,26 @@ func GetServiceByType(sType string) []Service {
 	return byType
 }
 
-func GetServiceByImage(sImg string) []Service {
-	byImage := make([]Service, 0)
+func GetServiceByImage(sImg string) (*Service, error) {
 
 	for _, service := range services {
 		if service.Image == sImg {
-			byImage = append(byImage, service)
+			return &service, nil
 		}
 	}
 
-	return byImage
+	return nil, ErrNoSuchService
+}
+
+func GetServiceByInstanceId(sId string) (*Service, error) {
+
+	for _, service := range services {
+		if _, ok := service.Instances[sId]; ok {
+			return &service, nil
+		}
+	}
+
+	return nil, ErrNoSuchService
 }
 
 func CleanServices() {

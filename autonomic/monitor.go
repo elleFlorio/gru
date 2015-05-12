@@ -3,10 +3,55 @@ package autonomic
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/samalba/dockerclient"
+
+	"github.com/elleFlorio/gru/service"
 )
 
-func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	//In the callback I should update my stats
+var monitorActive bool
+
+type Monitor struct {
+	c_stop chan struct{}
+	c_err  chan error
+}
+
+func (p *Monitor) run() {
+	// Monitor stuff
+}
+
+func (p *Monitor) start(docker *dockerclient.DockerClient) {
+	log.WithField("status", "start").Debugln("Running monitor")
+	monitorActive = true
+	c_mntrerr := make(chan error)
+
+	docker.StartMonitorEvents(eventCallback, c_mntrerr)
+
+	// Get the list of active containers to monitor
+	containers, err := docker.ListContainers(false, false, "")
+	if err != nil {
+		p.monitorError(err)
+	}
+
+	// Start the monitor for each active container
+	for _, c := range containers {
+		serv, err := service.GetServiceByImage(c.Image)
+		if err != nil {
+			p.monitorError(err)
+		} else {
+			docker.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
+			serv.Instances[c.Id] = service.Instance{Id: c.Id}
+			log.WithFields(log.Fields{
+				"id":    c.Id,
+				"image": c.Image,
+			}).Debug("Started monitor on container")
+		}
+	}
+
+	for monitorActive {
+		select {
+		case err := <-c_mntrerr:
+			p.monitorError(err)
+		}
+	}
 }
 
 // Events are: create, destroy, die, exec_create, exec_start, export, kill, oom, pause, restart, start, stop, unpause
@@ -18,7 +63,32 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 
 }
 
-func monitor() {
-	// Monitor stuff
-	log.Debug("I'm monitoring...")
+func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
+	serv, err := service.GetServiceByInstanceId(id)
+	if err != nil {
+		ec <- err
+		return
+	}
+	instance := serv.Instances[id]
+	instance.Cpu = stats.CpuStats.CpuUsage.TotalUsage
+	serv.Instances[id] = instance
+
+	log.WithFields(log.Fields{
+		"status": "update",
+		"id:":    id,
+	}).Errorln("Running monitor")
+}
+
+func (p *Monitor) monitorError(err error) {
+	log.WithFields(log.Fields{
+		"status": "error",
+		"error:": "err",
+	}).Errorln("Running monitor")
+	p.c_err <- err
+}
+
+func (p *Monitor) stop() {
+	monitorActive = false
+	log.WithField("status", "done").Debugln("Running monitor")
+	p.c_stop <- struct{}{}
 }

@@ -4,7 +4,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-func execute() {
+type Execute struct{}
+
+func (p *Execute) run() {
 	//Execute stuff
 	log.Debugln("I'm executing")
 }

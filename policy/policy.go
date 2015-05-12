@@ -11,13 +11,20 @@ type GruPolicy interface {
 	Actions() []string
 }
 
-var reactive []GruPolicy
-var proactive []GruPolicy
+var proactive, reactive []GruPolicy
 
 func init() {
 	reactive = []GruPolicy{}
 	proactive = []GruPolicy{
 		&ScaleDown{},
+	}
+}
+
+func GetPolicies(pType string) []GruPolicy {
+	if pType == "reactive" {
+		return reactive
+	} else {
+		return proactive
 	}
 }
 
