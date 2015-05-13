@@ -47,8 +47,8 @@ func (man *autoManager) loop() {
 	for {
 		select {
 		case <-ticker.C:
-			m.run()
-			a.run()
+			stats := m.run()
+			a.run(stats)
 			p.run()
 			e.run()
 		case <-c_err:

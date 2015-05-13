@@ -8,14 +8,22 @@ import (
 )
 
 var monitorActive bool
+var gruStats GruStats
 
 type Monitor struct {
 	c_stop chan struct{}
 	c_err  chan error
 }
 
-func (p *Monitor) run() {
-	// Monitor stuff
+func init() {
+	gruStats = GruStats{
+		Service:  make(map[string]ServiceStats),
+		Instance: make(map[string]InstanceStats),
+	}
+}
+
+func (p *Monitor) run() GruStats {
+	return gruStats
 }
 
 func (p *Monitor) start(docker *dockerclient.DockerClient) {
@@ -37,8 +45,11 @@ func (p *Monitor) start(docker *dockerclient.DockerClient) {
 		if err != nil {
 			p.monitorError(err)
 		} else {
+			servStats := gruStats.Service[serv.Name]
+			servStats.Instances = append(servStats.Instances, c.Id)
+			gruStats.Service[serv.Name] = servStats
 			docker.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
-			serv.Instances[c.Id] = service.Instance{Id: c.Id}
+
 			log.WithFields(log.Fields{
 				"id":    c.Id,
 				"image": c.Image,
@@ -64,19 +75,14 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	serv, err := service.GetServiceByInstanceId(id)
-	if err != nil {
-		ec <- err
-		return
-	}
-	instance := serv.Instances[id]
-	instance.Cpu = stats.CpuStats.CpuUsage.TotalUsage
-	serv.Instances[id] = instance
+	InstanceStats := gruStats.Instance[id]
+	InstanceStats.Cpu = stats.CpuStats.CpuUsage.TotalUsage
+	gruStats.Instance[id] = InstanceStats
 
 	log.WithFields(log.Fields{
 		"status": "update",
 		"id:":    id,
-	}).Errorln("Running monitor")
+	}).Debugln("Running monitor")
 }
 
 func (p *Monitor) monitorError(err error) {
