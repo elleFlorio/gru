@@ -72,17 +72,6 @@ func List() []string {
 	return names
 }
 
-func GetServiceByName(sName string) (*Service, error) {
-
-	for _, service := range services {
-		if service.Name == sName {
-			return &service, nil
-		}
-	}
-
-	return nil, ErrNoSuchService
-}
-
 func GetServiceByType(sType string) []Service {
 	byType := make([]Service, 0)
 
@@ -95,22 +84,33 @@ func GetServiceByType(sType string) []Service {
 	return byType
 }
 
+func GetServiceByName(sName string) (*Service, error) {
+	return getServiceBy("Name", sName)
+}
+
 func GetServiceByImage(sImg string) (*Service, error) {
-
-	for _, service := range services {
-		if service.Image == sImg {
-			return &service, nil
-		}
-	}
-
-	return nil, ErrNoSuchService
+	return getServiceBy("Image", sImg)
 }
 
 func GetServiceByInstanceId(sId string) (*Service, error) {
+	return getServiceBy("Instance", sId)
+}
 
+func getServiceBy(field string, value string) (*Service, error) {
 	for _, service := range services {
-		if _, ok := service.Instances[sId]; ok {
-			return &service, nil
+		switch field {
+		case "Name":
+			if service.Name == value {
+				return &service, nil
+			}
+		case "Image":
+			if service.Image == value {
+				return &service, nil
+			}
+		case "Instance":
+			if _, ok := service.Instances[value]; ok {
+				return &service, nil
+			}
 		}
 	}
 
