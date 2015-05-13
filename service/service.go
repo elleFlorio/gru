@@ -13,14 +13,7 @@ type Service struct {
 	Name        string
 	Type        string
 	Image       string
-	CpuAvg      float64
-	Instances   map[string]Instance
 	Constraints Constraints
-}
-
-type Instance struct {
-	Id  string
-	Cpu uint64
 }
 
 type Constraints struct {
@@ -43,9 +36,9 @@ func LoadServices(path string) ([]Service, error) {
 	}
 
 	for _, file := range folder {
+		var service Service
 		filep := path + string(filepath.Separator) + file.Name()
 		log.Debugln("reading file ", filep)
-		service := Service{Instances: make(map[string]Instance)}
 		tmp, _ := ioutil.ReadFile(filep)
 		err = json.Unmarshal(tmp, &service)
 		if err != nil {
@@ -65,6 +58,7 @@ func LoadServices(path string) ([]Service, error) {
 
 func List() []string {
 	names := make([]string, len(services))
+
 	for _, service := range services {
 		names = append(names, service.Name)
 	}
@@ -92,10 +86,6 @@ func GetServiceByImage(sImg string) (*Service, error) {
 	return getServiceBy("Image", sImg)
 }
 
-func GetServiceByInstanceId(sId string) (*Service, error) {
-	return getServiceBy("Instance", sId)
-}
-
 func getServiceBy(field string, value string) (*Service, error) {
 	for _, service := range services {
 		switch field {
@@ -105,10 +95,6 @@ func getServiceBy(field string, value string) (*Service, error) {
 			}
 		case "Image":
 			if service.Image == value {
-				return &service, nil
-			}
-		case "Instance":
-			if _, ok := service.Instances[value]; ok {
 				return &service, nil
 			}
 		}

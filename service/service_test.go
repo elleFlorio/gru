@@ -17,7 +17,6 @@ func TestLoadServices(t *testing.T) {
 	if assert.Len(t, result, 2, "Loaded services should be 2") {
 		names := [2]string{result[0].Name, result[1].Name}
 		assert.Contains(t, names, "service1", "The name of a service should be 'service1'")
-		assert.Empty(t, result[1].Instances, "Instances should be empty")
 	}
 	CleanServices()
 }
@@ -110,18 +109,6 @@ func TestGetServiceByImage(t *testing.T) {
 	CleanServices()
 }
 
-func TestGetServiceByInstanceId(t *testing.T) {
-	createMockServices()
-
-	s1, _ := GetServiceByInstanceId("000000")
-	assert.Equal(t, "service2", s1.Name, "Service name should be 'service3'")
-
-	_, err := GetServiceByInstanceId("111111")
-	assert.Error(t, err, "There should be no service with instance id '111111'")
-
-	CleanServices()
-}
-
 func createMockServices() {
 	service1 := Service{
 		Name:  "service1",
@@ -130,10 +117,9 @@ func createMockServices() {
 	}
 
 	service2 := Service{
-		Name:      "service2",
-		Type:      "webserver",
-		Image:     "test/jetty",
-		Instances: map[string]Instance{"000000": Instance{}},
+		Name:  "service2",
+		Type:  "webserver",
+		Image: "test/jetty",
 	}
 
 	service3 := Service{
