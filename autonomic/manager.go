@@ -5,6 +5,11 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/samalba/dockerclient"
+
+	"github.com/elleFlorio/gru/autonomic/analyzer"
+	"github.com/elleFlorio/gru/autonomic/executor"
+	"github.com/elleFlorio/gru/autonomic/monitor"
+	"github.com/elleFlorio/gru/autonomic/planner"
 )
 
 type autoManager struct {
@@ -34,12 +39,12 @@ func (man *autoManager) loop() {
 	c_err := make(chan error)
 	c_stop := make(chan struct{})
 
-	m := Monitor{c_stop, c_err}
-	a := Analyze{c_err}
-	p := Plan{}
-	e := Execute{}
+	m := monitor.NewMonitor(c_stop, c_err)
+	a := analyzer.NewAnalyzer(c_err)
+	p := planner.NewPlanner()
+	e := executor.NewExecutor()
 
-	m.start(man.Docker)
+	m.Start(man.Docker)
 
 	// Set the ticker for the periodic execution
 	ticker := time.NewTicker(time.Duration(man.LoopTimeInterval) * time.Second)
@@ -47,10 +52,10 @@ func (man *autoManager) loop() {
 	for {
 		select {
 		case <-ticker.C:
-			stats := m.run()
-			analytics := a.run(stats)
-			p.run(analytics)
-			e.run()
+			stats := m.Run()
+			analytics := a.Run(stats)
+			p.Run(analytics)
+			e.Run()
 		case <-c_err:
 			log.WithField("status", "error").Debugln("Running autonomic loop")
 		case <-c_stop:

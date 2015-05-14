@@ -1,0 +1,120 @@
+package analyzer
+
+import (
+	"testing"
+
+	"github.com/elleFlorio/gru/autonomic/monitor"
+	"github.com/stretchr/testify/assert"
+)
+
+func init() {
+	gruAnalytics = GruAnalytics{
+		Service:  make(map[string]ServiceAnalytics),
+		Instance: make(map[string]InstanceAnalytics),
+	}
+}
+
+func TestUpdateAnalytics(t *testing.T) {
+	mockStats, names := createMockStats()
+	for _, name := range names {
+		updateAnalytics(name, &mockStats)
+	}
+
+	assert.Contains(t, gruAnalytics.Service["service1"].Instances, "instance2", "Service 1 should contains instance2")
+	assert.Contains(t, gruAnalytics.Service["service2"].Instances, "instance3", "Service 2 should contains instance3")
+	assert.Equal(t, mockStats.Instance["instance1"].Cpu, gruAnalytics.Instance["instance1"].Cpu, "Instance1 stats and analytics should be equal")
+	assert.Equal(t, mockStats.System.Cpu, gruAnalytics.System.Cpu, "System stats and analytics should be equal")
+
+	cleanAnalytics()
+}
+
+func TestComputeCpuAvg(t *testing.T) {
+	mockStats, names := createMockStats()
+	createMockAnalytics()
+	for _, name := range names {
+		computeCpuAvg(name, &mockStats)
+	}
+
+	assert.Equal(t, 0.25, gruAnalytics.Service["service1"].CpuAvg, "Service1 cpuAvg should be 50%")
+	assert.Equal(t, 0.3, gruAnalytics.Service["service2"].CpuAvg, "Service2 cpuAvg should be 30%")
+}
+
+func createMockStats() (GruStats, []string) {
+	instances1 := []string{"instance1", "instance2"}
+	service1 := ServiceStats{instances1}
+	instances2 := []string{"instance3"}
+	service2 := ServiceStats{instances2}
+	services := map[string]ServiceStats{
+		"service1": service1,
+		"service2": service2,
+	}
+
+	instStat1 := InstanceStats{20000}
+	instStat2 := InstanceStats{60000}
+	instStat3 := InstanceStats{60000}
+	instances := map[string]InstanceStats{
+		"instance1": instStat1,
+		"instance2": instStat2,
+		"instance3": instStat3,
+	}
+
+	system := SystemStats{150000}
+
+	mockStats := GruStats{
+		Service:  services,
+		Instance: instances,
+		System:   system,
+	}
+
+	return mockStats, []string{"service1", "service2"}
+}
+
+func cleanAnalytics() {
+	gruAnalytics = GruAnalytics{}
+	gruAnalytics.Service = make(map[string]ServiceAnalytics)
+	gruAnalytics.Instance = make(map[string]InstanceAnalytics)
+}
+
+func createMockAnalytics() {
+	instances1 := []string{"instance1", "instance2"}
+	service1 := ServiceAnalytics{
+		CpuAvg:    0.2,
+		Instances: instances1}
+	instances2 := []string{"instance3"}
+	service2 := ServiceAnalytics{
+		CpuAvg:    0.4,
+		Instances: instances2,
+	}
+	services := map[string]ServiceAnalytics{
+		"service1": service1,
+		"service2": service2,
+	}
+
+	instAnalytics1 := InstanceAnalytics{
+		Cpu:     10000,
+		CpuPerc: 0.1,
+	}
+	instAnalytics2 := InstanceAnalytics{
+		Cpu:     20000,
+		CpuPerc: 0.2,
+	}
+	instAnalytics3 := InstanceAnalytics{
+		Cpu:     30000,
+		CpuPerc: 0.3,
+	}
+	instances := map[string]InstanceAnalytics{
+		"instance1": instAnalytics1,
+		"instance2": instAnalytics2,
+		"instance3": instAnalytics3,
+	}
+
+	system := SystemAnalytics{50000}
+
+	mockAnalytics := GruAnalytics{
+		Service:  services,
+		Instance: instances,
+		System:   system,
+	}
+
+	gruAnalytics = mockAnalytics
+}
