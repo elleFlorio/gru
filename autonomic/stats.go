@@ -7,7 +7,6 @@ type GruStats struct {
 }
 
 type ServiceStats struct {
-	CpuAvg    float64
 	Instances []string
 }
 

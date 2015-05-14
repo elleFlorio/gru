@@ -6,7 +6,7 @@ import (
 
 type Plan struct{}
 
-func (p *Plan) run() {
+func (p *Plan) run(analytics GruAnalytics) {
 	//Plan stuff
 	log.Debugln("I'm planning")
 }

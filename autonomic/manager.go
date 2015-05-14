@@ -35,7 +35,7 @@ func (man *autoManager) loop() {
 	c_stop := make(chan struct{})
 
 	m := Monitor{c_stop, c_err}
-	a := Analyze{}
+	a := Analyze{c_err}
 	p := Plan{}
 	e := Execute{}
 
@@ -48,8 +48,8 @@ func (man *autoManager) loop() {
 		select {
 		case <-ticker.C:
 			stats := m.run()
-			a.run(stats)
-			p.run()
+			analytics := a.run(stats)
+			p.run(analytics)
 			e.run()
 		case <-c_err:
 			log.WithField("status", "error").Debugln("Running autonomic loop")
