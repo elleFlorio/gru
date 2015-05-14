@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/samalba/dockerclient"
@@ -9,12 +11,15 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-const servicesPath string = "config/services"
-const gruAgentConfigPath string = "config/gruagentconfig.json"
+const gruAgentConfigFolder string = "/gru/config/gruagentconfig.json"
+const servicesFolder string = "/gru/config/services"
 
 func agent(c *cli.Context) {
 	log.WithField("status", "start").Debugln("Running gru agent")
 	defer log.WithField("status", "done").Errorln("Running gru agent")
+
+	gruAgentConfigPath := os.Getenv("HOME") + gruAgentConfigFolder
+	servicesPath := os.Getenv("HOME") + servicesFolder
 
 	config, err := LoadGruAgentConfig(gruAgentConfigPath)
 	if err != nil {

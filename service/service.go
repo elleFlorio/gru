@@ -57,7 +57,7 @@ func LoadServices(path string) ([]Service, error) {
 }
 
 func List() []string {
-	names := make([]string, len(services))
+	names := []string{}
 
 	for _, service := range services {
 		names = append(names, service.Name)

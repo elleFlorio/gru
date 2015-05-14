@@ -44,7 +44,7 @@ func (man *autoManager) loop() {
 	p := planner.NewPlanner()
 	e := executor.NewExecutor()
 
-	m.Start(man.Docker)
+	go m.Start(man.Docker)
 
 	// Set the ticker for the periodic execution
 	ticker := time.NewTicker(time.Duration(man.LoopTimeInterval) * time.Second)

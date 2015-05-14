@@ -27,11 +27,20 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 	defer log.WithField("status", "done").Debugln("Running analyzer")
 
 	for _, name := range service.List() {
-		if gruAnalytics.System.Cpu != 0 {
+		if gruAnalytics.System.Cpu > 0 {
 			computeCpuAvg(name, &stats)
+
+			log.WithFields(log.Fields{
+				"status":  "analyzing",
+				"service": name,
+				"CpuAvg":  gruAnalytics.Service[name].CpuAvg,
+			}).Debugln("Running analyzer")
 		}
+
 		updateAnalytics(name, &stats)
 	}
+
+	gruAnalytics.System.Cpu = stats.System.Cpu
 
 	return gruAnalytics
 }
@@ -47,9 +56,6 @@ func updateAnalytics(name string, stats *monitor.GruStats) {
 		instAnalytics.Cpu = stats.Instance[id].Cpu
 		gruAnalytics.Instance[id] = instAnalytics
 	}
-
-	gruAnalytics.System.Cpu = stats.System.Cpu
-
 }
 
 func computeCpuAvg(name string, stats *monitor.GruStats) {
@@ -64,7 +70,7 @@ func computeCpuAvg(name string, stats *monitor.GruStats) {
 		instAnalytics := gruAnalytics.Instance[id]
 		instOld := instAnalytics.Cpu
 		instNew := stats.Instance[id].Cpu
-		instAnalytics.CpuPerc = float64(instNew-instOld) / float64(sysNew-sysOld)
+		instAnalytics.CpuPerc = 100.0 * float64(instNew-instOld) / float64(sysNew-sysOld)
 		gruAnalytics.Instance[id] = instAnalytics
 		sum += instAnalytics.CpuPerc
 	}
