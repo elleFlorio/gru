@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -20,10 +21,15 @@ func (p *ScaleDown) Actions() []string {
 	}
 }
 
-func (p *ScaleDown) Weight(s *service.Service) float64 {
+func (p *ScaleDown) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
-	if s.CpuAvg < s.Constraints.CpuMin {
-		weight = (s.Constraints.CpuMin - s.CpuAvg) / s.Constraints.CpuMin
+	cpuAvg := a.Service[s.Name].CpuAvg
+	if cpuAvg < s.Constraints.CpuMin {
+		weight = (s.Constraints.CpuMin - cpuAvg) / s.Constraints.CpuMin
 	}
 	return weight
+}
+
+func (p *ScaleDown) Target() string {
+	return "container"
 }

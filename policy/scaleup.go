@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -21,10 +22,15 @@ func (p *ScaleUp) Actions() []string {
 	}
 }
 
-func (p *ScaleUp) Weight(s *service.Service) float64 {
+func (p *ScaleUp) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
-	if s.CpuAvg > s.Constraints.CpuMax {
-		weight = (s.CpuAvg - s.Constraints.CpuMax) / (1.0 - s.Constraints.CpuMax)
+	cpuAvg := a.Service[s.Name].CpuAvg
+	if cpuAvg > s.Constraints.CpuMax {
+		weight = (cpuAvg - s.Constraints.CpuMax) / (1.0 - s.Constraints.CpuMax)
 	}
 	return weight
+}
+
+func (p *ScaleUp) Target() string {
+	return "image"
 }
