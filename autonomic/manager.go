@@ -42,7 +42,7 @@ func (man *autoManager) loop() {
 	m := monitor.NewMonitor(c_stop, c_err)
 	a := analyzer.NewAnalyzer(c_err)
 	p := planner.NewPlanner("dummy", c_err)
-	e := executor.NewExecutor()
+	e := executor.NewExecutor(c_err)
 
 	go m.Start(man.Docker)
 
@@ -55,7 +55,7 @@ func (man *autoManager) loop() {
 			stats := m.Run()
 			analytics := a.Run(stats)
 			plan := p.Run(analytics)
-			e.Run(plan)
+			e.Run(plan, man.Docker)
 		case <-c_err:
 			log.WithField("status", "error").Debugln("Running autonomic loop")
 		case <-c_stop:

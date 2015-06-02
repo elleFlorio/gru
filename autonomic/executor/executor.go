@@ -2,21 +2,27 @@ package executor
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/samalba/dockerclient"
 
 	"github.com/elleFlorio/gru/action"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	"github.com/elleFlorio/gru/service"
 )
 
-type executor struct{}
+type executor struct{ c_err chan error }
 
 func NewExecutor() *executor {
 	return &executor{}
 }
 
-func (p *executor) Run(plan strategy.GruPlan) {
+func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient) {
 	//Execute stuff
 	log.Debugln("I'm executing")
-	actions := buildActions(&plan)
+	actions := p.buildActions(&plan)
+	config := p.buildConfig(&plan, docker)
+	for _, act := range actions {
+		act.Run(config)
+	}
 }
 
 func (p *executor) buildActions(plan *strategy.GruPlan) []action.GruAction {
@@ -30,4 +36,16 @@ func (p *executor) buildActions(plan *strategy.GruPlan) []action.GruAction {
 	}
 
 	return actions
+}
+
+func (p *executor) buildConfig(plan *strategy.GruPlan, docker *dockerclient.DockerClient) *action.GruActionConfig {
+	srv, _ := service.GetServiceByName(plan.Service)
+	config := action.GruActionConfig{
+		Service:    plan.Service,
+		Target:     plan.Target,
+		Client:     docker,
+		HostConfig: &srv.HostConfig,
+	}
+
+	return &config
 }

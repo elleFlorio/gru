@@ -5,7 +5,8 @@ import (
 )
 
 type GruActionConfig struct {
-	Client      *dockerclient.DockerClient
-	ContainerId string
-	HostConf    *dockerclient.HostConfig
+	Service    string
+	Target     string
+	Client     *dockerclient.DockerClient
+	HostConfig *dockerclient.HostConfig
 }

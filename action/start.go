@@ -15,10 +15,10 @@ func (p *Start) Initialize() error {
 }
 
 func (p *Start) Run(config *GruActionConfig) error {
-	err := config.Client.StartContainer(config.ContainerId, config.HostConf)
+	err := config.Client.StartContainer(config.Target, config.HostConfig)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"id":    config.ContainerId,
+			"id":    config.Target,
 			"error": err,
 		}).Errorln("Error starting container")
 		return err

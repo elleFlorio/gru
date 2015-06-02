@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/samalba/dockerclient"
 )
 
 type Service struct {
@@ -14,6 +15,7 @@ type Service struct {
 	Type        string
 	Image       string
 	Constraints Constraints
+	HostConfig  dockerclient.HostConfig
 }
 
 type Constraints struct {
@@ -25,7 +27,7 @@ type Constraints struct {
 
 var (
 	services         []Service
-	ErrNoSuchService = errors.New("Service not exists")
+	ErrNoSuchService = errors.New("Service does not exists")
 )
 
 func LoadServices(path string) ([]Service, error) {
