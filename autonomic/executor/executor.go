@@ -11,8 +11,8 @@ import (
 
 type executor struct{ c_err chan error }
 
-func NewExecutor() *executor {
-	return &executor{}
+func NewExecutor(c_err chan error) *executor {
+	return &executor{c_err}
 }
 
 func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient) {
