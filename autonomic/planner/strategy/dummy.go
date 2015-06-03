@@ -3,6 +3,8 @@ package strategy
 import (
 	"math/rand"
 
+	log "github.com/Sirupsen/logrus"
+
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/service"
 )
@@ -19,34 +21,42 @@ func (p *DummyStrategy) Initialize() error {
 
 func (p *DummyStrategy) MakeDecision(plans []GruPlan, analytics *analyzer.GruAnalytics) (*GruPlan, error) {
 	thePlan := p.chosePlan(plans)
-	err := p.choseTarget(thePlan, analytics)
+	srv, _ := service.GetServiceByName(thePlan.Service)
+	target, err := p.choseTarget(thePlan.TargetType, analytics, srv)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"status": "target",
+			"error":  err,
+		}).Errorln("Making decision")
+	}
+	thePlan.Target = target
 	return thePlan, err
 }
 
 func (p *DummyStrategy) chosePlan(plans []GruPlan) *GruPlan {
-	var thePlan *GruPlan
+	var thePlan GruPlan
 	weigth := 0.0
 	for _, plan := range plans {
 		if plan.Weight > weigth {
-			thePlan = &plan
+			thePlan = plan
+			weigth = thePlan.Weight
 		}
 	}
 
-	return thePlan
+	return &thePlan
 }
 
-func (p *DummyStrategy) choseTarget(thePlan *GruPlan, analytics *analyzer.GruAnalytics) error {
+func (p *DummyStrategy) choseTarget(tType string, analytics *analyzer.GruAnalytics, srv *service.Service) (string, error) {
 	var target string
-	switch thePlan.TargetType {
+	switch tType {
 	case "container":
-		instances := analytics.Service[thePlan.Service].Instances
+		instances := analytics.Service[srv.Name].Instances
 		target = instances[rand.Intn(len(instances))]
 	case "image":
-		srv, _ := service.GetServiceByName(thePlan.Service)
 		target = srv.Image
 	default:
-		return ErrorNoSuchTarget
+		return "", ErrorNoSuchTarget
 	}
-	thePlan.Target = target
-	return nil
+
+	return target, nil
 }

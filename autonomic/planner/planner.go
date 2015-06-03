@@ -10,34 +10,52 @@ import (
 )
 
 type planner struct {
-	strategy strategy.GruStrategy
-	c_err    chan error
+	strtg strategy.GruStrategy
+	c_err chan error
 }
 
 func NewPlanner(strategyName string, c_err chan error) *planner {
-	strategy, err := strategy.New(strategyName)
+	strtg, err := strategy.New(strategyName)
 	if err != nil {
-		//TODO
+		log.WithFields(log.Fields{
+			"status": "init",
+			"error":  err,
+		}).Errorln("Running Planner")
+
+		// If error use default one
+		strtg, err = strategy.New("dummy")
 	}
+
+	log.WithFields(log.Fields{
+		"status":   "init",
+		"strategy": strtg.Name(),
+	}).Infoln("Running Planner")
+
 	return &planner{
-		strategy,
+		strtg,
 		c_err,
 	}
 }
 
 func (p *planner) Run(analytics analyzer.GruAnalytics) strategy.GruPlan {
-	//Plan stuff
-	log.Debugln("I'm planning")
-	plans := buildPlans(&analytics)
-	thePlan, err := p.strategy.MakeDecision(plans, &analytics)
+	log.WithField("status", "start").Debugln("Running planner")
+	defer log.WithField("status", "done").Debugln("Running planner")
+
+	plans := p.buildPlans(&analytics)
+	thePlan, err := p.strtg.MakeDecision(plans, &analytics)
 	if err != nil {
-		//TODO
+		log.WithFields(log.Fields{
+			"status": "planning",
+			"error":  err,
+		}).Errorln("Running Planner")
+
+		p.c_err <- err
 	}
 
 	return *thePlan
 }
 
-func buildPlans(analytics *analyzer.GruAnalytics) []strategy.GruPlan {
+func (p *planner) buildPlans(analytics *analyzer.GruAnalytics) []strategy.GruPlan {
 	policies := policy.GetPolicies("proactive")
 	plans := []strategy.GruPlan{}
 
