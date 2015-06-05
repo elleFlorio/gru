@@ -16,7 +16,7 @@ func NewExecutor(c_err chan error) *executor {
 }
 
 func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient) {
-	//Execute stuff
+	// TODO add correct debug messages
 	log.Debugln("I'm executing")
 	actions := p.buildActions(&plan)
 	config := p.buildConfig(&plan, docker)

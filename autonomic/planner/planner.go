@@ -61,11 +61,7 @@ func (p *planner) buildPlans(analytics *analyzer.GruAnalytics) []strategy.GruPla
 
 	for _, name := range service.List() {
 		for _, plc := range policies {
-			srvc, err := service.GetServiceByName(name)
-			if err != nil {
-				//TODO
-			}
-
+			srvc, _ := service.GetServiceByName(name)
 			plan := strategy.GruPlan{
 				Service:    name,
 				Weight:     plc.Weight(srvc, analytics),
