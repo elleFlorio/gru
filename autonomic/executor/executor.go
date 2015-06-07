@@ -16,30 +16,35 @@ func NewExecutor(c_err chan error) *executor {
 }
 
 func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient) {
-	// TODO add correct debug messages
-	log.Debugln("I'm executing")
-	actions := p.buildActions(&plan)
-	config := p.buildConfig(&plan, docker)
+	log.WithField("status", "start").Debugln("Running executor")
+	defer log.WithField("status", "done").Debugln("Running executor")
+	actions, err := p.buildActions(&plan)
+	if err != nil {
+		p.c_err <- err
+	}
+	srv, _ := service.GetServiceByName(plan.Service)
+	config := p.buildConfig(&plan, srv, docker)
 	for _, act := range actions {
 		act.Run(config)
 	}
 }
 
-func (p *executor) buildActions(plan *strategy.GruPlan) []action.GruAction {
-	actions := make([]action.GruAction, len(plan.Actions))
+func (p *executor) buildActions(plan *strategy.GruPlan) ([]action.GruAction, error) {
+	var err error
+	actions := make([]action.GruAction, 0, len(plan.Actions))
 	for _, name := range plan.Actions {
 		act, err := action.New(name)
 		if err != nil {
-			//TODO
+			return actions, err
+		} else {
+			actions = append(actions, act)
 		}
-		actions = append(actions, act)
 	}
 
-	return actions
+	return actions, err
 }
 
-func (p *executor) buildConfig(plan *strategy.GruPlan, docker *dockerclient.DockerClient) *action.GruActionConfig {
-	srv, _ := service.GetServiceByName(plan.Service)
+func (p *executor) buildConfig(plan *strategy.GruPlan, srv *service.Service, docker *dockerclient.DockerClient) *action.GruActionConfig {
 	config := action.GruActionConfig{
 		Service:    plan.Service,
 		Target:     plan.Target,
