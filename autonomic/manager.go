@@ -53,8 +53,32 @@ func (man *autoManager) loop() {
 		select {
 		case <-ticker.C:
 			stats := m.Run()
+
+			log.WithFields(log.Fields{
+				"status":    "received stats",
+				"instances": len(stats.Instance),
+				"services":  len(stats.Service),
+			}).Debugln("Running autonomic loop")
+
 			analytics := a.Run(stats)
+
+			log.WithFields(log.Fields{
+				"status":    "received analytics",
+				"instances": len(analytics.Instance),
+				"services":  len(analytics.Service),
+			}).Debugln("Running autonomic loop")
+
 			plan := p.Run(analytics)
+
+			log.WithFields(log.Fields{
+				"status":     "received plan",
+				"Service":    plan.Service,
+				"TargetType": plan.TargetType,
+				"Target":     plan.Target,
+				"Weight":     plan.Weight,
+				"Actions":    plan.Actions,
+			}).Debugln("Running autonomic loop")
+
 			e.Run(plan, man.Docker)
 		case <-c_err:
 			log.WithField("status", "error").Debugln("Running autonomic loop")

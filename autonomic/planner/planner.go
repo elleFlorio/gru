@@ -48,8 +48,6 @@ func (p *planner) Run(analytics analyzer.GruAnalytics) strategy.GruPlan {
 			"status": "planning",
 			"error":  err,
 		}).Errorln("Running Planner")
-
-		p.c_err <- err
 	}
 
 	return *thePlan

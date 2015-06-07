@@ -20,10 +20,19 @@ func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient)
 	defer log.WithField("status", "done").Debugln("Running executor")
 	actions, err := p.buildActions(&plan)
 	if err != nil {
-		p.c_err <- err
+		log.WithFields(log.Fields{
+			"status": "error",
+			"error":  err,
+		}).Debugln("Running executor")
 	}
 	srv, _ := service.GetServiceByName(plan.Service)
 	config := p.buildConfig(&plan, srv, docker)
+
+	log.WithFields(log.Fields{
+		"status":  "actuation",
+		"actions": len(actions),
+	}).Debugln("Running executor")
+
 	for _, act := range actions {
 		act.Run(config)
 	}

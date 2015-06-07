@@ -87,10 +87,10 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 	gruStats.Instance[id] = InstanceStats
 	gruStats.System.Cpu = stats.CpuStats.SystemUsage
 
-	log.WithFields(log.Fields{
-		"status": "update",
-		"id:":    id,
-	}).Debugln("Running monitor")
+	// log.WithFields(log.Fields{
+	// 	"status": "update",
+	// 	"id:":    id,
+	// }).Debugln("Running monitor")
 }
 
 func (p *monitor) monitorError(err error) {
