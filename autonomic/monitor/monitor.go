@@ -38,7 +38,7 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 	monitorActive = true
 	c_mntrerr := make(chan error)
 
-	docker.StartMonitorEvents(eventCallback, c_mntrerr)
+	docker.StartMonitorEvents(eventCallback, c_mntrerr, docker)
 
 	// Get the list of active containers to monitor
 	containers, err := docker.ListContainers(false, false, "")
@@ -78,7 +78,58 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		"from":   event.From,
 		"status": event.Status,
 	}).Debug("Received event")
+	docker := args[0].(*dockerclient.DockerClient)
 
+	switch event.Status {
+	case "kill":
+		removeResource(event.From, docker)
+
+		log.WithFields(log.Fields{
+			"status": "removed instance",
+			"id":     event.From,
+		}).Debug("Running monitor")
+
+	default:
+		log.WithFields(log.Fields{
+			"status": "event not handled",
+			"event":  event.Status,
+			"from":   event.From,
+		}).Warnln("Running monitor")
+	}
+
+}
+
+func removeResource(id string, docker *dockerclient.DockerClient) {
+	container, err := docker.InspectContainer(id)
+	if err != nil {
+		//TODO
+	}
+
+	srv, err := service.GetServiceByImage(container.Image)
+	if err != nil {
+		//TODO
+	}
+
+	// Updating service stats
+	srvStats := gruStats.Service[srv.Name]
+	inst := srvStats.Instances
+	index := findIdIndex(id, inst)
+	inst = append(inst[:index], inst[index+1:]...)
+	srvStats.Instances = inst
+	gruStats.Service[srv.Name] = srvStats
+
+	// Updating Instances stats
+	delete(gruStats.Instance, id)
+
+}
+
+func findIdIndex(id string, instances []string) int {
+	for index, v := range instances {
+		if v == id {
+			return index
+		}
+	}
+	return -1
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {

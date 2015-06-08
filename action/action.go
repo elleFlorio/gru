@@ -20,6 +20,7 @@ var (
 func init() {
 	actions = []GruAction{
 		&Start{},
+		&Stop{},
 	}
 }
 
