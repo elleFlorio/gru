@@ -38,7 +38,7 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 	monitorActive = true
 	c_mntrerr := make(chan error)
 
-	docker.StartMonitorEvents(eventCallback, c_mntrerr, docker)
+	docker.StartMonitorEvents(eventCallback, c_mntrerr)
 
 	// Get the list of active containers to monitor
 	containers, err := docker.ListContainers(false, false, "")
@@ -78,11 +78,10 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		"from":   event.From,
 		"status": event.Status,
 	}).Debug("Received event")
-	docker := args[0].(*dockerclient.DockerClient)
 
 	switch event.Status {
-	case "kill":
-		removeResource(event.From, docker)
+	case "die":
+		removeResource(event.From, &gruStats)
 
 		log.WithFields(log.Fields{
 			"status": "removed instance",
@@ -99,36 +98,43 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 
 }
 
-func removeResource(id string, docker *dockerclient.DockerClient) {
-	container, err := docker.InspectContainer(id)
-	if err != nil {
-		//TODO
-	}
-
-	srv, err := service.GetServiceByImage(container.Image)
-	if err != nil {
-		//TODO
-	}
+func removeResource(id string, stats *GruStats) {
+	srvName := findServiceByInstanceId(id, stats)
 
 	// Updating service stats
-	srvStats := gruStats.Service[srv.Name]
+	srvStats := stats.Service[srvName]
 	inst := srvStats.Instances
 	index := findIdIndex(id, inst)
 	inst = append(inst[:index], inst[index+1:]...)
 	srvStats.Instances = inst
-	gruStats.Service[srv.Name] = srvStats
+	stats.Service[srvName] = srvStats
 
 	// Updating Instances stats
-	delete(gruStats.Instance, id)
+	delete(stats.Instance, id)
 
 }
 
+// TODO create error?
+func findServiceByInstanceId(id string, stats *GruStats) string {
+	for k, v := range stats.Service {
+		for _, instance := range v.Instances {
+			if instance == id {
+				return k
+			}
+		}
+	}
+
+	return ""
+}
+
+// TODO create error?
 func findIdIndex(id string, instances []string) int {
 	for index, v := range instances {
 		if v == id {
 			return index
 		}
 	}
+
 	return -1
 }
 
