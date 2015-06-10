@@ -18,6 +18,8 @@ func NewExecutor(c_err chan error) *executor {
 func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient) {
 	log.WithField("status", "start").Debugln("Running executor")
 	defer log.WithField("status", "done").Debugln("Running executor")
+
+	config := &action.GruActionConfig{}
 	actions, err := p.buildActions(&plan)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -25,8 +27,17 @@ func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient)
 			"error":  err,
 		}).Debugln("Running executor")
 	}
-	srv, _ := service.GetServiceByName(plan.Service)
-	config := p.buildConfig(&plan, srv, docker)
+
+	srv, err := service.GetServiceByName(plan.Service)
+
+	if err == nil {
+		config = p.buildConfig(&plan, srv, docker)
+	}
+
+	log.WithFields(log.Fields{
+		"status": "config builded",
+		"config": config,
+	}).Debugln("Running executor")
 
 	log.WithFields(log.Fields{
 		"status":  "actuation",

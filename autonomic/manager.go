@@ -28,11 +28,11 @@ func NewAutoManager(docker *dockerclient.DockerClient, loopTimeInternval int) *a
 }
 
 func (man *autoManager) RunLoop() {
-	log.WithField("status", "start").Debugln("Running autonomic loop")
+	log.WithField("status", "start").Infoln("Running autonomic loop")
 
 	man.loop()
 
-	log.WithField("status", "done").Debugln("Running autonomic loop")
+	log.WithField("status", "done").Infoln("Running autonomic loop")
 }
 
 func (man *autoManager) loop() {
@@ -81,7 +81,7 @@ func (man *autoManager) loop() {
 
 			e.Run(plan, man.Docker)
 		case <-c_err:
-			log.WithField("status", "error").Debugln("Running autonomic loop")
+			log.WithField("status", "error").Errorln("Running autonomic loop")
 		case <-c_stop:
 			ticker.Stop()
 		}

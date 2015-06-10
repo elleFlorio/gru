@@ -8,6 +8,11 @@ type GruStats struct {
 
 type ServiceStats struct {
 	Instances []string
+	Events    EventStats
+}
+
+type EventStats struct {
+	Die []string
 }
 
 type InstanceStats struct {

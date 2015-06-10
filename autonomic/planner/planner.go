@@ -42,6 +42,12 @@ func (p *planner) Run(analytics analyzer.GruAnalytics) strategy.GruPlan {
 	defer log.WithField("status", "done").Debugln("Running planner")
 
 	plans := p.buildPlans(&analytics)
+
+	log.WithFields(log.Fields{
+		"status": "plans builded",
+		"plans":  len(plans),
+	}).Debugln("Running Planner")
+
 	thePlan, err := p.strtg.MakeDecision(plans, &analytics)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -50,12 +56,22 @@ func (p *planner) Run(analytics analyzer.GruAnalytics) strategy.GruPlan {
 		}).Errorln("Running Planner")
 	}
 
+	log.WithFields(log.Fields{
+		"status": "plan chosen",
+		"plan":   thePlan,
+	}).Debugln("Running Planner")
+
 	return *thePlan
 }
 
 func (p *planner) buildPlans(analytics *analyzer.GruAnalytics) []strategy.GruPlan {
 	policies := policy.GetPolicies("proactive")
 	plans := []strategy.GruPlan{}
+
+	log.WithFields(log.Fields{
+		"status":   "building plans",
+		"policies": len(policies),
+	}).Debugln("Running Planner")
 
 	for _, name := range service.List() {
 		for _, plc := range policies {

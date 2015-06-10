@@ -17,8 +17,8 @@ type GruAgentConfig struct {
 var config GruAgentConfig
 
 func LoadGruAgentConfig(filename string) (*GruAgentConfig, error) {
-	log.WithField("status", "start").Debugln("Agent configuration loading")
-	log.Debugln("Loading Agent Configuration...")
+	log.WithField("status", "start").Infoln("Agent configuration loading")
+	defer log.WithField("status", "done").Infoln("Agent configuration loading")
 
 	tmp, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -30,6 +30,5 @@ func LoadGruAgentConfig(filename string) (*GruAgentConfig, error) {
 		log.WithField("error", err).Errorln("Error unmarshaling configuration file")
 		return nil, err
 	}
-	log.WithField("status", "done").Debugln("Agent configuration loading")
 	return &config, nil
 }

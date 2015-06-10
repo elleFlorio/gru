@@ -12,6 +12,10 @@ type analyzer struct{ c_err chan error }
 var gruAnalytics GruAnalytics
 
 func init() {
+	resetAnalytics()
+}
+
+func resetAnalytics() {
 	gruAnalytics = GruAnalytics{
 		Service:  make(map[string]ServiceAnalytics),
 		Instance: make(map[string]InstanceAnalytics),
@@ -51,6 +55,12 @@ func updateAnalytics(name string, stats *monitor.GruStats) {
 	srvAnalytics.Instances = stats.Service[name].Instances
 	gruAnalytics.Service[name] = srvAnalytics
 
+	toBeRemoved := stats.Service[name].Events.Die
+
+	for _, died := range toBeRemoved {
+		delete(gruAnalytics.Instance, died)
+	}
+
 	for _, id := range srvAnalytics.Instances {
 		instAnalytics := gruAnalytics.Instance[id]
 		instAnalytics.Cpu = stats.Instance[id].Cpu
@@ -70,7 +80,8 @@ func computeCpuAvg(name string, stats *monitor.GruStats) {
 		instAnalytics := gruAnalytics.Instance[id]
 		instOld := instAnalytics.Cpu
 		instNew := stats.Instance[id].Cpu
-		instAnalytics.CpuPerc = 100.0 * float64(instNew-instOld) / float64(sysNew-sysOld)
+		// 100 * ?
+		instAnalytics.CpuPerc = float64(instNew-instOld) / float64(sysNew-sysOld)
 		gruAnalytics.Instance[id] = instAnalytics
 		sum += instAnalytics.CpuPerc
 	}

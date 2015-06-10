@@ -15,8 +15,8 @@ const gruAgentConfigFolder string = "/gru/config/gruagentconfig.json"
 const servicesFolder string = "/gru/config/services"
 
 func agent(c *cli.Context) {
-	log.WithField("status", "start").Debugln("Running gru agent")
-	defer log.WithField("status", "done").Errorln("Running gru agent")
+	log.WithField("status", "start").Infoln("Running gru agent")
+	defer log.WithField("status", "done").Infoln("Running gru agent")
 
 	gruAgentConfigPath := os.Getenv("HOME") + gruAgentConfigFolder
 	servicesPath := os.Getenv("HOME") + servicesFolder
@@ -40,7 +40,7 @@ func agent(c *cli.Context) {
 		return
 	}
 
-	log.WithField("status", "config complete").Debugln("Running gru agent")
+	log.WithField("status", "config complete").Infoln("Running gru agent")
 
 	manager := autonomic.NewAutoManager(docker, config.LoopTimeInterval)
 	manager.RunLoop()

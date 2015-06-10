@@ -20,10 +20,14 @@ func TestUpdateAnalytics(t *testing.T) {
 		updateAnalytics(name, &mockStats)
 	}
 
-	assert.Contains(t, gruAnalytics.Service["service1"].Instances, "instance2", "Service 1 should contains instance2")
+	assert.NotContains(t, gruAnalytics.Service["service1"].Instances, "instance2", "Service 1 should contains instance2")
+	inst := []string{}
+	for k, _ := range gruAnalytics.Instance {
+		inst = append(inst, k)
+	}
+	assert.NotContains(t, inst, "instance2", "Instances should not contains instance2")
 	assert.Contains(t, gruAnalytics.Service["service2"].Instances, "instance3", "Service 2 should contains instance3")
 	assert.Equal(t, mockStats.Instance["instance1"].Cpu, gruAnalytics.Instance["instance1"].Cpu, "Instance1 stats and analytics should be equal")
-	assert.Equal(t, mockStats.System.Cpu, gruAnalytics.System.Cpu, "System stats and analytics should be equal")
 
 	cleanAnalytics()
 }
@@ -35,32 +39,39 @@ func TestComputeCpuAvg(t *testing.T) {
 		computeCpuAvg(name, &mockStats)
 	}
 
-	assert.Equal(t, 0.25, gruAnalytics.Service["service1"].CpuAvg, "Service1 cpuAvg should be 50%")
+	assert.Equal(t, 0.25, gruAnalytics.Service["service1"].CpuAvg, "Service1 cpuAvg should be 25%")
 	assert.Equal(t, 0.3, gruAnalytics.Service["service2"].CpuAvg, "Service2 cpuAvg should be 30%")
 }
 
-func createMockStats() (GruStats, []string) {
-	instances1 := []string{"instance1", "instance2"}
-	service1 := ServiceStats{instances1}
+func createMockStats() (monitor.GruStats, []string) {
+	instances1 := []string{"instance1"}
+	events1 := monitor.EventStats{
+		Die: []string{"instance2"},
+	}
+	service1 := monitor.ServiceStats{
+		Instances: instances1,
+		Events:    events1,
+	}
+
 	instances2 := []string{"instance3"}
-	service2 := ServiceStats{instances2}
-	services := map[string]ServiceStats{
+	service2 := monitor.ServiceStats{Instances: instances2}
+	services := map[string]monitor.ServiceStats{
 		"service1": service1,
 		"service2": service2,
 	}
 
-	instStat1 := InstanceStats{20000}
-	instStat2 := InstanceStats{60000}
-	instStat3 := InstanceStats{60000}
-	instances := map[string]InstanceStats{
+	instStat1 := monitor.InstanceStats{20000}
+	instStat2 := monitor.InstanceStats{60000}
+	instStat3 := monitor.InstanceStats{60000}
+	instances := map[string]monitor.InstanceStats{
 		"instance1": instStat1,
 		"instance2": instStat2,
 		"instance3": instStat3,
 	}
 
-	system := SystemStats{150000}
+	system := monitor.SystemStats{150000}
 
-	mockStats := GruStats{
+	mockStats := monitor.GruStats{
 		Service:  services,
 		Instance: instances,
 		System:   system,

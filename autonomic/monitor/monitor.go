@@ -29,8 +29,51 @@ func NewMonitor(c_stop chan struct{}, c_err chan error) *monitor {
 	}
 }
 
+// FIXME need to find a way to reset events
 func (p *monitor) Run() GruStats {
-	return gruStats
+	updGruStats := GruStats{
+		Service:  make(map[string]ServiceStats),
+		Instance: make(map[string]InstanceStats),
+	}
+
+	copyStats(&gruStats, &updGruStats)
+
+	services := service.List()
+	for _, name := range services {
+		resetEventsStats(name, &gruStats)
+	}
+
+	return updGruStats
+}
+
+func copyStats(src *GruStats, dst *GruStats) {
+	// Copy service stats
+	for k, v := range src.Service {
+		srv_src := v
+		// Copy instances
+		inst_dst := make([]string, len(srv_src.Instances), len(srv_src.Instances))
+		copy(inst_dst, srv_src.Instances)
+		// Copy events
+		events_src := srv_src.Events
+		die_dst := make([]string, len(events_src.Die), len(events_src.Die))
+		copy(die_dst, events_src.Die)
+		// Create new service stats
+		events_dst := EventStats{die_dst}
+		srv_dst := ServiceStats{inst_dst, events_dst}
+		dst.Service[k] = srv_dst
+	}
+
+	for k, v := range src.Instance {
+		dst.Instance[k] = v
+	}
+
+	dst.System.Cpu = src.System.Cpu
+}
+
+func resetEventsStats(srvName string, stats *GruStats) {
+	srvStats := stats.Service[srvName]
+	srvStats.Events = EventStats{}
+	stats.Service[srvName] = srvStats
 }
 
 func (p *monitor) Start(docker *dockerclient.DockerClient) {
@@ -60,7 +103,7 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 			log.WithFields(log.Fields{
 				"id":    c.Id,
 				"image": c.Image,
-			}).Debug("Started monitor on container")
+			}).Infoln("Started monitor on container")
 		}
 	}
 
@@ -80,12 +123,14 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 	}).Debug("Received event")
 
 	switch event.Status {
+	case "stop":
 	case "die":
-		removeResource(event.From, &gruStats)
+		removeResource(event.Id, &gruStats)
 
 		log.WithFields(log.Fields{
 			"status": "removed instance",
-			"id":     event.From,
+			"image":  event.From,
+			"id":     event.Id,
 		}).Debug("Running monitor")
 
 	default:
@@ -107,11 +152,14 @@ func removeResource(id string, stats *GruStats) {
 	index := findIdIndex(id, inst)
 	inst = append(inst[:index], inst[index+1:]...)
 	srvStats.Instances = inst
+
+	// Upating Event stats
+	srvStats.Events.Die = append(srvStats.Events.Die, id)
+
 	stats.Service[srvName] = srvStats
 
 	// Updating Instances stats
 	delete(stats.Instance, id)
-
 }
 
 // TODO create error?
@@ -160,6 +208,6 @@ func (p *monitor) monitorError(err error) {
 
 func (p *monitor) Stop() {
 	monitorActive = false
-	log.WithField("status", "done").Debugln("Running monitor")
+	log.WithField("status", "done").Warnln("Running monitor")
 	p.c_stop <- struct{}{}
 }

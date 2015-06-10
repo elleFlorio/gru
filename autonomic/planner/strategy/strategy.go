@@ -31,7 +31,7 @@ func New(name string) (GruStrategy, error) {
 
 	for _, strategy := range strategies {
 		if strategy.Name() == name {
-			log.WithField("name", name).Debugf("Initializing strategy")
+			log.WithField("name", name).Debugln("Initializing strategy")
 			err := strategy.Initialize()
 			return strategy, err
 		}

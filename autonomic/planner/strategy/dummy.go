@@ -30,16 +30,29 @@ func (p *DummyStrategy) MakeDecision(plans []GruPlan, analytics *analyzer.GruAna
 		}).Errorln("Making decision")
 	}
 	thePlan.Target = target
+
+	log.WithFields(log.Fields{
+		"status": "plan chosen",
+		"plan":   thePlan,
+	}).Debugln("Making decision")
+
 	return thePlan, err
 }
 
 func (p *DummyStrategy) chosePlan(plans []GruPlan) *GruPlan {
-	var thePlan GruPlan
-	weigth := 0.0
+	weight := 0.0
+	thePlan := GruPlan{
+		Service:    "none",
+		Weight:     weight,
+		TargetType: "none",
+		Target:     "none",
+		Actions:    []string{"noAction"},
+	}
+
 	for _, plan := range plans {
-		if plan.Weight > weigth {
+		if plan.Weight > weight {
 			thePlan = plan
-			weigth = thePlan.Weight
+			weight = thePlan.Weight
 		}
 	}
 
@@ -54,6 +67,8 @@ func (p *DummyStrategy) choseTarget(tType string, analytics *analyzer.GruAnalyti
 		target = instances[rand.Intn(len(instances))]
 	case "image":
 		target = srv.Image
+	case "none":
+		target = "none"
 	default:
 		return "", ErrorNoSuchTarget
 	}
