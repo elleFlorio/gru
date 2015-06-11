@@ -32,6 +32,8 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 
 	for _, name := range service.List() {
 		if gruAnalytics.System.Cpu > 0 {
+			updateInstances(name, &stats)
+
 			computeCpuAvg(name, &stats)
 
 			log.WithFields(log.Fields{
@@ -49,8 +51,7 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 	return gruAnalytics
 }
 
-func updateAnalytics(name string, stats *monitor.GruStats) {
-
+func updateInstances(name string, stats *monitor.GruStats) {
 	srvAnalytics := gruAnalytics.Service[name]
 	srvAnalytics.Instances = stats.Service[name].Instances
 	gruAnalytics.Service[name] = srvAnalytics
@@ -59,12 +60,6 @@ func updateAnalytics(name string, stats *monitor.GruStats) {
 
 	for _, died := range toBeRemoved {
 		delete(gruAnalytics.Instance, died)
-	}
-
-	for _, id := range srvAnalytics.Instances {
-		instAnalytics := gruAnalytics.Instance[id]
-		instAnalytics.Cpu = stats.Instance[id].Cpu
-		gruAnalytics.Instance[id] = instAnalytics
 	}
 }
 
@@ -83,9 +78,19 @@ func computeCpuAvg(name string, stats *monitor.GruStats) {
 		// 100 * ?
 		instAnalytics.CpuPerc = float64(instNew-instOld) / float64(sysNew-sysOld)
 		gruAnalytics.Instance[id] = instAnalytics
+		log.Debugln("Instance cpuPerc ", instAnalytics.CpuPerc)
 		sum += instAnalytics.CpuPerc
 	}
 
 	srvAnalytics.CpuAvg = sum / float64(len(instances))
 	gruAnalytics.Service[name] = srvAnalytics
+}
+
+func updateAnalytics(name string, stats *monitor.GruStats) {
+
+	for id, instSt := range stats.Instance {
+		instAn := gruAnalytics.Instance[id]
+		instAn.Cpu = instSt.Cpu
+		gruAnalytics.Instance[id] = instAn
+	}
 }

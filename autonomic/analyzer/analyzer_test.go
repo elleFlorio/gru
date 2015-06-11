@@ -14,10 +14,10 @@ func init() {
 	}
 }
 
-func TestUpdateAnalytics(t *testing.T) {
+func TestUpdateInstances(t *testing.T) {
 	mockStats, names := createMockStats()
 	for _, name := range names {
-		updateAnalytics(name, &mockStats)
+		updateInstances(name, &mockStats)
 	}
 
 	assert.NotContains(t, gruAnalytics.Service["service1"].Instances, "instance2", "Service 1 should contains instance2")
@@ -27,7 +27,18 @@ func TestUpdateAnalytics(t *testing.T) {
 	}
 	assert.NotContains(t, inst, "instance2", "Instances should not contains instance2")
 	assert.Contains(t, gruAnalytics.Service["service2"].Instances, "instance3", "Service 2 should contains instance3")
-	assert.Equal(t, mockStats.Instance["instance1"].Cpu, gruAnalytics.Instance["instance1"].Cpu, "Instance1 stats and analytics should be equal")
+
+	cleanAnalytics()
+}
+
+func TestUpdateAnalytics(t *testing.T) {
+	mockStats, names := createMockStats()
+	for _, name := range names {
+		updateAnalytics(name, &mockStats)
+	}
+	statsCpu := mockStats.Instance["instance1"].Cpu
+	analyticsCpu := gruAnalytics.Instance["instance1"].Cpu
+	assert.Equal(t, statsCpu, analyticsCpu, "Instance1 stats and analytics should be equal")
 
 	cleanAnalytics()
 }
@@ -60,9 +71,9 @@ func createMockStats() (monitor.GruStats, []string) {
 		"service2": service2,
 	}
 
-	instStat1 := monitor.InstanceStats{20000}
-	instStat2 := monitor.InstanceStats{60000}
-	instStat3 := monitor.InstanceStats{60000}
+	instStat1 := monitor.InstanceStats{Cpu: 20000}
+	instStat2 := monitor.InstanceStats{Cpu: 60000}
+	instStat3 := monitor.InstanceStats{Cpu: 60000}
 	instances := map[string]monitor.InstanceStats{
 		"instance1": instStat1,
 		"instance2": instStat2,

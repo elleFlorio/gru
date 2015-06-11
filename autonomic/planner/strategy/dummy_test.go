@@ -135,11 +135,3 @@ func createMockServices() []service.Service {
 
 	return []service.Service{service1, service2, service3}
 }
-
-// type GruPlan struct {
-//     Service    string
-//     Weight     float64
-//     TargetType string
-//     Target     string
-//     Actions    []string
-// }

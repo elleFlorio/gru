@@ -25,9 +25,15 @@ func (p *ScaleUp) Actions() []string {
 func (p *ScaleUp) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
 	cpuAvg := a.Service[s.Name].CpuAvg
-	if cpuAvg > s.Constraints.CpuMax {
-		weight = (cpuAvg - s.Constraints.CpuMax) / (1.0 - s.Constraints.CpuMax)
+	curActive := len(a.Service[s.Name].Instances)
+	maxActive := s.Constraints.MaxActive
+
+	if curActive < maxActive {
+		if cpuAvg > s.Constraints.CpuMax {
+			weight = (cpuAvg - s.Constraints.CpuMax) / (1.0 - s.Constraints.CpuMax)
+		}
 	}
+
 	return weight
 }
 
