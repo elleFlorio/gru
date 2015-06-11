@@ -50,16 +50,34 @@ func copyStats(src *GruStats, dst *GruStats) {
 	// Copy service stats
 	for k, v := range src.Service {
 		srv_src := v
-		// Copy instances
-		inst_dst := make([]string, len(srv_src.Instances), len(srv_src.Instances))
-		copy(inst_dst, srv_src.Instances)
+		// Copy instances status
+		status_src := v.Instances
+		all_dst := make([]string, len(status_src.All), len(status_src.All))
+		runnig_dst := make([]string, len(status_src.Running), len(status_src.Running))
+		stopped_dst := make([]string, len(status_src.Stopped), len(status_src.Stopped))
+		paused_dst := make([]string, len(status_src.Paused), len(status_src.Paused))
+		copy(all_dst, status_src.All)
+		copy(runnig_dst, status_src.Running)
+		copy(stopped_dst, status_src.Stopped)
+		copy(paused_dst, status_src.Paused)
+		status_dst := InstanceStatus{
+			all_dst,
+			runnig_dst,
+			stopped_dst,
+			paused_dst,
+		}
 		// Copy events
 		events_src := srv_src.Events
-		die_dst := make([]string, len(events_src.Die), len(events_src.Die))
-		copy(die_dst, events_src.Die)
+		stop_dst := make([]string, len(events_src.Stop), len(events_src.Stop))
+		start_dst := make([]string, len(events_src.Start), len(events_src.Start))
+		copy(start_dst, events_src.Stop)
+		copy(stop_dst, events_src.Stop)
 		// Create new service stats
-		events_dst := EventStats{die_dst}
-		srv_dst := ServiceStats{inst_dst, events_dst}
+		events_dst := EventStats{
+			start_dst,
+			stop_dst,
+		}
+		srv_dst := ServiceStats{status_dst, events_dst}
 		dst.Service[k] = srv_dst
 	}
 
@@ -96,7 +114,9 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 			p.monitorError(err)
 		} else {
 			servStats := gruStats.Service[serv.Name]
-			servStats.Instances = append(servStats.Instances, c.Id)
+			servStats.Instances.All = append(servStats.Instances.All, c.Id)
+			servStats.Events.Start = append(servStats.Events.Start, c.Id)
+			servStats.Instances.Running = append(servStats.Instances.Running, c.Id)
 			gruStats.Service[serv.Name] = servStats
 			docker.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
 
@@ -148,13 +168,14 @@ func removeResource(id string, stats *GruStats) {
 
 	// Updating service stats
 	srvStats := stats.Service[srvName]
-	inst := srvStats.Instances
-	index := findIdIndex(id, inst)
-	inst = append(inst[:index], inst[index+1:]...)
-	srvStats.Instances = inst
+	running := srvStats.Instances.Running
+	index := findIdIndex(id, running)
+	running = append(running[:index], running[index+1:]...)
+	srvStats.Instances.Running = running
+	srvStats.Instances.Stopped = append(srvStats.Instances.Stopped, id)
 
 	// Upating Event stats
-	srvStats.Events.Die = append(srvStats.Events.Die, id)
+	srvStats.Events.Stop = append(srvStats.Events.Stop, id)
 
 	stats.Service[srvName] = srvStats
 
@@ -165,7 +186,7 @@ func removeResource(id string, stats *GruStats) {
 // TODO create error?
 func findServiceByInstanceId(id string, stats *GruStats) string {
 	for k, v := range stats.Service {
-		for _, instance := range v.Instances {
+		for _, instance := range v.Instances.All {
 			if instance == id {
 				return k
 			}

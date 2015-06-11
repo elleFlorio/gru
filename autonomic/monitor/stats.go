@@ -7,12 +7,20 @@ type GruStats struct {
 }
 
 type ServiceStats struct {
-	Instances []string
+	Instances InstanceStatus
 	Events    EventStats
 }
 
+type InstanceStatus struct {
+	All     []string
+	Running []string
+	Stopped []string
+	Paused  []string
+}
+
 type EventStats struct {
-	Die []string
+	Start []string
+	Stop  []string
 }
 
 type InstanceStats struct {

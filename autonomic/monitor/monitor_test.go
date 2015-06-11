@@ -11,7 +11,7 @@ func TestRemoveResource(t *testing.T) {
 	mockInstId := "instance3"
 
 	removeResource(mockInstId, &mockStats)
-	serviceStatsInst := mockStats.Service["service2"].Instances
+	serviceStatsInst := mockStats.Service["service2"].Instances.Running
 	instancesStats := []string{}
 	for k, _ := range mockStats.Instance {
 		instancesStats = append(instancesStats, k)
@@ -19,7 +19,7 @@ func TestRemoveResource(t *testing.T) {
 
 	assert.NotContains(t, serviceStatsInst, mockInstId, "Service stats should not contain 'instance3'")
 	assert.NotContains(t, instancesStats, mockInstId, "Instance stats should not contain 'instance3'")
-	assert.Contains(t, mockStats.Service["service2"].Events.Die, mockInstId, "Events Die should contain 'instance3'")
+	assert.Contains(t, mockStats.Service["service2"].Events.Stop, mockInstId, "Events Stop should contain 'instance3'")
 
 }
 
@@ -36,7 +36,7 @@ func TestResetEventsStats(t *testing.T) {
 	srvName := "service1"
 
 	resetEventsStats(srvName, &mockStats)
-	assert.Equal(t, 0, len(mockStats.Service[srvName].Events.Die), "Events Die should be empty")
+	assert.Equal(t, 0, len(mockStats.Service[srvName].Events.Stop), "Events Stop should be empty")
 }
 
 func TestCopyStats(t *testing.T) {
@@ -51,20 +51,31 @@ func TestCopyStats(t *testing.T) {
 
 	service := "service1"
 	resetEventsStats(service, &mockStats)
-	assert.Contains(t, mockStats_cp.Service[service].Events.Die,
+	assert.Contains(t, mockStats_cp.Service[service].Events.Stop,
 		"instance0", "The copy should be not modified")
 }
 
 func createMockStats() GruStats {
-	instances1 := []string{"instance1", "instance2"}
+	all1 := []string{"instance1", "instance2"}
+	running1 := []string{"instance1", "instance2"}
 	events1 := EventStats{
-		Die: []string{"instance0"},
+		Stop: []string{"instance0"},
+	}
+	instances1 := InstanceStatus{
+		All:     all1,
+		Running: running1,
 	}
 	service1 := ServiceStats{
 		Instances: instances1,
 		Events:    events1,
 	}
-	instances2 := []string{"instance3"}
+
+	all2 := []string{"instance3"}
+	running2 := []string{"instance3"}
+	instances2 := InstanceStatus{
+		All:     all2,
+		Running: running2,
+	}
 	service2 := ServiceStats{Instances: instances2}
 	services := map[string]ServiceStats{
 		"service1": service1,
