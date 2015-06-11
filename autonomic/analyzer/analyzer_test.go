@@ -80,7 +80,7 @@ func createMockStats() (monitor.GruStats, []string) {
 		"instance3": instStat3,
 	}
 
-	system := monitor.SystemStats{150000}
+	system := monitor.SystemStats{15000000}
 
 	mockStats := monitor.GruStats{
 		Service:  services,
@@ -130,7 +130,7 @@ func createMockAnalytics() {
 		"instance3": instAnalytics3,
 	}
 
-	system := SystemAnalytics{50000}
+	system := SystemAnalytics{5000000}
 
 	mockAnalytics := GruAnalytics{
 		Service:  services,

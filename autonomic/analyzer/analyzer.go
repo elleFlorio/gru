@@ -76,7 +76,7 @@ func computeCpuAvg(name string, stats *monitor.GruStats) {
 		instOld := instAnalytics.Cpu
 		instNew := stats.Instance[id].Cpu
 		// 100 * ?
-		instAnalytics.CpuPerc = float64(instNew-instOld) / float64(sysNew-sysOld)
+		instAnalytics.CpuPerc = 100 * float64(instNew-instOld) / float64(sysNew-sysOld)
 		gruAnalytics.Instance[id] = instAnalytics
 		log.Debugln("Instance cpuPerc ", instAnalytics.CpuPerc)
 		sum += instAnalytics.CpuPerc
