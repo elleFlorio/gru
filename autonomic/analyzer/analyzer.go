@@ -1,6 +1,8 @@
 package analyzer
 
 import (
+	"errors"
+
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/monitor"
@@ -9,7 +11,10 @@ import (
 
 type analyzer struct{ c_err chan error }
 
-var gruAnalytics GruAnalytics
+var (
+	gruAnalytics      GruAnalytics
+	ErrNotValidCpuAvg error = errors.New("Cpu Avg is not a valid value")
+)
 
 func init() {
 	resetAnalytics()
@@ -33,7 +38,15 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 	for _, name := range service.List() {
 		updateInstances(name, &stats)
 
-		computeCpuAvg(name, &stats)
+		err := computeCpuAvg(name, &stats)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"status":  "analyzing",
+				"error":   err,
+				"service": name,
+				"CpuAvg":  gruAnalytics.Service[name].CpuAvg,
+			}).Warnln("Running analyzer")
+		}
 
 		log.WithFields(log.Fields{
 			"status":  "analyzing",
@@ -50,53 +63,79 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 }
 
 func updateInstances(name string, stats *monitor.GruStats) {
+	srvStats := stats.Service[name]
 	srvAnalytics := gruAnalytics.Service[name]
-	srvAnalytics.Instances.All = stats.Service[name].Instances.All
-	srvAnalytics.Instances.Running = stats.Service[name].Instances.Running
-	srvAnalytics.Instances.Stopped = stats.Service[name].Instances.Stopped
-	srvAnalytics.Instances.Paused = stats.Service[name].Instances.Paused
+
+	srvAnalytics.Instances.All = srvStats.Instances.All
+	srvAnalytics.Instances.Pending = srvStats.Events.Start
+	// pending instances should not be analyzed, because we don't have
+	// previous data to compare.
+	srvAnalytics.Instances.Running = []string{}
+	for _, running := range srvStats.Instances.Running {
+		if !isPending(running, srvAnalytics.Instances.Pending) {
+			srvAnalytics.Instances.Running = append(srvAnalytics.Instances.Running, running)
+		}
+	}
+	srvAnalytics.Instances.Stopped = srvStats.Instances.Stopped
+	srvAnalytics.Instances.Paused = srvStats.Instances.Paused
+
+	log.WithFields(log.Fields{
+		"status":  "instance updated",
+		"service": name,
+		"all":     srvAnalytics.Instances.All,
+		"pending": srvAnalytics.Instances.Pending,
+		"running": srvAnalytics.Instances.Running,
+		"stopped": srvAnalytics.Instances.Stopped,
+		"paused":  srvAnalytics.Instances.Paused,
+	}).Debugln("Running analyzer")
+
 	gruAnalytics.Service[name] = srvAnalytics
 
-	toBeRemoved := stats.Service[name].Events.Stop
-
-	for _, died := range toBeRemoved {
-		delete(gruAnalytics.Instance, died)
+	toBeRemoved := srvStats.Events.Stop
+	for _, stopped := range toBeRemoved {
+		delete(gruAnalytics.Instance, stopped)
 	}
 }
 
-func computeCpuAvg(name string, stats *monitor.GruStats) {
+func isPending(id string, pending []string) bool {
+	for _, pndng := range pending {
+		if id == pndng {
+			return true
+		}
+	}
+
+	return false
+}
+
+func computeCpuAvg(name string, stats *monitor.GruStats) error {
+	var err error = nil
 	sum := 0.0
-	counter := 0
+	avg := 0.0
 	sysOld := gruAnalytics.System.Cpu
 	sysNew := stats.System.Cpu
 
 	srvAnalytics := gruAnalytics.Service[name]
 
 	instances := srvAnalytics.Instances
+	nRunning := len(srvAnalytics.Instances.Running)
 	for _, id := range instances.Running {
-		if !isJustStarted(id, stats.Service[name].Events.Start) {
-			instAnalytics := gruAnalytics.Instance[id]
-			instOld := instAnalytics.Cpu
-			instNew := stats.Instance[id].Cpu
-			instAnalytics.CpuPerc = 100 * float64(instNew-instOld) / float64(sysNew-sysOld)
-			gruAnalytics.Instance[id] = instAnalytics
-			sum += instAnalytics.CpuPerc
-			counter++
-		}
+		instAnalytics := gruAnalytics.Instance[id]
+		instOld := instAnalytics.Cpu
+		instNew := stats.Instance[id].Cpu
+		instAnalytics.CpuPerc = 100 * float64(instNew-instOld) / float64(sysNew-sysOld)
+		gruAnalytics.Instance[id] = instAnalytics
+		sum += instAnalytics.CpuPerc
+	}
+	if nRunning != 0 {
+		avg = sum / float64(nRunning)
+	} else {
+		avg = 0
+		err = ErrNotValidCpuAvg
 	}
 
-	srvAnalytics.CpuAvg = sum / float64(counter)
+	srvAnalytics.CpuAvg = avg
 	gruAnalytics.Service[name] = srvAnalytics
-}
-
-func isJustStarted(id string, started []string) bool {
-	for _, strtd := range started {
-		if id == strtd {
-			return true
-		}
-	}
-
-	return false
+	return err
 }
 
 func updateAnalytics(name string, stats *monitor.GruStats) {

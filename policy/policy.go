@@ -10,6 +10,7 @@ type GruPolicy interface {
 	Type() string
 	Weight(s *service.Service, a *analyzer.GruAnalytics) float64
 	Target() string
+	TargetStatus() string
 	Actions() []string
 }
 

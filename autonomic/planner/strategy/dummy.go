@@ -22,13 +22,19 @@ func (p *DummyStrategy) Initialize() error {
 func (p *DummyStrategy) MakeDecision(plans []GruPlan, analytics *analyzer.GruAnalytics) (*GruPlan, error) {
 	thePlan := p.chosePlan(plans)
 	srv, _ := service.GetServiceByName(thePlan.Service)
-	target, err := p.choseTarget(thePlan.TargetType, analytics, srv)
+	target, err := p.choseTarget(thePlan.TargetType, thePlan.TargetStatus, analytics, srv)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"status": "target",
 			"error":  err,
 		}).Errorln("Making decision")
+
+		if err == ErrorNoStoppedCont {
+			thePlan.TargetType = "image"
+			target = srv.Image
+		}
 	}
+
 	thePlan.Target = target
 
 	log.WithFields(log.Fields{
@@ -59,12 +65,25 @@ func (p *DummyStrategy) chosePlan(plans []GruPlan) *GruPlan {
 	return &thePlan
 }
 
-func (p *DummyStrategy) choseTarget(tType string, analytics *analyzer.GruAnalytics, srv *service.Service) (string, error) {
+func (p *DummyStrategy) choseTarget(tType string, tStatus string, analytics *analyzer.GruAnalytics, srv *service.Service) (string, error) {
 	var target string
+	var pool []string
 	switch tType {
 	case "container":
 		instances := analytics.Service[srv.Name].Instances
-		target = instances[rand.Intn(len(instances))]
+		switch tStatus {
+		case "running":
+			pool = instances.Running
+		case "stopped":
+			if len(instances.Stopped) > 0 {
+				pool = instances.Stopped
+			} else {
+				return "", ErrorNoStoppedCont
+			}
+		default:
+			return "", ErrorNoSuchStatus
+		}
+		target = pool[rand.Intn(len(pool))]
 	case "image":
 		target = srv.Image
 	case "none":

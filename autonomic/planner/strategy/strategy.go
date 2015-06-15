@@ -19,6 +19,8 @@ var (
 	strategies          []GruStrategy
 	ErrorNoSuchStrategy error = errors.New("Strategy not implemented")
 	ErrorNoSuchTarget   error = errors.New("Unrecognized Target type")
+	ErrorNoSuchStatus   error = errors.New("Unrecognized Target status")
+	ErrorNoStoppedCont  error = errors.New("No stopped container for this service")
 )
 
 func init() {

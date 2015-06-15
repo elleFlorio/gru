@@ -70,7 +70,7 @@ func copyStats(src *GruStats, dst *GruStats) {
 		events_src := srv_src.Events
 		stop_dst := make([]string, len(events_src.Stop), len(events_src.Stop))
 		start_dst := make([]string, len(events_src.Start), len(events_src.Start))
-		copy(start_dst, events_src.Stop)
+		copy(start_dst, events_src.Start)
 		copy(stop_dst, events_src.Stop)
 		// Create new service stats
 		events_dst := EventStats{
@@ -90,6 +90,12 @@ func copyStats(src *GruStats, dst *GruStats) {
 
 func resetEventsStats(srvName string, stats *GruStats) {
 	srvStats := stats.Service[srvName]
+
+	log.WithFields(log.Fields{
+		"start": srvStats.Events.Start,
+		"stop":  srvStats.Events.Stop,
+	}).Debugln("Monitored events")
+
 	srvStats.Events = EventStats{}
 	stats.Service[srvName] = srvStats
 }
@@ -212,11 +218,6 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 	InstanceStats.Cpu = stats.CpuStats.CpuUsage.TotalUsage
 	gruStats.Instance[id] = InstanceStats
 	gruStats.System.Cpu = stats.CpuStats.SystemUsage
-
-	// log.WithFields(log.Fields{
-	// 	"status": "update",
-	// 	"id:":    id,
-	// }).Debugln("Running monitor")
 }
 
 func (p *monitor) monitorError(err error) {

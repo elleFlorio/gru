@@ -24,7 +24,7 @@ func (p *ScaleDown) Actions() []string {
 func (p *ScaleDown) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
 	minActive := s.Constraints.MinActive
-	curActive := len(a.Service[s.Name].Instances)
+	curActive := len(a.Service[s.Name].Instances.Running)
 
 	if curActive > minActive {
 		cpuAvg := a.Service[s.Name].CpuAvg
@@ -38,4 +38,8 @@ func (p *ScaleDown) Weight(s *service.Service, a *analyzer.GruAnalytics) float64
 
 func (p *ScaleDown) Target() string {
 	return "container"
+}
+
+func (p *ScaleDown) TargetStatus() string {
+	return "running"
 }

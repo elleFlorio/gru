@@ -25,7 +25,7 @@ func (p *ScaleUp) Actions() []string {
 func (p *ScaleUp) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
 	cpuAvg := a.Service[s.Name].CpuAvg
-	curActive := len(a.Service[s.Name].Instances)
+	curActive := len(a.Service[s.Name].Instances.Running)
 	maxActive := s.Constraints.MaxActive
 
 	if curActive < maxActive {
@@ -38,5 +38,9 @@ func (p *ScaleUp) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 }
 
 func (p *ScaleUp) Target() string {
-	return "image"
+	return "container"
+}
+
+func (p *ScaleUp) TargetStatus() string {
+	return "stopped"
 }

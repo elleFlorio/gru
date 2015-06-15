@@ -15,6 +15,7 @@ func init() {
 }
 
 func TestUpdateInstances(t *testing.T) {
+	defer cleanAnalytics()
 	mockStats := createMockStats()
 	for name, _ := range mockStats.Service {
 		updateInstances(name, &mockStats)
@@ -27,11 +28,10 @@ func TestUpdateInstances(t *testing.T) {
 	}
 	assert.NotContains(t, inst, "instance0", "Instances should not contains instance2")
 	assert.Contains(t, gruAnalytics.Service["service2"].Instances.Running, "instance3", "Service 2 should contains instance3")
-
-	cleanAnalytics()
 }
 
 func TestUpdateAnalytics(t *testing.T) {
+	defer cleanAnalytics()
 	mockStats := createMockStats()
 	for name, _ := range mockStats.Service {
 		updateAnalytics(name, &mockStats)
@@ -39,19 +39,21 @@ func TestUpdateAnalytics(t *testing.T) {
 	statsCpu := mockStats.Instance["instance1"].Cpu
 	analyticsCpu := gruAnalytics.Instance["instance1"].Cpu
 	assert.Equal(t, statsCpu, analyticsCpu, "Instance1 stats and analytics should be equal")
-
-	cleanAnalytics()
 }
 
 func TestComputeCpuAvg(t *testing.T) {
+	defer cleanAnalytics()
+	var err error = nil
 	mockStats := createMockStats()
 	createMockAnalytics()
-	for name, _ := range mockStats.Service {
-		computeCpuAvg(name, &mockStats)
-	}
 
+	err = computeCpuAvg("service1", &mockStats)
 	assert.Equal(t, 0.25, gruAnalytics.Service["service1"].CpuAvg, "Service1 cpuAvg should be 25%")
+	err = computeCpuAvg("service2", &mockStats)
 	assert.Equal(t, 0.3, gruAnalytics.Service["service2"].CpuAvg, "Service2 cpuAvg should be 30%")
+	err = computeCpuAvg("service3", &mockStats)
+	assert.Error(t, err, "Service 3 cpu avg should be not valid")
+	assert.Equal(t, 0.0, gruAnalytics.Service["service3"].CpuAvg, "Service3 cpuAvg should be 0%")
 }
 
 func createMockStats() monitor.GruStats {
@@ -79,20 +81,38 @@ func createMockStats() monitor.GruStats {
 		Running: running2,
 	}
 	service2 := monitor.ServiceStats{Instances: instances2}
+
+	all3 := []string{"instance5"}
+	running3 := []string{"instance5"}
+	instances3 := monitor.InstanceStatus{
+		All:     all3,
+		Running: running3,
+	}
+	events3 := monitor.EventStats{
+		Start: []string{"instance5"},
+	}
+	service3 := monitor.ServiceStats{
+		Instances: instances3,
+		Events:    events3,
+	}
+
 	services := map[string]monitor.ServiceStats{
 		"service1": service1,
 		"service2": service2,
+		"service3": service3,
 	}
 
 	instStat1 := monitor.InstanceStats{20000}
 	instStat2 := monitor.InstanceStats{60000}
 	instStat3 := monitor.InstanceStats{60000}
 	instStat4 := monitor.InstanceStats{10000}
+	instStat5 := monitor.InstanceStats{15000}
 	instances := map[string]monitor.InstanceStats{
 		"instance1": instStat1,
 		"instance2": instStat2,
 		"instance3": instStat3,
 		"instance4": instStat4,
+		"instance5": instStat5,
 	}
 
 	system := monitor.SystemStats{15000000}
@@ -114,9 +134,11 @@ func cleanAnalytics() {
 
 func createMockAnalytics() {
 	all1 := []string{"instance0", "instance1", "instance2", "instance4"}
-	running1 := []string{"instance4", "instance1", "instance2"}
+	pending1 := []string{"instance4"}
+	running1 := []string{"instance1", "instance2"}
 	instances1 := InstanceStatus{
 		All:     all1,
+		Pending: pending1,
 		Running: running1,
 	}
 	service1 := ServiceAnalytics{
@@ -133,9 +155,22 @@ func createMockAnalytics() {
 		CpuAvg:    0.4,
 		Instances: instances2,
 	}
+
+	all3 := []string{"instance5"}
+	pending3 := []string{"instance5"}
+	instances3 := InstanceStatus{
+		All:     all3,
+		Pending: pending3,
+	}
+	service3 := ServiceAnalytics{
+		CpuAvg:    0.0,
+		Instances: instances3,
+	}
+
 	services := map[string]ServiceAnalytics{
 		"service1": service1,
 		"service2": service2,
+		"service3": service3,
 	}
 
 	instAnalytics1 := InstanceAnalytics{
@@ -154,11 +189,16 @@ func createMockAnalytics() {
 		Cpu:     0,
 		CpuPerc: 0.0,
 	}
+	InstAnalytics5 := InstanceAnalytics{
+		Cpu:     0,
+		CpuPerc: 0.0,
+	}
 	instances := map[string]InstanceAnalytics{
 		"instance1": instAnalytics1,
 		"instance2": instAnalytics2,
 		"instance3": instAnalytics3,
 		"instance4": InstAnalytics4,
+		"instance5": InstAnalytics5,
 	}
 
 	system := SystemAnalytics{5000000}

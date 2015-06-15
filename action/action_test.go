@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const number int = 1
+const number int = 3
 
 func TestNew(t *testing.T) {
 	correct := "start"
@@ -25,5 +25,5 @@ func TestList(t *testing.T) {
 
 	assert.Len(t, actions, number, "Number of current actions should be "+strconv.Itoa(number))
 
-	assert.Equal(t, "start", actions[0], "The name of the first action should be 'start'")
+	assert.Equal(t, "noAction", actions[0], "The name of the first action should be 'start'")
 }

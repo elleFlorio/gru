@@ -13,6 +13,7 @@ type ServiceAnalytics struct {
 
 type InstanceStatus struct {
 	All     []string
+	Pending []string
 	Running []string
 	Stopped []string
 	Paused  []string
