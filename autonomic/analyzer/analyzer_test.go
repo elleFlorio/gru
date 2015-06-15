@@ -15,25 +15,25 @@ func init() {
 }
 
 func TestUpdateInstances(t *testing.T) {
-	mockStats, names := createMockStats()
-	for _, name := range names {
+	mockStats := createMockStats()
+	for name, _ := range mockStats.Service {
 		updateInstances(name, &mockStats)
 	}
 
-	assert.NotContains(t, gruAnalytics.Service["service1"].Instances, "instance2", "Service 1 should contains instance2")
+	assert.NotContains(t, gruAnalytics.Service["service1"].Instances.Running, "instance0", "Service 1 should contains instance2")
 	inst := []string{}
 	for k, _ := range gruAnalytics.Instance {
 		inst = append(inst, k)
 	}
-	assert.NotContains(t, inst, "instance2", "Instances should not contains instance2")
-	assert.Contains(t, gruAnalytics.Service["service2"].Instances, "instance3", "Service 2 should contains instance3")
+	assert.NotContains(t, inst, "instance0", "Instances should not contains instance2")
+	assert.Contains(t, gruAnalytics.Service["service2"].Instances.Running, "instance3", "Service 2 should contains instance3")
 
 	cleanAnalytics()
 }
 
 func TestUpdateAnalytics(t *testing.T) {
-	mockStats, names := createMockStats()
-	for _, name := range names {
+	mockStats := createMockStats()
+	for name, _ := range mockStats.Service {
 		updateAnalytics(name, &mockStats)
 	}
 	statsCpu := mockStats.Instance["instance1"].Cpu
@@ -44,9 +44,9 @@ func TestUpdateAnalytics(t *testing.T) {
 }
 
 func TestComputeCpuAvg(t *testing.T) {
-	mockStats, names := createMockStats()
+	mockStats := createMockStats()
 	createMockAnalytics()
-	for _, name := range names {
+	for name, _ := range mockStats.Service {
 		computeCpuAvg(name, &mockStats)
 	}
 
@@ -54,30 +54,45 @@ func TestComputeCpuAvg(t *testing.T) {
 	assert.Equal(t, 0.3, gruAnalytics.Service["service2"].CpuAvg, "Service2 cpuAvg should be 30%")
 }
 
-func createMockStats() (monitor.GruStats, []string) {
-	instances1 := []string{"instance1"}
+func createMockStats() monitor.GruStats {
+	all1 := []string{"instance0", "instance1", "instance2", "instance4"}
+	running1 := []string{"instance1", "instance2", "instance4"}
+	stopped1 := []string{"instance0"}
 	events1 := monitor.EventStats{
-		Die: []string{"instance2"},
+		Start: []string{"instance4"},
+		Stop:  []string{"instance0"},
+	}
+	instances1 := monitor.InstanceStatus{
+		All:     all1,
+		Running: running1,
+		Stopped: stopped1,
 	}
 	service1 := monitor.ServiceStats{
 		Instances: instances1,
 		Events:    events1,
 	}
 
-	instances2 := []string{"instance3"}
+	all2 := []string{"instance3"}
+	running2 := []string{"instance3"}
+	instances2 := monitor.InstanceStatus{
+		All:     all2,
+		Running: running2,
+	}
 	service2 := monitor.ServiceStats{Instances: instances2}
 	services := map[string]monitor.ServiceStats{
 		"service1": service1,
 		"service2": service2,
 	}
 
-	instStat1 := monitor.InstanceStats{Cpu: 20000}
-	instStat2 := monitor.InstanceStats{Cpu: 60000}
-	instStat3 := monitor.InstanceStats{Cpu: 60000}
+	instStat1 := monitor.InstanceStats{20000}
+	instStat2 := monitor.InstanceStats{60000}
+	instStat3 := monitor.InstanceStats{60000}
+	instStat4 := monitor.InstanceStats{10000}
 	instances := map[string]monitor.InstanceStats{
 		"instance1": instStat1,
 		"instance2": instStat2,
 		"instance3": instStat3,
+		"instance4": instStat4,
 	}
 
 	system := monitor.SystemStats{15000000}
@@ -88,7 +103,7 @@ func createMockStats() (monitor.GruStats, []string) {
 		System:   system,
 	}
 
-	return mockStats, []string{"service1", "service2"}
+	return mockStats
 }
 
 func cleanAnalytics() {
@@ -98,11 +113,22 @@ func cleanAnalytics() {
 }
 
 func createMockAnalytics() {
-	instances1 := []string{"instance1", "instance2"}
+	all1 := []string{"instance0", "instance1", "instance2", "instance4"}
+	running1 := []string{"instance4", "instance1", "instance2"}
+	instances1 := InstanceStatus{
+		All:     all1,
+		Running: running1,
+	}
 	service1 := ServiceAnalytics{
 		CpuAvg:    0.2,
 		Instances: instances1}
-	instances2 := []string{"instance3"}
+
+	all2 := []string{"instance3"}
+	running2 := []string{"instance3"}
+	instances2 := InstanceStatus{
+		All:     all2,
+		Running: running2,
+	}
 	service2 := ServiceAnalytics{
 		CpuAvg:    0.4,
 		Instances: instances2,
@@ -124,10 +150,15 @@ func createMockAnalytics() {
 		Cpu:     30000,
 		CpuPerc: 0.3,
 	}
+	InstAnalytics4 := InstanceAnalytics{
+		Cpu:     0,
+		CpuPerc: 0.0,
+	}
 	instances := map[string]InstanceAnalytics{
 		"instance1": instAnalytics1,
 		"instance2": instAnalytics2,
 		"instance3": instAnalytics3,
+		"instance4": InstAnalytics4,
 	}
 
 	system := SystemAnalytics{5000000}

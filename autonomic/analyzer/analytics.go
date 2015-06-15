@@ -8,7 +8,14 @@ type GruAnalytics struct {
 
 type ServiceAnalytics struct {
 	CpuAvg    float64
-	Instances []string
+	Instances InstanceStatus
+}
+
+type InstanceStatus struct {
+	All     []string
+	Running []string
+	Stopped []string
+	Paused  []string
 }
 
 type InstanceAnalytics struct {
