@@ -19,38 +19,25 @@ func (p *Start) Initialize() error {
 
 func (p *Start) Run(config *GruActionConfig) error {
 	var err error = nil
-	var uuid string
+	var id string
 
 	// If my target type is a container I have to start a stopped one (the target)
 	// Otherwise I have to create a new one starting from its image, then start it
 	if config.TargetType == "container" {
-		err = config.Client.StartContainer(config.Target, config.HostConfig)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"id":    config.Target,
-				"error": err,
-			}).Errorln("Error starting container")
-		}
+		id = config.Target
 
 	} else {
-		uuid, err = generateUUID()
-		name := config.Service + "_" + uuid
+		id, err = createNewContainer(config)
 
-		log.WithFields(log.Fields{
-			"name": name,
-			"id":   "TODO",
-		}).Infoln("Starting new container")
-		config.ContainerConfig.Image = config.Target
-		id, err := config.Client.CreateContainer(config.ContainerConfig, name)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"id":    id,
 				"error": err,
 			}).Errorln("Error creating container")
 		}
-		config.Client.StartContainer(id, config.HostConfig)
 	}
 
+	config.Client.StartContainer(id, config.HostConfig)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"id":    config.Target,

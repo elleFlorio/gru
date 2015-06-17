@@ -5,23 +5,23 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-type ScaleDown struct{}
+type ScaleIn struct{}
 
-func (p *ScaleDown) Name() string {
-	return "scaledown"
+func (p *ScaleIn) Name() string {
+	return "scalein"
 }
 
-func (p *ScaleDown) Type() string {
+func (p *ScaleIn) Type() string {
 	return "proactive"
 }
 
-func (p *ScaleDown) Actions() []string {
+func (p *ScaleIn) Actions() []string {
 	return []string{
 		"stop",
 	}
 }
 
-func (p *ScaleDown) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
+func (p *ScaleIn) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
 	minActive := s.Constraints.MinActive
 	curActive := len(a.Service[s.Name].Instances.Running)
@@ -36,10 +36,10 @@ func (p *ScaleDown) Weight(s *service.Service, a *analyzer.GruAnalytics) float64
 	return weight
 }
 
-func (p *ScaleDown) Target() string {
+func (p *ScaleIn) Target() string {
 	return "container"
 }
 
-func (p *ScaleDown) TargetStatus() string {
+func (p *ScaleIn) TargetStatus() string {
 	return "running"
 }

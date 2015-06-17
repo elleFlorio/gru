@@ -13,8 +13,8 @@ var plc map[string]GruPolicy
 
 func init() {
 	plc = map[string]GruPolicy{
-		"scaleDown": &ScaleDown{},
-		"scaleUp":   &ScaleUp{},
+		"scalein":  &ScaleIn{},
+		"scaleout": &ScaleOut{},
 	}
 }
 
@@ -24,24 +24,24 @@ func TestWeight(t *testing.T) {
 	delta := 0.0000001
 
 	// ScaleDown
-	weight0 := plc["scaleDown"].Weight(&mockServices[0], &mockAnalytics)
-	assert.Equal(t, 1.0, weight0, "scaleDown: weight0 should be 1")
-	weight1 := plc["scaleDown"].Weight(&mockServices[1], &mockAnalytics)
-	assert.Equal(t, 0.5, weight1, "scaleDown: weight1 should be 0.5")
-	weight2 := plc["scaleDown"].Weight(&mockServices[2], &mockAnalytics)
-	assert.Equal(t, 0.0, weight2, "scaleDown: weight2 should be 0")
+	weight0 := plc["scalein"].Weight(&mockServices[0], &mockAnalytics)
+	assert.Equal(t, 1.0, weight0, "scalein: weight0 should be 1")
+	weight1 := plc["scalein"].Weight(&mockServices[1], &mockAnalytics)
+	assert.Equal(t, 0.5, weight1, "scalein: weight1 should be 0.5")
+	weight2 := plc["scalein"].Weight(&mockServices[2], &mockAnalytics)
+	assert.Equal(t, 0.0, weight2, "scalein: weight2 should be 0")
 
 	//ScaleUp
-	weight0 = plc["scaleUp"].Weight(&mockServices[0], &mockAnalytics)
-	assert.Equal(t, 0.0, weight0, "scaleUp: weight0 should be 0")
-	weight1 = plc["scaleUp"].Weight(&mockServices[1], &mockAnalytics)
-	assert.Equal(t, 0.0, weight1, "scaleUp: weight1 should be 0")
-	weight2 = plc["scaleUp"].Weight(&mockServices[2], &mockAnalytics)
+	weight0 = plc["scaleout"].Weight(&mockServices[0], &mockAnalytics)
+	assert.Equal(t, 0.0, weight0, "scaleout: weight0 should be 0")
+	weight1 = plc["scaleout"].Weight(&mockServices[1], &mockAnalytics)
+	assert.Equal(t, 0.0, weight1, "scaleout: weight1 should be 0")
+	weight2 = plc["scaleout"].Weight(&mockServices[2], &mockAnalytics)
 	// FIXME is there a way to avoid this step???
 	if weight2 < 0.5+delta && weight2 > 0.5-delta {
 		weight2 = 0.5
 	}
-	assert.Equal(t, 0.5, weight2, "scaleUp: weight2 should be 0")
+	assert.Equal(t, 0.5, weight2, "scaleout: weight2 should be 0")
 }
 
 func createMockServices() []service.Service {
@@ -83,18 +83,27 @@ func createMockServices() []service.Service {
 }
 
 func createMockAnalytics() analyzer.GruAnalytics {
-	instances1 := []string{"instance1_1", "instance1_2", "instance1_3"}
+	running1 := []string{"instance1_1", "instance1_2", "instance1_3"}
+	instances1 := analyzer.InstanceStatus{
+		Running: running1,
+	}
 	service1 := analyzer.ServiceAnalytics{
 		CpuAvg:    0,
 		Instances: instances1}
 
-	instances2 := []string{"instance2_1", "instance_2_2"}
+	running2 := []string{"instance2_1", "instance_2_2"}
+	instances2 := analyzer.InstanceStatus{
+		Running: running2,
+	}
 	service2 := analyzer.ServiceAnalytics{
 		CpuAvg:    0.2,
 		Instances: instances2,
 	}
 
-	instances3 := []string{"instance3_1", "instance3_2", "instance3_3", "instance3_4"}
+	running3 := []string{"instance3_1", "instance3_2", "instance3_3", "instance3_4"}
+	instances3 := analyzer.InstanceStatus{
+		Running: running3,
+	}
 	service3 := analyzer.ServiceAnalytics{
 		CpuAvg:    0.8,
 		Instances: instances3,

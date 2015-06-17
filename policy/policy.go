@@ -19,8 +19,8 @@ var proactive, reactive []GruPolicy
 func init() {
 	reactive = []GruPolicy{}
 	proactive = []GruPolicy{
-		&ScaleDown{},
-		&ScaleUp{},
+		&ScaleIn{},
+		&ScaleOut{},
 	}
 }
 
