@@ -104,32 +104,26 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 	log.WithField("status", "start").Debugln("Running monitor")
 	monitorActive = true
 	c_mntrerr := make(chan error)
+	c_evntstart := make(chan string)
 
-	docker.StartMonitorEvents(eventCallback, c_mntrerr)
+	docker.StartMonitorEvents(eventCallback, c_mntrerr, c_evntstart)
 
 	// Get the list of active containers to monitor
-	containers, err := docker.ListContainers(false, false, "")
+	containers, err := docker.ListContainers(true, false, "")
 	if err != nil {
 		p.monitorError(err)
 	}
 
 	// Start the monitor for each active container
 	for _, c := range containers {
-		serv, err := service.GetServiceByImage(c.Image)
+		info, _ := docker.InspectContainer(c.Id)
+		status := getContainerStatus(info)
+		err = addResource(c.Id, c.Image, status, &gruStats)
+
 		if err != nil {
 			p.monitorError(err)
 		} else {
-			servStats := gruStats.Service[serv.Name]
-			servStats.Instances.All = append(servStats.Instances.All, c.Id)
-			servStats.Events.Start = append(servStats.Events.Start, c.Id)
-			servStats.Instances.Running = append(servStats.Instances.Running, c.Id)
-			gruStats.Service[serv.Name] = servStats
 			docker.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
-
-			log.WithFields(log.Fields{
-				"id":    c.Id,
-				"image": c.Image,
-			}).Infoln("Started monitor on container")
 		}
 	}
 
@@ -137,6 +131,8 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 		select {
 		case err := <-c_mntrerr:
 			p.monitorError(err)
+		case newId := <-c_evntstart:
+			docker.StartMonitorStats(newId, statCallBack, c_mntrerr)
 		}
 	}
 }
@@ -144,21 +140,20 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 // Events are: create, destroy, die, exec_create, exec_start, export, kill, oom, pause, restart, start, stop, unpause
 func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}) {
 	log.WithFields(log.Fields{
+		"status": "received event",
+		"event":  event.Status,
 		"from":   event.From,
-		"status": event.Status,
-	}).Debug("Received event")
+	}).Debug("Running monitor")
+
+	c_evntstart := args[0].(chan string)
 
 	switch event.Status {
 	case "stop":
 	case "die":
 		removeResource(event.Id, &gruStats)
-
-		log.WithFields(log.Fields{
-			"status": "removed instance",
-			"image":  event.From,
-			"id":     event.Id,
-		}).Debug("Running monitor")
-
+	case "start":
+		addResource(event.Id, event.From, "running", &gruStats)
+		c_evntstart <- event.Id
 	default:
 		log.WithFields(log.Fields{
 			"status": "event not handled",
@@ -167,6 +162,50 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		}).Warnln("Running monitor")
 	}
 
+}
+
+func getContainerStatus(info *dockerclient.ContainerInfo) string {
+	if info.State.Running {
+		return "running"
+	} else if info.State.Paused {
+		return "paused"
+	} else {
+		return "stopped"
+	}
+}
+
+func addResource(id string, image string, status string, stats *GruStats) error {
+	serv, err := service.GetServiceByImage(image)
+	if err != nil {
+		return err
+	} else {
+		servStats := stats.Service[serv.Name]
+		servStats.Instances.All = append(servStats.Instances.All, id)
+		switch status {
+		case "running":
+			servStats.Instances.Running = append(servStats.Instances.Running, id)
+			servStats.Events.Start = append(servStats.Events.Start, id)
+		case "stopped":
+			servStats.Instances.Stopped = append(servStats.Instances.Stopped, id)
+		case "paused":
+			servStats.Instances.Paused = append(servStats.Instances.Paused, id)
+		default:
+			log.WithFields(log.Fields{
+				"error":   "Unknown container state: " + status,
+				"service": serv.Name,
+				"id":      id,
+			}).Warnln("Running monitor")
+		}
+		stats.Service[serv.Name] = servStats
+
+		log.WithFields(log.Fields{
+			"status":  "started monitor on container",
+			"service": serv.Name,
+			"id":      id,
+		}).Infoln("Running monitor")
+	}
+
+	return nil
 }
 
 func removeResource(id string, stats *GruStats) {
@@ -187,6 +226,12 @@ func removeResource(id string, stats *GruStats) {
 
 	// Updating Instances stats
 	delete(stats.Instance, id)
+
+	log.WithFields(log.Fields{
+		"status":  "removed instance",
+		"service": srvName,
+		"id":      id,
+	}).Infoln("Running monitor")
 }
 
 // TODO create error?

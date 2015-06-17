@@ -20,17 +20,35 @@ func (p *Start) Initialize() error {
 func (p *Start) Run(config *GruActionConfig) error {
 	var err error = nil
 	var uuid string
-	if config.Target == "container" {
+
+	// If my target type is a container I have to start a stopped one (the target)
+	// Otherwise I have to create a new one starting from its image, then start it
+	if config.TargetType == "container" {
 		err = config.Client.StartContainer(config.Target, config.HostConfig)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"id":    config.Target,
+				"error": err,
+			}).Errorln("Error starting container")
+		}
+
 	} else {
 		uuid, err = generateUUID()
-		name := config.Service + uuid
+		name := config.Service + "_" + uuid
 
 		log.WithFields(log.Fields{
 			"name": name,
 			"id":   "TODO",
 		}).Infoln("Starting new container")
-		//config.Client.CreateContainer(config.HostConfig, name)
+		config.ContainerConfig.Image = config.Target
+		id, err := config.Client.CreateContainer(config.ContainerConfig, name)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"id":    id,
+				"error": err,
+			}).Errorln("Error creating container")
+		}
+		config.Client.StartContainer(id, config.HostConfig)
 	}
 
 	if err != nil {
@@ -42,6 +60,24 @@ func (p *Start) Run(config *GruActionConfig) error {
 	}
 
 	return nil
+}
+
+func createNewContainer(config *GruActionConfig) (string, error) {
+	uuid, err := generateUUID()
+	name := config.Service + "_" + uuid
+
+	config.ContainerConfig.Image = config.Target
+	id, err := config.Client.CreateContainer(config.ContainerConfig, name)
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"id":    id,
+			"error": err,
+		}).Errorln("Error creating container")
+		return "", err
+	}
+
+	return id, nil
 }
 
 func generateUUID() (string, error) {

@@ -23,16 +23,12 @@ func (p *DummyStrategy) MakeDecision(plans []GruPlan, analytics *analyzer.GruAna
 	thePlan := p.chosePlan(plans)
 	srv, _ := service.GetServiceByName(thePlan.Service)
 	target, err := p.choseTarget(thePlan.TargetType, thePlan.TargetStatus, analytics, srv)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"status": "target",
-			"error":  err,
-		}).Errorln("Making decision")
 
-		if err == ErrorNoStoppedCont {
-			thePlan.TargetType = "image"
-			target = srv.Image
-		}
+	// If I don't have stopped containers to start,
+	// I have to create a new one starting from an image
+	if err == ErrorNoStoppedCont {
+		thePlan.TargetType = "image"
+		target = srv.Image
 	}
 
 	thePlan.Target = target
