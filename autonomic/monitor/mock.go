@@ -41,18 +41,12 @@ func CreateMockStats() *GruStats {
 		"service2": service2,
 	}
 
-	cpuSysAll := window.New(W_SIZE, W_MULT)
-	cpuSysAll.PushBack(float64(15000000))
-	cpuTot1_1 := window.New(W_SIZE, W_MULT)
-	cpuTot1_1.PushBack(float64(20000))
-	cpuTot1_2 := window.New(W_SIZE, W_MULT)
-	cpuTot1_2.PushBack(float64(60000))
-	cpuTot1_3 := window.New(W_SIZE, W_MULT)
-	cpuTot1_3.PushBack(float64(60000))
-	cpuTot1_4 := window.New(W_SIZE, W_MULT)
-	cpuTot1_4.PushBack(float64(70000))
-	cpuTot2_1 := window.New(W_SIZE, W_MULT)
-	cpuTot2_1.PushBack(float64(40000))
+	cpuSysAll := []float64{15000000}
+	cpuTot1_1 := []float64{20000}
+	cpuTot1_2 := []float64{60000}
+	cpuTot1_3 := []float64{60000}
+	cpuTot1_4 := []float64{70000}
+	cpuTot2_1 := []float64{40000}
 
 	cpu1_1 := CpuStats{
 		cpuTot1_1,
@@ -89,7 +83,7 @@ func CreateMockStats() *GruStats {
 		"instance2_1": instStat2_1,
 	}
 
-	system := SystemStats{15000000}
+	system := SystemStats{}
 
 	mockStats := GruStats{
 		Service:  services,
@@ -98,4 +92,60 @@ func CreateMockStats() *GruStats {
 	}
 
 	return &mockStats
+}
+
+func CreateMockHistory() *statsHistory {
+
+	cpuSysAll := window.New(W_SIZE, W_MULT)
+	cpuSysAll.PushBack(float64(15000000))
+	cpuTot1_1 := window.New(W_SIZE, W_MULT)
+	cpuTot1_1.PushBack(float64(20000))
+	cpuTot1_2 := window.New(W_SIZE, W_MULT)
+	cpuTot1_2.PushBack(float64(60000))
+	cpuTot1_3 := window.New(W_SIZE, W_MULT)
+	cpuTot1_3.PushBack(float64(60000))
+	cpuTot1_4 := window.New(W_SIZE, W_MULT)
+	cpuTot1_4.PushBack(float64(70000))
+	cpuTot2_1 := window.New(W_SIZE, W_MULT)
+	cpuTot2_1.PushBack(float64(40000))
+
+	cpuHist1_1 := cpuHistory{
+		cpuTot1_1,
+		cpuSysAll,
+	}
+	cpuHist1_2 := cpuHistory{
+		cpuTot1_2,
+		cpuSysAll,
+	}
+	cpuHist1_3 := cpuHistory{
+		cpuTot1_3,
+		cpuSysAll,
+	}
+	cpuHist1_4 := cpuHistory{
+		cpuTot1_4,
+		cpuSysAll,
+	}
+	cpuHist2_1 := cpuHistory{
+		cpuTot2_1,
+		cpuSysAll,
+	}
+
+	instHist1_1 := instanceHistory{cpuHist1_1}
+	instHist1_2 := instanceHistory{cpuHist1_2}
+	instHist1_3 := instanceHistory{cpuHist1_3}
+	instHist1_4 := instanceHistory{cpuHist1_4}
+	instHist2_1 := instanceHistory{cpuHist2_1}
+
+	instancesHist := map[string]instanceHistory{
+		"instance1_1": instHist1_1,
+		"instance1_2": instHist1_2,
+		"instance1_3": instHist1_3,
+		"instance1_4": instHist1_4,
+		"instance2_1": instHist2_1,
+	}
+
+	mockHist := statsHistory{instancesHist}
+
+	return &mockHist
+
 }

@@ -10,6 +10,7 @@ import (
 
 var monitorActive bool
 var gruStats GruStats
+var history statsHistory
 
 const W_SIZE = 50
 const W_MULT = 1000
@@ -24,6 +25,8 @@ func init() {
 		Service:  make(map[string]ServiceStats),
 		Instance: make(map[string]InstanceStats),
 	}
+
+	history = statsHistory{make(map[string]instanceHistory)}
 }
 
 func NewMonitor(c_stop chan struct{}, c_err chan error) *monitor {
@@ -34,22 +37,22 @@ func NewMonitor(c_stop chan struct{}, c_err chan error) *monitor {
 }
 
 func (p *monitor) Run() GruStats {
-	updGruStats := GruStats{
+	snapshot := GruStats{
 		Service:  make(map[string]ServiceStats),
 		Instance: make(map[string]InstanceStats),
 	}
 
-	copyStats(&gruStats, &updGruStats)
+	makeSnapshot(&gruStats, &snapshot)
 
 	services := service.List()
 	for _, name := range services {
 		resetEventsStats(name, &gruStats)
 	}
 
-	return updGruStats
+	return snapshot
 }
 
-func copyStats(src *GruStats, dst *GruStats) {
+func makeSnapshot(src *GruStats, dst *GruStats) {
 	// Copy service stats
 	for k, v := range src.Service {
 		srv_src := v
@@ -84,11 +87,27 @@ func copyStats(src *GruStats, dst *GruStats) {
 		dst.Service[k] = srv_dst
 	}
 
-	for k, v := range src.Instance {
-		dst.Instance[k] = v
+	//Copy instance stats
+
+	for k, v := range history.instance {
+		instCpuHist := v.cpu.totalUsage.Slice()
+		instCpuSysHist := v.cpu.sysUsage.Slice()
+		instCpu_dst := make([]float64, len(instCpuHist), len(instCpuHist))
+		copy(instCpuHist, instCpu_dst)
+		instCpuSys_dst := make([]float64, len(instCpuSysHist), len(instCpuSysHist))
+		copy(instCpuSysHist, instCpuSys_dst)
+		cpuStats_dst := CpuStats{
+			TotalUsage: instCpu_dst,
+			SysUsage:   instCpuSys_dst,
+		}
+		instStats_dst := InstanceStats{
+			Cpu: cpuStats_dst,
+		}
+		dst.Instance[k] = instStats_dst
 	}
 
-	dst.System.Cpu = src.System.Cpu
+	//Copy system stats
+	//none for now...
 }
 
 func resetEventsStats(srvName string, stats *GruStats) {
@@ -125,7 +144,7 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 		if err != nil {
 			p.monitorError(err)
 		} else {
-			addResource(c.Id, srv.Name, status, &gruStats)
+			addResource(c.Id, srv.Name, status, &gruStats, &history)
 			docker.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
 		}
 	}
@@ -153,7 +172,7 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 	switch event.Status {
 	case "stop":
 	case "die":
-		removeResource(event.Id, &gruStats)
+		removeResource(event.Id, &gruStats, &history)
 	case "start":
 		// TODO handle error
 		srv, err := service.GetServiceByImage(event.From)
@@ -163,7 +182,7 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 				"error":  err,
 			}).Warnln("Running monitor")
 		} else {
-			addResource(event.Id, srv.Name, "running", &gruStats)
+			addResource(event.Id, srv.Name, "running", &gruStats, &history)
 			c_evntstart <- event.Id
 		}
 
@@ -187,7 +206,7 @@ func getContainerStatus(info *dockerclient.ContainerInfo) string {
 	}
 }
 
-func addResource(id string, srvName string, status string, stats *GruStats) {
+func addResource(id string, srvName string, status string, stats *GruStats, hist *statsHistory) {
 	servStats := stats.Service[srvName]
 	servStats.Instances.All = append(servStats.Instances.All, id)
 	switch status {
@@ -207,13 +226,13 @@ func addResource(id string, srvName string, status string, stats *GruStats) {
 	}
 	stats.Service[srvName] = servStats
 
-	cpu := CpuStats{
-		TotalUsage: window.New(W_SIZE, W_MULT),
-		SysUsage:   window.New(W_SIZE, W_MULT),
+	cpu := cpuHistory{
+		totalUsage: window.New(W_SIZE, W_MULT),
+		sysUsage:   window.New(W_SIZE, W_MULT),
 	}
 
-	stats.Instance[id] = InstanceStats{
-		Cpu: cpu,
+	hist.instance[id] = instanceHistory{
+		cpu: cpu,
 	}
 
 	log.WithFields(log.Fields{
@@ -223,7 +242,7 @@ func addResource(id string, srvName string, status string, stats *GruStats) {
 	}).Infoln("Running monitor")
 }
 
-func removeResource(id string, stats *GruStats) {
+func removeResource(id string, stats *GruStats, hist *statsHistory) {
 	srvName := findServiceByInstanceId(id, stats)
 
 	// Updating service stats
@@ -241,6 +260,8 @@ func removeResource(id string, stats *GruStats) {
 
 	// Updating Instances stats
 	delete(stats.Instance, id)
+
+	delete(hist.instance, id)
 
 	log.WithFields(log.Fields{
 		"status":  "removed instance",
@@ -274,21 +295,17 @@ func findIdIndex(id string, instances []string) int {
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	instStats := gruStats.Instance[id]
+	instHist := history.instance[id]
 
 	// Instance stats update
 
-	// Cpu usage update
-	cpu := instStats.Cpu
+	// Cpu history usage update
+	cpu := instHist.cpu
 	totCpu := float64(stats.CpuStats.CpuUsage.TotalUsage)
 	sysCpu := float64(stats.CpuStats.SystemUsage)
-	cpu.TotalUsage.PushBack(totCpu)
-	cpu.SysUsage.PushBack(sysCpu)
-
-	gruStats.Instance[id] = instStats
-
-	//System stats update
-	gruStats.System.Cpu = stats.CpuStats.SystemUsage
+	cpu.totalUsage.PushBack(totCpu)
+	cpu.sysUsage.PushBack(sysCpu)
+	history.instance[id] = instHist
 }
 
 func (p *monitor) monitorError(err error) {

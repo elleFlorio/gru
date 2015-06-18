@@ -32,10 +32,22 @@ type InstanceStats struct {
 }
 
 type CpuStats struct {
-	TotalUsage *window.MovingWindow
-	SysUsage   *window.MovingWindow
+	TotalUsage []float64
+	SysUsage   []float64
 }
 
 type SystemStats struct {
-	Cpu uint64
+}
+
+type statsHistory struct {
+	instance map[string]instanceHistory
+}
+
+type instanceHistory struct {
+	cpu cpuHistory
+}
+
+type cpuHistory struct {
+	totalUsage *window.MovingWindow
+	sysUsage   *window.MovingWindow
 }

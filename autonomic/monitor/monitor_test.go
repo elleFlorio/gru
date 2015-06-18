@@ -6,15 +6,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCopyStats(t *testing.T) {
+func TestMakeSnapshot(t *testing.T) {
 	mockStats := CreateMockStats()
 	mockStats_cp := GruStats{
 		Service:  make(map[string]ServiceStats),
 		Instance: make(map[string]InstanceStats),
 	}
 
-	copyStats(mockStats, &mockStats_cp)
-	assert.Equal(t, mockStats.System.Cpu, mockStats_cp.System.Cpu, "Copy should be equal to the original")
+	makeSnapshot(mockStats, &mockStats_cp)
+	assert.Equal(t, len(mockStats.Service["service1"].Instances.Running), len(mockStats_cp.Service["service1"].Instances.Running), "Copy should be equal to the original")
 
 	service := "service1"
 	resetEventsStats(service, mockStats)
@@ -32,13 +32,14 @@ func TestResetEventsStats(t *testing.T) {
 
 func TestAddResource(t *testing.T) {
 	mockStats := CreateMockStats()
+	mockHist := CreateMockHistory()
 	id2_x := "instance2_x"
 	id2_y := "instance2_y"
 	srvName := "service2"
 	status2_x := "running"
 	status2_y := "stopped"
 
-	addResource(id2_x, srvName, status2_x, mockStats)
+	addResource(id2_x, srvName, status2_x, mockStats, mockHist)
 	assert.Contains(t, mockStats.Service[srvName].Instances.All, id2_x,
 		"Service 2 - instances - all, should contain added instance")
 	assert.Contains(t, mockStats.Service[srvName].Instances.Running, id2_x,
@@ -46,7 +47,7 @@ func TestAddResource(t *testing.T) {
 	assert.Contains(t, mockStats.Service[srvName].Events.Start, id2_x,
 		"Service 2 - events - start, should contain added instance")
 
-	addResource(id2_y, srvName, status2_y, mockStats)
+	addResource(id2_y, srvName, status2_y, mockStats, mockHist)
 	assert.Contains(t, mockStats.Service[srvName].Instances.All, id2_y,
 		"Service 2 - instances - all, should contain added instance")
 	assert.Contains(t, mockStats.Service[srvName].Instances.Stopped, id2_y,
@@ -55,9 +56,10 @@ func TestAddResource(t *testing.T) {
 
 func TestRemoveResource(t *testing.T) {
 	mockStats := CreateMockStats()
+	mockHist := CreateMockHistory()
 	mockInstId := "instance2_1"
 
-	removeResource(mockInstId, mockStats)
+	removeResource(mockInstId, mockStats, mockHist)
 	serviceStatsInst := mockStats.Service["service2"].Instances.Running
 	instancesStats := []string{}
 	for k, _ := range mockStats.Instance {
