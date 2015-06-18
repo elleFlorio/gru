@@ -121,11 +121,11 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 	for _, c := range containers {
 		info, _ := docker.InspectContainer(c.Id)
 		status := getContainerStatus(info)
-		err = addResource(c.Id, c.Image, status, &gruStats)
-
+		srv, err := service.GetServiceByImage(c.Image)
 		if err != nil {
 			p.monitorError(err)
 		} else {
+			addResource(c.Id, srv.Name, status, &gruStats)
 			docker.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
 		}
 	}
@@ -155,8 +155,18 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 	case "die":
 		removeResource(event.Id, &gruStats)
 	case "start":
-		addResource(event.Id, event.From, "running", &gruStats)
-		c_evntstart <- event.Id
+		// TODO handle error
+		srv, err := service.GetServiceByImage(event.From)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"status": "resource not added",
+				"error":  err,
+			}).Warnln("Running monitor")
+		} else {
+			addResource(event.Id, srv.Name, "running", &gruStats)
+			c_evntstart <- event.Id
+		}
+
 	default:
 		log.WithFields(log.Fields{
 			"status": "event not handled",
@@ -177,30 +187,25 @@ func getContainerStatus(info *dockerclient.ContainerInfo) string {
 	}
 }
 
-func addResource(id string, image string, status string, stats *GruStats) error {
-	serv, err := service.GetServiceByImage(image)
-	if err != nil {
-		return err
-	} else {
-		servStats := stats.Service[serv.Name]
-		servStats.Instances.All = append(servStats.Instances.All, id)
-		switch status {
-		case "running":
-			servStats.Instances.Running = append(servStats.Instances.Running, id)
-			servStats.Events.Start = append(servStats.Events.Start, id)
-		case "stopped":
-			servStats.Instances.Stopped = append(servStats.Instances.Stopped, id)
-		case "paused":
-			servStats.Instances.Paused = append(servStats.Instances.Paused, id)
-		default:
-			log.WithFields(log.Fields{
-				"error":   "Unknown container state: " + status,
-				"service": serv.Name,
-				"id":      id,
-			}).Warnln("Running monitor")
-		}
-		stats.Service[serv.Name] = servStats
+func addResource(id string, srvName string, status string, stats *GruStats) {
+	servStats := stats.Service[srvName]
+	servStats.Instances.All = append(servStats.Instances.All, id)
+	switch status {
+	case "running":
+		servStats.Instances.Running = append(servStats.Instances.Running, id)
+		servStats.Events.Start = append(servStats.Events.Start, id)
+	case "stopped":
+		servStats.Instances.Stopped = append(servStats.Instances.Stopped, id)
+	case "paused":
+		servStats.Instances.Paused = append(servStats.Instances.Paused, id)
+	default:
+		log.WithFields(log.Fields{
+			"error":   "Unknown container state: " + status,
+			"service": srvName,
+			"id":      id,
+		}).Warnln("Running monitor")
 	}
+	stats.Service[srvName] = servStats
 
 	cpu := CpuStats{
 		TotalUsage: window.New(W_SIZE, W_MULT),
@@ -213,11 +218,9 @@ func addResource(id string, image string, status string, stats *GruStats) error 
 
 	log.WithFields(log.Fields{
 		"status":  "started monitor on container",
-		"service": serv.Name,
+		"service": srvName,
 		"id":      id,
 	}).Infoln("Running monitor")
-
-	return nil
 }
 
 func removeResource(id string, stats *GruStats) {

@@ -9,7 +9,7 @@ func ListMockServices() []string {
 	}
 }
 
-func CreateMockStats() GruStats {
+func CreateMockStats() *GruStats {
 	all1 := []string{"instance1_1", "instance1_2", "instance1_3", "instance1_4"}
 	running1 := []string{"instance1_1", "instance1_2", "instance1_4"}
 	stopped1 := []string{"instance1_0"}
@@ -97,5 +97,5 @@ func CreateMockStats() GruStats {
 		System:   system,
 	}
 
-	return mockStats
+	return &mockStats
 }
