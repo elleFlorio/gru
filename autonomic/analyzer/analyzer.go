@@ -9,18 +9,16 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-type analyzer struct{ c_err chan error }
+type analyzer struct {
+	c_err chan error
+}
 
 var (
-	gruAnalytics      GruAnalytics
-	ErrNotValidCpuAvg error = errors.New("Cpu Avg is not a valid value")
+	gruAnalytics          GruAnalytics
+	ErrNoRunningInstances error = errors.New("No active instance to analyze")
 )
 
 func init() {
-	resetAnalytics()
-}
-
-func resetAnalytics() {
 	gruAnalytics = GruAnalytics{
 		Service:  make(map[string]ServiceAnalytics),
 		Instance: make(map[string]InstanceAnalytics),
@@ -28,7 +26,9 @@ func resetAnalytics() {
 }
 
 func NewAnalyzer(c_err chan error) *analyzer {
-	return &analyzer{c_err}
+	return &analyzer{
+		c_err,
+	}
 }
 
 func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
@@ -36,46 +36,42 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 	defer log.WithField("status", "done").Debugln("Running analyzer")
 
 	for _, name := range service.List() {
-		updateInstances(name, &stats)
-
-		err := computeCpuAvg(name, &stats)
-		if err != nil {
+		updateInstances(name, &gruAnalytics, &stats)
+		if len(gruAnalytics.Service[name].Instances.Active) < 1 {
 			log.WithFields(log.Fields{
 				"status":  "analyzing",
-				"error":   err,
 				"service": name,
-				"CpuAvg":  gruAnalytics.Service[name].CpuAvg,
+				"pending": len(gruAnalytics.Service[name].Instances.Pending),
+				"error":   ErrNoRunningInstances,
 			}).Warnln("Running analyzer")
+		} else {
+			cpuAvg := computeServiceCpuPerc(name, &gruAnalytics, &stats)
+			log.WithFields(log.Fields{
+				"status":  "analyzing",
+				"service": name,
+				"CpuAvg":  cpuAvg,
+			}).Debugln("Running analyzer")
+
+			srv := gruAnalytics.Service[name]
+			srv.CpuAvg = cpuAvg
+			gruAnalytics.Service[name] = srv
 		}
-
-		log.WithFields(log.Fields{
-			"status":  "analyzing",
-			"service": name,
-			"CpuAvg":  gruAnalytics.Service[name].CpuAvg,
-		}).Debugln("Running analyzer")
-
-		updateAnalytics(name, &stats)
 	}
-
-	gruAnalytics.System.Cpu = stats.System.Cpu
 
 	return gruAnalytics
 }
 
-func updateInstances(name string, stats *monitor.GruStats) {
+func updateInstances(name string, analytics *GruAnalytics, stats *monitor.GruStats) {
 	srvStats := stats.Service[name]
-	srvAnalytics := gruAnalytics.Service[name]
+	srvAnalytics := analytics.Service[name]
 
 	srvAnalytics.Instances.All = srvStats.Instances.All
-	srvAnalytics.Instances.Pending = srvStats.Events.Start
-	// pending instances should not be analyzed, because we don't have
-	// previous data to compare.
-	srvAnalytics.Instances.Running = []string{}
-	for _, running := range srvStats.Instances.Running {
-		if !isPending(running, srvAnalytics.Instances.Pending) {
-			srvAnalytics.Instances.Running = append(srvAnalytics.Instances.Running, running)
-		}
+	active, pending := getActiveInstances(srvStats.Instances.Running, stats)
+	for _, id := range srvStats.Events.Start {
+		pending = append(pending, id)
 	}
+	srvAnalytics.Instances.Active = active
+	srvAnalytics.Instances.Pending = pending
 	srvAnalytics.Instances.Stopped = srvStats.Instances.Stopped
 	srvAnalytics.Instances.Paused = srvStats.Instances.Paused
 
@@ -84,65 +80,71 @@ func updateInstances(name string, stats *monitor.GruStats) {
 		"service": name,
 		"all":     srvAnalytics.Instances.All,
 		"pending": srvAnalytics.Instances.Pending,
-		"running": srvAnalytics.Instances.Running,
+		"active":  srvAnalytics.Instances.Active,
 		"stopped": srvAnalytics.Instances.Stopped,
 		"paused":  srvAnalytics.Instances.Paused,
 	}).Debugln("Running analyzer")
 
-	gruAnalytics.Service[name] = srvAnalytics
+	analytics.Service[name] = srvAnalytics
 
 	toBeRemoved := srvStats.Events.Stop
 	for _, stopped := range toBeRemoved {
-		delete(gruAnalytics.Instance, stopped)
+		delete(analytics.Instance, stopped)
 	}
 }
 
-func isPending(id string, pending []string) bool {
-	for _, pndng := range pending {
-		if id == pndng {
-			return true
+func getActiveInstances(running []string, stats *monitor.GruStats) ([]string, []string) {
+	active := []string{}
+	pending := []string{}
+
+	for _, id := range running {
+		instHistory := stats.Instance[id].Cpu.SysUsage
+		if len(instHistory) < monitor.W_SIZE {
+			pending = append(pending, id)
+		} else {
+			active = append(active, id)
 		}
 	}
 
-	return false
+	return active, pending
 }
 
-func computeCpuAvg(name string, stats *monitor.GruStats) error {
-	var err error = nil
+func computeServiceCpuPerc(name string, analytics *GruAnalytics, stats *monitor.GruStats) float64 {
 	sum := 0.0
 	avg := 0.0
-	sysOld := gruAnalytics.System.Cpu
-	sysNew := stats.System.Cpu
+	active := analytics.Service[name].Instances.Active
 
-	srvAnalytics := gruAnalytics.Service[name]
-
-	instances := srvAnalytics.Instances
-	nRunning := len(srvAnalytics.Instances.Running)
-	for _, id := range instances.Running {
-		instAnalytics := gruAnalytics.Instance[id]
-		instOld := instAnalytics.Cpu
-		instNew := stats.Instance[id].Cpu
-		instAnalytics.CpuPerc = 100 * float64(instNew-instOld) / float64(sysNew-sysOld)
-		gruAnalytics.Instance[id] = instAnalytics
-		sum += instAnalytics.CpuPerc
+	for _, id := range active {
+		instCpus := stats.Instance[id].Cpu.TotalUsage
+		sysCpus := stats.Instance[id].Cpu.SysUsage
+		instCpuAvg := computeInstanceCpuPerc(instCpus, sysCpus)
+		inst := analytics.Instance[id]
+		inst.Cpu.CpuPerc = instCpuAvg
+		analytics.Instance[id] = inst
+		sum += instCpuAvg
 	}
-	if nRunning != 0 {
-		avg = sum / float64(nRunning)
-	} else {
-		avg = 0
-		err = ErrNotValidCpuAvg
-	}
+	avg = sum / float64(len(active))
 
-	srvAnalytics.CpuAvg = avg
-	gruAnalytics.Service[name] = srvAnalytics
-	return err
+	return avg
 }
 
-func updateAnalytics(name string, stats *monitor.GruStats) {
+func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
+	sum := 0.0
+	instNext := 0.0
+	sysNext := 0.0
+	instPrev := 0.0
+	sysPrev := 0.0
 
-	for id, instSt := range stats.Instance {
-		instAn := gruAnalytics.Instance[id]
-		instAn.Cpu = instSt.Cpu
-		gruAnalytics.Instance[id] = instAn
+	for i := 0; i < monitor.W_SIZE; i++ {
+		if i > 0 {
+			instPrev = instCpus[i-1]
+			sysPrev = sysCpus[i-1]
+		}
+		instNext = instCpus[i]
+		sysNext = sysCpus[i]
+		cpu := 100 * (instNext - instPrev) / (sysNext - sysPrev)
+		sum += cpu
 	}
+
+	return sum / monitor.W_SIZE
 }

@@ -14,16 +14,18 @@ type ServiceAnalytics struct {
 type InstanceStatus struct {
 	All     []string
 	Pending []string
-	Running []string
+	Active  []string
 	Stopped []string
 	Paused  []string
 }
 
 type InstanceAnalytics struct {
-	Cpu     uint64
+	Cpu CpuAnalytics
+}
+
+type CpuAnalytics struct {
 	CpuPerc float64
 }
 
 type SystemAnalytics struct {
-	Cpu uint64
 }
