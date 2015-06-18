@@ -2,6 +2,7 @@ package monitor
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/jbrukh/window"
 	"github.com/samalba/dockerclient"
 
 	"github.com/elleFlorio/gru/service"
@@ -9,6 +10,9 @@ import (
 
 var monitorActive bool
 var gruStats GruStats
+
+const W_SIZE = 50
+const W_MULT = 1000
 
 type monitor struct {
 	c_stop chan struct{}
@@ -29,7 +33,6 @@ func NewMonitor(c_stop chan struct{}, c_err chan error) *monitor {
 	}
 }
 
-// FIXME need to find a way to reset events
 func (p *monitor) Run() GruStats {
 	updGruStats := GruStats{
 		Service:  make(map[string]ServiceStats),
@@ -108,7 +111,7 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 
 	docker.StartMonitorEvents(eventCallback, c_mntrerr, c_evntstart)
 
-	// Get the list of active containers to monitor
+	// Get the list of containers (running or not) to monitor
 	containers, err := docker.ListContainers(true, false, "")
 	if err != nil {
 		p.monitorError(err)
@@ -197,13 +200,22 @@ func addResource(id string, image string, status string, stats *GruStats) error 
 			}).Warnln("Running monitor")
 		}
 		stats.Service[serv.Name] = servStats
-
-		log.WithFields(log.Fields{
-			"status":  "started monitor on container",
-			"service": serv.Name,
-			"id":      id,
-		}).Infoln("Running monitor")
 	}
+
+	cpu := CpuStats{
+		TotalUsage: window.New(W_SIZE, W_MULT),
+		SysUsage:   window.New(W_SIZE, W_MULT),
+	}
+
+	stats.Instance[id] = InstanceStats{
+		Cpu: cpu,
+	}
+
+	log.WithFields(log.Fields{
+		"status":  "started monitor on container",
+		"service": serv.Name,
+		"id":      id,
+	}).Infoln("Running monitor")
 
 	return nil
 }
@@ -259,9 +271,20 @@ func findIdIndex(id string, instances []string) int {
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	InstanceStats := gruStats.Instance[id]
-	InstanceStats.Cpu = stats.CpuStats.CpuUsage.TotalUsage
-	gruStats.Instance[id] = InstanceStats
+	instStats := gruStats.Instance[id]
+
+	// Instance stats update
+
+	// Cpu usage update
+	cpu := instStats.Cpu
+	totCpu := float64(stats.CpuStats.CpuUsage.TotalUsage)
+	sysCpu := float64(stats.CpuStats.SystemUsage)
+	cpu.TotalUsage.PushBack(totCpu)
+	cpu.SysUsage.PushBack(sysCpu)
+
+	gruStats.Instance[id] = instStats
+
+	//System stats update
 	gruStats.System.Cpu = stats.CpuStats.SystemUsage
 }
 

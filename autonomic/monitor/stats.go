@@ -1,5 +1,9 @@
 package monitor
 
+import (
+	"github.com/jbrukh/window"
+)
+
 type GruStats struct {
 	Service  map[string]ServiceStats
 	Instance map[string]InstanceStats
@@ -24,7 +28,12 @@ type EventStats struct {
 }
 
 type InstanceStats struct {
-	Cpu uint64
+	Cpu CpuStats
+}
+
+type CpuStats struct {
+	TotalUsage *window.MovingWindow
+	SysUsage   *window.MovingWindow
 }
 
 type SystemStats struct {

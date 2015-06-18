@@ -7,8 +7,8 @@ import (
 )
 
 func TestRemoveResource(t *testing.T) {
-	mockStats := createMockStats()
-	mockInstId := "instance3"
+	mockStats := CreateMockStats()
+	mockInstId := "instance2_1"
 
 	removeResource(mockInstId, &mockStats)
 	serviceStatsInst := mockStats.Service["service2"].Instances.Running
@@ -24,15 +24,15 @@ func TestRemoveResource(t *testing.T) {
 }
 
 func TestFindServiceByInstanceId(t *testing.T) {
-	mockStats := createMockStats()
-	mockInstId := "instance3"
+	mockStats := CreateMockStats()
+	mockInstId := "instance1_4"
 
 	mockService := findServiceByInstanceId(mockInstId, &mockStats)
-	assert.Equal(t, "service2", mockService, "found service should be 'service2'")
+	assert.Equal(t, "service1", mockService, "found service should be 'service2'")
 }
 
 func TestResetEventsStats(t *testing.T) {
-	mockStats := createMockStats()
+	mockStats := CreateMockStats()
 	srvName := "service1"
 
 	resetEventsStats(srvName, &mockStats)
@@ -40,7 +40,7 @@ func TestResetEventsStats(t *testing.T) {
 }
 
 func TestCopyStats(t *testing.T) {
-	mockStats := createMockStats()
+	mockStats := CreateMockStats()
 	mockStats_cp := GruStats{
 		Service:  make(map[string]ServiceStats),
 		Instance: make(map[string]InstanceStats),
@@ -52,66 +52,19 @@ func TestCopyStats(t *testing.T) {
 	service := "service1"
 	resetEventsStats(service, &mockStats)
 	assert.Contains(t, mockStats_cp.Service[service].Events.Stop,
-		"instance0", "The copy should be not modified")
-}
-
-func createMockStats() GruStats {
-	all1 := []string{"instance1", "instance2"}
-	running1 := []string{"instance1", "instance2"}
-	events1 := EventStats{
-		Stop: []string{"instance0"},
-	}
-	instances1 := InstanceStatus{
-		All:     all1,
-		Running: running1,
-	}
-	service1 := ServiceStats{
-		Instances: instances1,
-		Events:    events1,
-	}
-
-	all2 := []string{"instance3"}
-	running2 := []string{"instance3"}
-	instances2 := InstanceStatus{
-		All:     all2,
-		Running: running2,
-	}
-	service2 := ServiceStats{Instances: instances2}
-	services := map[string]ServiceStats{
-		"service1": service1,
-		"service2": service2,
-	}
-
-	instStat1 := InstanceStats{20000}
-	instStat2 := InstanceStats{60000}
-	instStat3 := InstanceStats{60000}
-	instances := map[string]InstanceStats{
-		"instance1": instStat1,
-		"instance2": instStat2,
-		"instance3": instStat3,
-	}
-
-	system := SystemStats{150000}
-
-	mockStats := GruStats{
-		Service:  services,
-		Instance: instances,
-		System:   system,
-	}
-
-	return mockStats
+		"instance1_0", "The copy should be not modified")
 }
 
 func TestFindIdIndex(t *testing.T) {
 	instances := []string{
-		"instance1",
-		"instance2",
-		"instance3",
-		"instance4",
-		"instance5",
+		"instance1_1",
+		"instance1_2",
+		"instance1_3",
+		"instance1_4",
+		"instance2_1",
 	}
 
-	index := findIdIndex("instance3", instances)
+	index := findIdIndex("instance1_3", instances)
 	assert.Equal(t, 2, index, "index of 'instance3' should be 2")
 
 }
