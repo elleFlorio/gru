@@ -24,7 +24,7 @@ func (p *ScaleIn) Actions() []string {
 func (p *ScaleIn) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
 	minActive := s.Constraints.MinActive
-	curActive := len(a.Service[s.Name].Instances.Running)
+	curActive := len(a.Service[s.Name].Instances.Active)
 
 	if curActive > minActive {
 		cpuAvg := a.Service[s.Name].CpuAvg

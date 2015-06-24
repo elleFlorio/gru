@@ -2,6 +2,8 @@ package monitor
 
 import "github.com/jbrukh/window"
 
+const maxHistory = 6
+
 func ListMockServices() []string {
 	return []string{
 		"service1",
@@ -9,8 +11,12 @@ func ListMockServices() []string {
 	}
 }
 
+func MaxNumberOfEntryInHistory() int {
+	return maxHistory
+}
+
 func CreateMockStats() *GruStats {
-	all1 := []string{"instance1_1", "instance1_2", "instance1_3", "instance1_4"}
+	all1 := []string{"instance1_0, instance1_1", "instance1_2", "instance1_3", "instance1_4"}
 	running1 := []string{"instance1_1", "instance1_2", "instance1_4"}
 	stopped1 := []string{"instance1_0"}
 	paused1 := []string{"instance1_3"}
@@ -41,12 +47,12 @@ func CreateMockStats() *GruStats {
 		"service2": service2,
 	}
 
-	cpuSysAll := []float64{15000000}
-	cpuTot1_1 := []float64{20000}
-	cpuTot1_2 := []float64{60000}
-	cpuTot1_3 := []float64{60000}
+	cpuSysAll := []float64{100000000, 110000000, 120000000, 130000000, 140000000, 150000000}
+	cpuTot1_1 := []float64{10000, 20000, 30000, 40000, 50000, 60000}
+	cpuTot1_2 := []float64{60000, 120000, 180000, 240000, 300000, 360000}
+	cpuTot1_3 := []float64{50000, 52000, 72000, 75000}
 	cpuTot1_4 := []float64{70000}
-	cpuTot2_1 := []float64{40000}
+	cpuTot2_1 := []float64{40000, 80000, 120000, 160000, 200000, 240000}
 
 	cpu1_1 := CpuStats{
 		cpuTot1_1,
@@ -58,11 +64,11 @@ func CreateMockStats() *GruStats {
 	}
 	cpu1_3 := CpuStats{
 		cpuTot1_3,
-		cpuSysAll,
+		cpuSysAll[0:4],
 	}
 	cpu1_4 := CpuStats{
 		cpuTot1_4,
-		cpuSysAll,
+		cpuSysAll[:1],
 	}
 	cpu2_1 := CpuStats{
 		cpuTot2_1,
@@ -97,17 +103,45 @@ func CreateMockStats() *GruStats {
 func CreateMockHistory() *statsHistory {
 
 	cpuSysAll := window.New(W_SIZE, W_MULT)
-	cpuSysAll.PushBack(float64(15000000))
+	cpuSysAll.PushBack(float64(100000000))
+	cpuSysAll.PushBack(float64(110000000))
+	cpuSysAll.PushBack(float64(120000000))
+	cpuSysAll.PushBack(float64(130000000))
+	cpuSysAll.PushBack(float64(140000000))
+	cpuSysAll.PushBack(float64(150000000))
+
 	cpuTot1_1 := window.New(W_SIZE, W_MULT)
+	cpuTot1_1.PushBack(float64(10000))
 	cpuTot1_1.PushBack(float64(20000))
+	cpuTot1_1.PushBack(float64(30000))
+	cpuTot1_1.PushBack(float64(40000))
+	cpuTot1_1.PushBack(float64(50000))
+	cpuTot1_1.PushBack(float64(60000))
+
 	cpuTot1_2 := window.New(W_SIZE, W_MULT)
 	cpuTot1_2.PushBack(float64(60000))
+	cpuTot1_2.PushBack(float64(120000))
+	cpuTot1_2.PushBack(float64(180000))
+	cpuTot1_2.PushBack(float64(240000))
+	cpuTot1_2.PushBack(float64(300000))
+	cpuTot1_2.PushBack(float64(360000))
+
 	cpuTot1_3 := window.New(W_SIZE, W_MULT)
-	cpuTot1_3.PushBack(float64(60000))
+	cpuTot1_3.PushBack(float64(50000))
+	cpuTot1_3.PushBack(float64(52000))
+	cpuTot1_3.PushBack(float64(72000))
+	cpuTot1_3.PushBack(float64(75000))
+
 	cpuTot1_4 := window.New(W_SIZE, W_MULT)
 	cpuTot1_4.PushBack(float64(70000))
+
 	cpuTot2_1 := window.New(W_SIZE, W_MULT)
-	cpuTot2_1.PushBack(float64(40000))
+	cpuSysAll.PushBack(float64(40000))
+	cpuSysAll.PushBack(float64(80000))
+	cpuSysAll.PushBack(float64(120000))
+	cpuSysAll.PushBack(float64(160000))
+	cpuSysAll.PushBack(float64(200000))
+	cpuSysAll.PushBack(float64(240000))
 
 	cpuHist1_1 := cpuHistory{
 		cpuTot1_1,

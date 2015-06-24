@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"errors"
+	"fmt"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -36,7 +37,7 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 	defer log.WithField("status", "done").Debugln("Running analyzer")
 
 	for _, name := range service.List() {
-		updateInstances(name, &gruAnalytics, &stats)
+		updateInstances(name, &gruAnalytics, &stats, monitor.W_SIZE)
 		if len(gruAnalytics.Service[name].Instances.Active) < 1 {
 			log.WithFields(log.Fields{
 				"status":  "analyzing",
@@ -61,12 +62,12 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 	return gruAnalytics
 }
 
-func updateInstances(name string, analytics *GruAnalytics, stats *monitor.GruStats) {
+func updateInstances(name string, analytics *GruAnalytics, stats *monitor.GruStats, numberOfData int) {
 	srvStats := stats.Service[name]
 	srvAnalytics := analytics.Service[name]
 
 	srvAnalytics.Instances.All = srvStats.Instances.All
-	active, pending := getActiveInstances(srvStats.Instances.Running, stats)
+	active, pending := getActiveInstances(srvStats.Instances.Running, stats, numberOfData)
 	for _, id := range srvStats.Events.Start {
 		pending = append(pending, id)
 	}
@@ -93,13 +94,13 @@ func updateInstances(name string, analytics *GruAnalytics, stats *monitor.GruSta
 	}
 }
 
-func getActiveInstances(running []string, stats *monitor.GruStats) ([]string, []string) {
+func getActiveInstances(running []string, stats *monitor.GruStats, numberOfData int) ([]string, []string) {
 	active := []string{}
 	pending := []string{}
 
 	for _, id := range running {
-		instHistory := stats.Instance[id].Cpu.SysUsage
-		if len(instHistory) < monitor.W_SIZE {
+		instHistory := stats.Instance[id].Cpu.TotalUsage
+		if len(instHistory) < numberOfData {
 			pending = append(pending, id)
 		} else {
 			active = append(active, id)
@@ -113,11 +114,16 @@ func computeServiceCpuPerc(name string, analytics *GruAnalytics, stats *monitor.
 	sum := 0.0
 	avg := 0.0
 	active := analytics.Service[name].Instances.Active
+	fmt.Println("Service: ", name)
+	fmt.Println("Active: ", len(active))
 
 	for _, id := range active {
 		instCpus := stats.Instance[id].Cpu.TotalUsage
 		sysCpus := stats.Instance[id].Cpu.SysUsage
+		fmt.Println("instCpus: ", instCpus)
+		fmt.Println("sysCpus: ", sysCpus)
 		instCpuAvg := computeInstanceCpuPerc(instCpus, sysCpus)
+		fmt.Println("instCpuAvg: ", instCpuAvg)
 		inst := analytics.Instance[id]
 		inst.Cpu.CpuPerc = instCpuAvg
 		analytics.Instance[id] = inst
@@ -135,16 +141,16 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 	instPrev := 0.0
 	sysPrev := 0.0
 
-	for i := 0; i < monitor.W_SIZE; i++ {
-		if i > 0 {
-			instPrev = instCpus[i-1]
-			sysPrev = sysCpus[i-1]
-		}
+	for i := 1; i < len(instCpus); i++ {
+		instPrev = instCpus[i-1]
+		sysPrev = sysCpus[i-1]
 		instNext = instCpus[i]
 		sysNext = sysCpus[i]
-		cpu := 100 * (instNext - instPrev) / (sysNext - sysPrev)
+		instDelta := instNext - instPrev
+		sysDelta := sysNext - sysPrev
+		cpu := 100 * instDelta / sysDelta
 		sum += cpu
 	}
 
-	return sum / monitor.W_SIZE
+	return sum / float64(len(instCpus)-1)
 }

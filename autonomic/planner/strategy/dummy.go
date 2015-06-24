@@ -69,7 +69,7 @@ func (p *DummyStrategy) choseTarget(tType string, tStatus string, analytics *ana
 		instances := analytics.Service[srv.Name].Instances
 		switch tStatus {
 		case "running":
-			pool = instances.Running
+			pool = instances.Active
 		case "stopped":
 			if len(instances.Stopped) > 0 {
 				pool = instances.Stopped
