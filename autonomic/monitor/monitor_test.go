@@ -89,6 +89,6 @@ func TestFindIdIndex(t *testing.T) {
 		"instance2_1",
 	}
 
-	index := findIdIndex("instance1_3", instances)
+	index, _ := findIdIndex("instance1_3", instances)
 	assert.Equal(t, 2, index, "index of 'instance3' should be 2")
 }

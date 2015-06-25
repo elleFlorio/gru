@@ -26,6 +26,7 @@ var (
 func init() {
 	strategies = []GruStrategy{
 		&DummyStrategy{},
+		&ProbabilisticStrategy{},
 	}
 }
 

@@ -41,7 +41,7 @@ func (man *autoManager) loop() {
 
 	m := monitor.NewMonitor(c_stop, c_err)
 	a := analyzer.NewAnalyzer(c_err)
-	p := planner.NewPlanner("dummy", c_err)
+	p := planner.NewPlanner("probabilistic", c_err)
 	e := executor.NewExecutor(c_err)
 
 	go m.Start(man.Docker)

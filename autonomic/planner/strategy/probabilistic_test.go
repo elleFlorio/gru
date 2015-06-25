@@ -1,28 +1,47 @@
 package strategy
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
+	"testing"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/service"
 )
 
-var dummy DummyStrategy
+var prob ProbabilisticStrategy
 
 func init() {
-	dummy = DummyStrategy{}
+	prob = ProbabilisticStrategy{}
 }
 
-func TestChosePlanDummy(t *testing.T) {
+func TestRandomUniform(t *testing.T) {
+	val := prob.randUniform(0, 1)
+
+	assert.InDelta(t, 0.5, val, 0.5, "Expected value should be in (0,1))")
+}
+
+func TestWeightedRandomElement(t *testing.T) {
 	mockPlans := CreateMockPlans(0.8, 0.5, 0.3)
-	theMockPlan := dummy.chosePlan(mockPlans)
+	_, err := prob.weightedRandomElement(mockPlans)
+	assert.NoError(t, err, "No error should be returned")
 
-	assert.Equal(t, "service1", theMockPlan.Service, "Chosen service should be pippo")
+	mockPlans = CreateMockPlans(0.0, 0.0, 0.0)
+	_, err = prob.weightedRandomElement(mockPlans)
+	assert.Error(t, err, "Error is expected for total weight equals 0")
+
 }
 
-func TestChoseTargetDummy(t *testing.T) {
+func TestChosePlanProb(t *testing.T) {
+	mockPlans := CreateMockPlans(0.8, 0.5, 0.3)
+	mockPlan := prob.chosePlan(mockPlans)
+	assert.NotEqual(t, "none", mockPlan.Service, "Chosen plan - service should not be 'none'")
+
+	mockPlans = CreateMockPlans(0.0, 0.0, 0.0)
+	mockPlan = prob.chosePlan(mockPlans)
+	assert.Equal(t, "none", mockPlan.Service, "Chosen plan - service should be 'none'")
+}
+
+func TestChoseTargetProb(t *testing.T) {
 	mockPlans := CreateMockPlans(0.8, 0.5, 0.3)
 	mockPlanCont := mockPlans[0]
 	mockPlanImg := mockPlans[1]
