@@ -16,8 +16,17 @@
 			"Rev": "30b361bf66a60174a9589458afbf494478bafd00"
 		},
 		{
+			"ImportPath": "github.com/docker/docker/pkg/units",
+			"Comment": "v1.4.1-4249-g4ab8b88",
+			"Rev": "4ab8b8828666c8d0651e96d61b5c616d26c5e229"
+		},
+		{
+			"ImportPath": "github.com/jbrukh/window",
+			"Rev": "b4044121a7425712565d73a2074304309e7ca2c7"
+		},
+		{
 			"ImportPath": "github.com/samalba/dockerclient",
-			"Rev": "8b9427265e82fddde577648b986fbe78d816b333"
+			"Rev": "12570e600d71374233e5056ba315f657ced496c7"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
