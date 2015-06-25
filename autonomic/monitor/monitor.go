@@ -1,6 +1,8 @@
 package monitor
 
 import (
+	"errors"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/jbrukh/window"
 	"github.com/samalba/dockerclient"
@@ -8,9 +10,12 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-var monitorActive bool
-var gruStats GruStats
-var history statsHistory
+var (
+	monitorActive  bool
+	gruStats       GruStats
+	history        statsHistory
+	ErrNoIndexById error = errors.New("No index for such Id")
+)
 
 const W_SIZE = 50
 const W_MULT = 1000
@@ -93,9 +98,9 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		instCpuHist := v.cpu.totalUsage.Slice()
 		instCpuSysHist := v.cpu.sysUsage.Slice()
 		instCpu_dst := make([]float64, len(instCpuHist), len(instCpuHist))
-		copy(instCpuHist, instCpu_dst)
+		copy(instCpu_dst, instCpuHist)
 		instCpuSys_dst := make([]float64, len(instCpuSysHist), len(instCpuSysHist))
-		copy(instCpuSysHist, instCpuSys_dst)
+		copy(instCpuSys_dst, instCpuSysHist)
 		cpuStats_dst := CpuStats{
 			TotalUsage: instCpu_dst,
 			SysUsage:   instCpuSys_dst,
@@ -208,11 +213,30 @@ func getContainerStatus(info *dockerclient.ContainerInfo) string {
 
 func addResource(id string, srvName string, status string, stats *GruStats, hist *statsHistory) {
 	servStats := stats.Service[srvName]
-	servStats.Instances.All = append(servStats.Instances.All, id)
+	_, err := findIdIndex(id, servStats.Instances.All)
+	if err != nil {
+		servStats.Instances.All = append(servStats.Instances.All, id)
+	}
+
 	switch status {
 	case "running":
 		servStats.Instances.Running = append(servStats.Instances.Running, id)
+		index, err := findIdIndex(id, servStats.Instances.Stopped)
+		if err == nil {
+			servStats.Instances.Stopped = append(
+				servStats.Instances.Stopped[:index],
+				servStats.Instances.Stopped[index+1:]...)
+		}
+
 		servStats.Events.Start = append(servStats.Events.Start, id)
+		cpu := cpuHistory{
+			totalUsage: window.New(W_SIZE, W_MULT),
+			sysUsage:   window.New(W_SIZE, W_MULT),
+		}
+
+		hist.instance[id] = instanceHistory{
+			cpu: cpu,
+		}
 	case "stopped":
 		servStats.Instances.Stopped = append(servStats.Instances.Stopped, id)
 	case "paused":
@@ -225,15 +249,6 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 		}).Warnln("Running monitor")
 	}
 	stats.Service[srvName] = servStats
-
-	cpu := cpuHistory{
-		totalUsage: window.New(W_SIZE, W_MULT),
-		sysUsage:   window.New(W_SIZE, W_MULT),
-	}
-
-	hist.instance[id] = instanceHistory{
-		cpu: cpu,
-	}
 
 	log.WithFields(log.Fields{
 		"status":  "started monitor on container",
@@ -248,7 +263,7 @@ func removeResource(id string, stats *GruStats, hist *statsHistory) {
 	// Updating service stats
 	srvStats := stats.Service[srvName]
 	running := srvStats.Instances.Running
-	index := findIdIndex(id, running)
+	index, _ := findIdIndex(id, running)
 	running = append(running[:index], running[index+1:]...)
 	srvStats.Instances.Running = running
 	srvStats.Instances.Stopped = append(srvStats.Instances.Stopped, id)
@@ -283,15 +298,14 @@ func findServiceByInstanceId(id string, stats *GruStats) string {
 	return ""
 }
 
-// TODO create error?
-func findIdIndex(id string, instances []string) int {
+func findIdIndex(id string, instances []string) (int, error) {
 	for index, v := range instances {
 		if v == id {
-			return index
+			return index, nil
 		}
 	}
 
-	return -1
+	return -1, ErrNoIndexById
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
@@ -300,11 +314,10 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 	// Instance stats update
 
 	// Cpu history usage update
-	cpu := instHist.cpu
 	totCpu := float64(stats.CpuStats.CpuUsage.TotalUsage)
 	sysCpu := float64(stats.CpuStats.SystemUsage)
-	cpu.totalUsage.PushBack(totCpu)
-	cpu.sysUsage.PushBack(sysCpu)
+	instHist.cpu.totalUsage.PushBack(totCpu)
+	instHist.cpu.sysUsage.PushBack(sysCpu)
 	history.instance[id] = instHist
 }
 

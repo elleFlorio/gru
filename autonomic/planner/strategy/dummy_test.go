@@ -27,19 +27,20 @@ func TestChoseTarget(t *testing.T) {
 	mockPlanCont := mockPlans[0]
 	mockPlanImg := mockPlans[1]
 	mockPlanErr := mockPlans[2]
-	mockAnalytics := createMockAnalytics()
+	//mockAnalytics := createMockAnalytics()
+	mockAnalytics := analyzer.CreateMockAnalytics()
 	mockServices := createMockServices()
 	mockServiceCont := mockServices[0]
 	mockServiceImg := mockServices[1]
 	mockServiceErr := mockServices[2]
 
-	target, err := dummy.choseTarget(mockPlanCont.TargetType, &mockAnalytics, &mockServiceCont)
-	assert.Contains(t, mockAnalytics.Service["service1"].Instances, target, "first plan should have as target an instance of service1")
+	target, err := dummy.choseTarget(mockPlanCont.TargetType, "running", mockAnalytics, &mockServiceCont)
+	assert.Contains(t, mockAnalytics.Service["service1"].Instances.Active, target, "first plan should have as target an instance of service1")
 
-	target, err = dummy.choseTarget(mockPlanImg.TargetType, &mockAnalytics, &mockServiceImg)
+	target, err = dummy.choseTarget(mockPlanImg.TargetType, "running", mockAnalytics, &mockServiceImg)
 	assert.Equal(t, mockServiceImg.Image, target, "secon plan should have as target the image of service2")
 
-	target, err = dummy.choseTarget(mockPlanErr.TargetType, &mockAnalytics, &mockServiceErr)
+	target, err = dummy.choseTarget(mockPlanErr.TargetType, "running", mockAnalytics, &mockServiceErr)
 	assert.Error(t, err, "third plan should produce an error in the choice of the target")
 
 }
@@ -68,50 +69,6 @@ func createMockPlans() []GruPlan {
 
 	return []GruPlan{p1, p2, p3}
 
-}
-
-func createMockAnalytics() analyzer.GruAnalytics {
-	instances1 := []string{"instance1", "instance2"}
-	service1 := analyzer.ServiceAnalytics{
-		CpuAvg:    0.2,
-		Instances: instances1}
-	instances2 := []string{"instance3"}
-	service2 := analyzer.ServiceAnalytics{
-		CpuAvg:    0.4,
-		Instances: instances2,
-	}
-	services := map[string]analyzer.ServiceAnalytics{
-		"service1": service1,
-		"service2": service2,
-	}
-
-	instAnalytics1 := analyzer.InstanceAnalytics{
-		Cpu:     10000,
-		CpuPerc: 0.1,
-	}
-	instAnalytics2 := analyzer.InstanceAnalytics{
-		Cpu:     20000,
-		CpuPerc: 0.2,
-	}
-	instAnalytics3 := analyzer.InstanceAnalytics{
-		Cpu:     30000,
-		CpuPerc: 0.3,
-	}
-	instances := map[string]analyzer.InstanceAnalytics{
-		"instance1": instAnalytics1,
-		"instance2": instAnalytics2,
-		"instance3": instAnalytics3,
-	}
-
-	system := analyzer.SystemAnalytics{50000}
-
-	mockAnalytics := analyzer.GruAnalytics{
-		Service:  services,
-		Instance: instances,
-		System:   system,
-	}
-
-	return mockAnalytics
 }
 
 func createMockServices() []service.Service {
