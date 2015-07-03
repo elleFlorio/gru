@@ -109,25 +109,26 @@ func getActiveInstances(running []string, stats *monitor.GruStats, numberOfData 
 
 func computeServiceCpuPerc(name string, analytics *GruAnalytics, stats *monitor.GruStats) float64 {
 	sum := 0.0
-	avg := 0.0
+	//avg := 0.0
 	active := analytics.Service[name].Instances.Active
 
 	for _, id := range active {
 		instCpus := stats.Instance[id].Cpu.TotalUsage
 		sysCpus := stats.Instance[id].Cpu.SysUsage
 		instCpuAvg := computeInstanceCpuPerc(instCpus, sysCpus)
-		log.Debugln("instCpuAvg: ", instCpuAvg)
 		inst := analytics.Instance[id]
 		inst.Cpu.CpuPerc = instCpuAvg
 		analytics.Instance[id] = inst
 		sum += instCpuAvg
 	}
-	avg = sum / float64(len(active))
-	log.Debugln("service cpu avg: ", avg)
+	//avg = sum / float64(len(active))
 
-	return avg
+	return sum
 }
 
+// Since linux compute the cpu usage in unit of jiffies, it needs to be converted
+// in % using the formula used in this function.
+// Explaination: http://stackoverflow.com/questions/1420426/calculating-cpu-usage-of-a-process-in-linux
 func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 	sum := 0.0
 	instNext := 0.0
@@ -146,7 +147,8 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 		if sysDelta == 0 {
 			cpu = 0
 		} else {
-			cpu = 100 * instDelta / sysDelta
+			// "100 * cpu" should produce values in [0, 100]
+			cpu = instDelta / sysDelta
 		}
 		sum += cpu
 	}

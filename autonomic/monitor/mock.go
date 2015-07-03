@@ -47,7 +47,7 @@ func CreateMockStats() *GruStats {
 		"service2": service2,
 	}
 
-	cpuSysAll := []float64{100000000, 110000000, 120000000, 130000000, 140000000, 150000000}
+	cpuSysAll := []float64{1000000, 1100000, 1200000, 1300000, 1400000, 1500000}
 	cpuTot1_1 := []float64{10000, 20000, 30000, 40000, 50000, 60000}
 	cpuTot1_2 := []float64{60000, 120000, 180000, 240000, 300000, 360000}
 	cpuTot1_3 := []float64{50000, 52000, 72000, 75000}
@@ -103,12 +103,12 @@ func CreateMockStats() *GruStats {
 func CreateMockHistory() *statsHistory {
 
 	cpuSysAll := window.New(W_SIZE, W_MULT)
-	cpuSysAll.PushBack(float64(100000000))
-	cpuSysAll.PushBack(float64(110000000))
-	cpuSysAll.PushBack(float64(120000000))
-	cpuSysAll.PushBack(float64(130000000))
-	cpuSysAll.PushBack(float64(140000000))
-	cpuSysAll.PushBack(float64(150000000))
+	cpuSysAll.PushBack(float64(1000000))
+	cpuSysAll.PushBack(float64(1100000))
+	cpuSysAll.PushBack(float64(1200000))
+	cpuSysAll.PushBack(float64(1300000))
+	cpuSysAll.PushBack(float64(1400000))
+	cpuSysAll.PushBack(float64(1500000))
 
 	cpuTot1_1 := window.New(W_SIZE, W_MULT)
 	cpuTot1_1.PushBack(float64(10000))

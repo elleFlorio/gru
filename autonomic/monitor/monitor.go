@@ -119,9 +119,11 @@ func resetEventsStats(srvName string, stats *GruStats) {
 	srvStats := stats.Service[srvName]
 
 	log.WithFields(log.Fields{
-		"start": srvStats.Events.Start,
-		"stop":  srvStats.Events.Stop,
-	}).Debugln("Monitored events")
+		"status":  "monitored events",
+		"service": srvName,
+		"start":   srvStats.Events.Start,
+		"stop":    srvStats.Events.Stop,
+	}).Debugln("Running monitor")
 
 	srvStats.Events = EventStats{}
 	stats.Service[srvName] = srvStats
@@ -141,13 +143,16 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 		p.monitorError(err)
 	}
 
-	// Start the monitor for each active container
+	// Start the monitor for each configured service
 	for _, c := range containers {
 		info, _ := docker.InspectContainer(c.Id)
 		status := getContainerStatus(info)
 		srv, err := service.GetServiceByImage(c.Image)
 		if err != nil {
-			p.monitorError(err)
+			log.WithFields(log.Fields{
+				"err":   err,
+				"image": c.Image,
+			}).Warningln("Running monitor")
 		} else {
 			addResource(c.Id, srv.Name, status, &gruStats, &history)
 			docker.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
@@ -178,6 +183,7 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 	case "stop":
 	case "die":
 		removeResource(event.Id, &gruStats, &history)
+	case "create":
 	case "start":
 		// TODO handle error
 		srv, err := service.GetServiceByImage(event.From)

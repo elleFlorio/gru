@@ -25,7 +25,7 @@ func (p *ScaleOut) Actions() []string {
 func (p *ScaleOut) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
 	cpuAvg := a.Service[s.Name].CpuAvg
-	curActive := len(a.Service[s.Name].Instances.Active)
+	curActive := len(a.Service[s.Name].Instances.Active) + len(a.Service[s.Name].Instances.Pending)
 	maxActive := s.Constraints.MaxActive
 
 	if curActive < maxActive {

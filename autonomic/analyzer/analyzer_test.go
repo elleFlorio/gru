@@ -40,7 +40,7 @@ func TestUpdateInstances(t *testing.T) {
 // computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64
 func TestComputeInstanceCpuPerc(t *testing.T) {
 	mockInstCpus := []float64{10000, 20000, 30000, 40000, 50000, 60000}
-	mockSysCpus := []float64{100000000, 110000000, 120000000, 130000000, 140000000, 150000000}
+	mockSysCpus := []float64{1000000, 1100000, 1200000, 1300000, 1400000, 1500000}
 
 	mockPerc := computeInstanceCpuPerc(mockInstCpus, mockSysCpus)
 

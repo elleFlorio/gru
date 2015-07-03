@@ -64,6 +64,7 @@ func (p *executor) buildActions(plan *strategy.GruPlan) ([]action.GruAction, err
 	return actions, err
 }
 
+// TODO container config should be configured properly
 func (p *executor) buildConfig(plan *strategy.GruPlan, srv *service.Service, docker *dockerclient.DockerClient) *action.GruActionConfig {
 	config := action.GruActionConfig{
 		Service:         plan.Service,
@@ -71,7 +72,7 @@ func (p *executor) buildConfig(plan *strategy.GruPlan, srv *service.Service, doc
 		TargetType:      plan.TargetType,
 		Client:          docker,
 		HostConfig:      &srv.HostConfig,
-		ContainerConfig: &dockerclient.ContainerConfig{},
+		ContainerConfig: &srv.ContainerConfig,
 	}
 
 	return &config

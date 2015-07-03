@@ -11,11 +11,12 @@ import (
 )
 
 type Service struct {
-	Name        string
-	Type        string
-	Image       string
-	Constraints Constraints
-	HostConfig  dockerclient.HostConfig
+	Name            string
+	Type            string
+	Image           string
+	Constraints     Constraints
+	ContainerConfig dockerclient.ContainerConfig
+	HostConfig      dockerclient.HostConfig
 }
 
 type Constraints struct {
