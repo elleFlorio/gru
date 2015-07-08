@@ -35,6 +35,8 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 	log.WithField("status", "start").Debugln("Running analyzer")
 	defer log.WithField("status", "done").Debugln("Running analyzer")
 
+	sysCpuPerc := 0.0
+
 	for _, name := range service.List() {
 		updateInstances(name, &gruAnalytics, &stats, monitor.W_SIZE)
 		if len(gruAnalytics.Service[name].Instances.Active) < 1 {
@@ -55,8 +57,17 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 			srv := gruAnalytics.Service[name]
 			srv.CpuAvg = cpuAvg
 			gruAnalytics.Service[name] = srv
+
+			sysCpuPerc += cpuAvg
 		}
 	}
+
+	gruAnalytics.System.Cpu.CpuPerc = sysCpuPerc
+
+	log.WithFields(log.Fields{
+		"status":   "analyzing",
+		"CpuTotal": sysCpuPerc,
+	}).Debugln("Running analyzer")
 
 	return gruAnalytics
 }
@@ -109,7 +120,6 @@ func getActiveInstances(running []string, stats *monitor.GruStats, numberOfData 
 
 func computeServiceCpuPerc(name string, analytics *GruAnalytics, stats *monitor.GruStats) float64 {
 	sum := 0.0
-	//avg := 0.0
 	active := analytics.Service[name].Instances.Active
 
 	for _, id := range active {
@@ -121,12 +131,11 @@ func computeServiceCpuPerc(name string, analytics *GruAnalytics, stats *monitor.
 		analytics.Instance[id] = inst
 		sum += instCpuAvg
 	}
-	//avg = sum / float64(len(active))
 
 	return sum
 }
 
-// Since linux compute the cpu usage in unit of jiffies, it needs to be converted
+// Since linux compute the cpu usage in units of jiffies, it needs to be converted
 // in % using the formula used in this function.
 // Explaination: http://stackoverflow.com/questions/1420426/calculating-cpu-usage-of-a-process-in-linux
 func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {

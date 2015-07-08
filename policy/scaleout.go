@@ -22,19 +22,22 @@ func (p *ScaleOut) Actions() []string {
 	}
 }
 
+//FIXME I cannot use the avg Cpu of the service to scale the container.
+// I need to find another metric...
 func (p *ScaleOut) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
-	cpuAvg := a.Service[s.Name].CpuAvg
-	curActive := len(a.Service[s.Name].Instances.Active) + len(a.Service[s.Name].Instances.Pending)
-	maxActive := s.Constraints.MaxActive
 
-	if curActive < maxActive {
-		// Just for test...
-		//weight = rand.Float64()
-		if cpuAvg > s.Constraints.CpuMax {
-			weight = (cpuAvg - s.Constraints.CpuMax) / (1.0 - s.Constraints.CpuMax)
+	/*
+		cpuAvg := a.Service[s.Name].CpuAvg
+		curActive := len(a.Service[s.Name].Instances.Active) + len(a.Service[s.Name].Instances.Pending)
+		maxActive := s.Constraints.MaxActive
+
+		if curActive < maxActive {
+			if cpuAvg > s.Constraints.CpuMax {
+				weight = (cpuAvg - s.Constraints.CpuMax) / (1.0 - s.Constraints.CpuMax)
+			}
 		}
-	}
+	*/
 
 	return weight
 }

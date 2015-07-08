@@ -23,9 +23,10 @@ type InstanceAnalytics struct {
 	Cpu CpuAnalytics
 }
 
-type CpuAnalytics struct {
-	CpuPerc float64
+type SystemAnalytics struct {
+	Cpu CpuAnalytics
 }
 
-type SystemAnalytics struct {
+type CpuAnalytics struct {
+	CpuPerc float64
 }

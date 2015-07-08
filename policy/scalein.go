@@ -21,17 +21,23 @@ func (p *ScaleIn) Actions() []string {
 	}
 }
 
+// FIXME I cannot use the avg Cpu of the service to scale the container.
+// I need to find another metric...
 func (p *ScaleIn) Weight(s *service.Service, a *analyzer.GruAnalytics) float64 {
 	weight := 0.0
-	minActive := s.Constraints.MinActive
-	curActive := len(a.Service[s.Name].Instances.Active) + len(a.Service[s.Name].Instances.Pending)
 
-	if curActive > minActive {
-		cpuAvg := a.Service[s.Name].CpuAvg
-		if cpuAvg < s.Constraints.CpuMin {
-			weight = (s.Constraints.CpuMin - cpuAvg) / s.Constraints.CpuMin
+	// TODO
+	/*
+		minActive := s.Constraints.MinActive
+		curActive := len(a.Service[s.Name].Instances.Active) + len(a.Service[s.Name].Instances.Pending)
+
+		if curActive > minActive {
+			cpuAvg := a.Service[s.Name].CpuAvg
+			if cpuAvg < s.Constraints.CpuMin {
+				weight = (s.Constraints.CpuMin - cpuAvg) / s.Constraints.CpuMin
+			}
 		}
-	}
+	*/
 
 	return weight
 }
