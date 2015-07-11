@@ -21,6 +21,6 @@ Currently Gru is working on a single node, scaling containers in order to balanc
 This is a PhD project: this means that by now it is more like a "proof of concept".
 Please keep in mind that I'm the only person actively working on it and I'm learning the technology through the development process. So I am open to any suggestion/contribution.
 If you like my work and want to help me in some way, you can contact me at luca<dot>florio<at>polimi<dot>it:
-- if you are a student at Politecnico di Milano, we can discuss a thesis;
-- if you are just curious about my work/want to give me a suggestion, I'm happy to have a chat;
-- if you are a company and want to offer me an internship/job... Well, you make me very happy! :-)
+* if you are a student at Politecnico di Milano, we can discuss a thesis;
+* if you are just curious about my work/want to give me a suggestion, I'm happy to have a chat;
+* if you are a company and want to offer me an internship/job... Well, you make me very happy! :-)
