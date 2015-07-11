@@ -14,12 +14,6 @@ func Run() {
 	app.Usage = "Self-managing container system"
 
 	app.Flags = []cli.Flag{
-		/*cli.BoolFlag{
-			Name:   "debug",
-			Usage:  "debug mode",
-			EnvVar: "DEBUG",
-		},*/
-
 		cli.StringFlag{
 			Name:  "log-level, l",
 			Value: "info",

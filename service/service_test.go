@@ -8,6 +8,8 @@ import (
 )
 
 func TestLoadServices(t *testing.T) {
+	defer CleanServices()
+
 	tmpdir := CreateMockFiles()
 	defer os.RemoveAll(tmpdir)
 
@@ -17,10 +19,10 @@ func TestLoadServices(t *testing.T) {
 		names := [2]string{result[0].Name, result[1].Name}
 		assert.Contains(t, names, "service1", "The name of a service should be 'service1'")
 	}
-	CleanServices()
 }
 
 func TestGetServiceByType(t *testing.T) {
+	defer CleanServices()
 	services = CreateMockServices()
 
 	ws := GetServiceByType("webserver")
@@ -37,11 +39,10 @@ func TestGetServiceByType(t *testing.T) {
 
 	ap := GetServiceByType("application")
 	assert.Len(t, ap, 0, "there should be 0 services with type application")
-
-	CleanServices()
 }
 
 func TestGetServiceByName(t *testing.T) {
+	defer CleanServices()
 	services = CreateMockServices()
 
 	s1, err := GetServiceByName("service2")
@@ -49,11 +50,10 @@ func TestGetServiceByName(t *testing.T) {
 
 	_, err = GetServiceByName("pippo")
 	assert.Error(t, err, "There should be no service with name 'pippo'")
-
-	CleanServices()
 }
 
 func TestGetServiceByImage(t *testing.T) {
+	defer CleanServices()
 	services = CreateMockServices()
 
 	img1, err := GetServiceByImage("test/mysql")
@@ -61,6 +61,44 @@ func TestGetServiceByImage(t *testing.T) {
 
 	_, err = GetServiceByImage("test/pippo")
 	assert.Error(t, err, "There should be no image 'test/pippo'")
+}
 
-	CleanServices()
+func TestAddServices(t *testing.T) {
+	defer CleanServices()
+	services = CreateMockServices()
+
+	newService := Service{
+		Name:  "newService",
+		Type:  "mockService",
+		Image: "noImage",
+	}
+	newServices := []Service{newService}
+
+	AddServices(newServices)
+	assert.Contains(t, services, newService, "services should contain the added service")
+}
+
+func TestRemoveServices(t *testing.T) {
+	defer CleanServices()
+	services = CreateMockServices()
+	rmService := "service2"
+	rmServices := []string{rmService}
+
+	RemoveServices(rmServices)
+	assert.NotContains(t, List(), rmService, "services should not contain removed service 'service2'")
+}
+
+func TestUpdateServices(t *testing.T) {
+	defer CleanServices()
+	services = CreateMockServices()
+	newService := Service{
+		Name:  "newService",
+		Type:  "mockService",
+		Image: "noImage",
+	}
+	newServices := []Service{newService}
+
+	UpdateServices(newServices)
+	assert.Len(t, services, 1, "services should have lenght = 1 after the update")
+	assert.Contains(t, List(), "newService", "services should contain service 'newService' after the update")
 }

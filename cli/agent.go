@@ -8,18 +8,21 @@ import (
 	"github.com/samalba/dockerclient"
 
 	"github.com/elleFlorio/gru/autonomic"
+	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
 )
 
-const gruAgentConfigFolder string = "/gru/config/gruagentconfig.json"
+const gruAgentConfigFile string = "/gru/config/gruagentconfig.json"
 const servicesFolder string = "/gru/config/services"
+const nodeConfigFile string = "/gru/config/nodeconfig.json"
 
 func agent(c *cli.Context) {
 	log.WithField("status", "start").Infoln("Running gru agent")
 	defer log.WithField("status", "done").Infoln("Running gru agent")
 
-	gruAgentConfigPath := os.Getenv("HOME") + gruAgentConfigFolder
+	gruAgentConfigPath := os.Getenv("HOME") + gruAgentConfigFile
 	servicesPath := os.Getenv("HOME") + servicesFolder
+	nodeConfigPath := os.Getenv("HOME") + nodeConfigFile
 
 	config, err := LoadGruAgentConfig(gruAgentConfigPath)
 	if err != nil {
@@ -29,6 +32,12 @@ func agent(c *cli.Context) {
 
 	//Do I need to return the slice of services?
 	_, err = service.LoadServices(servicesPath)
+	if err != nil {
+		signalErrorInAgent(err)
+		return
+	}
+
+	err = node.LoadNodeConfig(nodeConfigPath)
 	if err != nil {
 		signalErrorInAgent(err)
 		return

@@ -112,7 +112,22 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 	}
 
 	//Copy system stats
-	//none for now...
+	sys_status_src := src.System.Instances
+	sys_all_dst := make([]string, len(sys_status_src.All), len(sys_status_src.All))
+	sys_runnig_dst := make([]string, len(sys_status_src.Running), len(sys_status_src.Running))
+	sys_stopped_dst := make([]string, len(sys_status_src.Stopped), len(sys_status_src.Stopped))
+	sys_paused_dst := make([]string, len(sys_status_src.Paused), len(sys_status_src.Paused))
+	copy(sys_all_dst, sys_status_src.All)
+	copy(sys_runnig_dst, sys_status_src.Running)
+	copy(sys_stopped_dst, sys_status_src.Stopped)
+	copy(sys_paused_dst, sys_status_src.Paused)
+	sys_status_dst := InstanceStatus{
+		sys_all_dst,
+		sys_runnig_dst,
+		sys_stopped_dst,
+		sys_paused_dst,
+	}
+	dst.System.Instances = sys_status_dst
 }
 
 func resetEventsStats(srvName string, stats *GruStats) {
@@ -222,16 +237,24 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 	_, err := findIdIndex(id, servStats.Instances.All)
 	if err != nil {
 		servStats.Instances.All = append(servStats.Instances.All, id)
+		stats.System.Instances.All = append(stats.System.Instances.All, id)
 	}
 
 	switch status {
 	case "running":
 		servStats.Instances.Running = append(servStats.Instances.Running, id)
+		stats.System.Instances.Running = append(stats.System.Instances.Running, id)
+
 		index, err := findIdIndex(id, servStats.Instances.Stopped)
 		if err == nil {
 			servStats.Instances.Stopped = append(
 				servStats.Instances.Stopped[:index],
 				servStats.Instances.Stopped[index+1:]...)
+
+			sysIndex, _ := findIdIndex(id, stats.System.Instances.Stopped)
+			stats.System.Instances.Stopped = append(
+				stats.System.Instances.Stopped[:sysIndex],
+				stats.System.Instances.Stopped[sysIndex+1:]...)
 		}
 
 		servStats.Events.Start = append(servStats.Events.Start, id)
@@ -245,8 +268,10 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 		}
 	case "stopped":
 		servStats.Instances.Stopped = append(servStats.Instances.Stopped, id)
+		stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
 	case "paused":
 		servStats.Instances.Paused = append(servStats.Instances.Paused, id)
+		stats.System.Instances.Paused = append(stats.System.Instances.Paused, id)
 	default:
 		log.WithFields(log.Fields{
 			"error":   "Unknown container state: " + status,
@@ -273,6 +298,13 @@ func removeResource(id string, stats *GruStats, hist *statsHistory) {
 	running = append(running[:index], running[index+1:]...)
 	srvStats.Instances.Running = running
 	srvStats.Instances.Stopped = append(srvStats.Instances.Stopped, id)
+
+	// Updating system stats
+	sysIndex, _ := findIdIndex(id, stats.System.Instances.Running)
+	stats.System.Instances.Running = append(
+		stats.System.Instances.Running[:sysIndex],
+		stats.System.Instances.Running[sysIndex+1:]...)
+	stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
 
 	// Upating Event stats
 	srvStats.Events.Stop = append(srvStats.Events.Stop, id)

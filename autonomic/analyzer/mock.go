@@ -13,10 +13,12 @@ func CreateMockAnalytics() *GruAnalytics {
 
 	for _, name := range monitor.ListMockServices() {
 		updateInstances(name, mockAnalytics, mockStats, monitor.MaxNumberOfEntryInHistory())
-		mockCpuAvg := computeServiceCpuPerc(name, mockAnalytics, mockStats)
+		mockCpuTot, mockCpuAvg := computeServiceCpuPerc(name, mockAnalytics, mockStats)
 		mockSrv := mockAnalytics.Service[name]
+		mockSrv.CpuTot = mockCpuTot
 		mockSrv.CpuAvg = mockCpuAvg
 		mockAnalytics.Service[name] = mockSrv
+		updateSystemInstances(mockAnalytics)
 	}
 
 	return mockAnalytics

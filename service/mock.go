@@ -16,7 +16,7 @@ func CreateMockFiles() string {
             "Type":"webserver",
             "Image":"test/tomcat",
             "Constraints":{
-                "CpuMax":0.8,
+                "CpuMax":0.3,
                 "CpuMin":0.3
             }
 
@@ -37,8 +37,7 @@ func CreateMockFiles() string {
             "Type":"database",
             "Image":"test/mysql",
             "Constraints":{
-                "MinActive":1,
-                "MaxActive":1
+                "MinActive":1
             }
         }`
 
@@ -47,17 +46,17 @@ func CreateMockFiles() string {
 		panic(err)
 	}
 
-	tmpfile1, err := ioutil.TempFile(tmpdir, "gru_test_services")
+	tmpfile1, err := ioutil.TempFile(tmpdir, "gru_test_services1")
 	if err != nil {
 		panic(err)
 	}
 
-	tmpfile2, err := ioutil.TempFile(tmpdir, "gru_test_services")
+	tmpfile2, err := ioutil.TempFile(tmpdir, "gru_test_services2")
 	if err != nil {
 		panic(err)
 	}
 
-	tmpfile3, err := ioutil.TempFile(tmpdir, "gru_test_services")
+	tmpfile3, err := ioutil.TempFile(tmpdir, "gru_test_services3")
 	if err != nil {
 		panic(err)
 	}
@@ -99,10 +98,7 @@ func CreateMockServices() []Service {
 		Type:  "database",
 		Image: "test/mysql",
 		Constraints: Constraints{
-			CpuMin:    0.4,
-			CpuMax:    0.6,
 			MinActive: 2,
-			MaxActive: 5,
 		},
 	}
 

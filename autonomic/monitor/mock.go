@@ -89,7 +89,20 @@ func CreateMockStats() *GruStats {
 		"instance2_1": instStat2_1,
 	}
 
-	system := SystemStats{}
+	allSys := []string{"instance1_0, instance1_1", "instance1_2", "instance1_3", "instance1_4", "instance2_1"}
+	runningSys := []string{"instance1_1", "instance1_2", "instance1_4", "instance2_1"}
+	stoppedSys := []string{"instance1_0"}
+	pausedSys := []string{"instance1_3"}
+	instancesSys := InstanceStatus{
+		All:     allSys,
+		Running: runningSys,
+		Stopped: stoppedSys,
+		Paused:  pausedSys,
+	}
+
+	system := SystemStats{
+		Instances: instancesSys,
+	}
 
 	mockStats := GruStats{
 		Service:  services,

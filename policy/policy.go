@@ -2,13 +2,13 @@ package policy
 
 import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
-	"github.com/elleFlorio/gru/service"
 )
 
 type GruPolicy interface {
 	Name() string
 	Type() string
-	Weight(s *service.Service, a *analyzer.GruAnalytics) float64
+	Level() string
+	Weight(name string, a *analyzer.GruAnalytics) float64
 	Target() string
 	TargetStatus() string
 	Actions() []string

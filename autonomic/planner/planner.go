@@ -75,17 +75,19 @@ func (p *planner) buildPlans(analytics *analyzer.GruAnalytics) []strategy.GruPla
 
 	for _, name := range service.List() {
 		for _, plc := range policies {
-			srv, _ := service.GetServiceByName(name)
-			if len(analytics.Service[name].Instances.Active) > 0 {
-				plan := strategy.GruPlan{
-					Service:      name,
-					Weight:       plc.Weight(srv, analytics),
-					TargetType:   plc.Target(),
-					TargetStatus: plc.TargetStatus(),
-					Actions:      plc.Actions(),
-				}
+			if plc.Level() == "service" {
 
-				plans = append(plans, plan)
+				if len(analytics.Service[name].Instances.Active) > 0 {
+					plan := strategy.GruPlan{
+						Service:      name,
+						Weight:       plc.Weight(name, analytics),
+						TargetType:   plc.Target(),
+						TargetStatus: plc.TargetStatus(),
+						Actions:      plc.Actions(),
+					}
+
+					plans = append(plans, plan)
+				}
 			}
 		}
 	}

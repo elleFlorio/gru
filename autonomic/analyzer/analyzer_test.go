@@ -59,10 +59,47 @@ func TestComputeServiceCpuPerc(t *testing.T) {
 		updateInstances(name, mockAnalytics, mockStats, monitor.MaxNumberOfEntryInHistory())
 	}
 
-	mockCpuSrv1 := computeServiceCpuPerc("service1", mockAnalytics, mockStats)
-	mockCpuSrv2 := computeServiceCpuPerc("service2", mockAnalytics, mockStats)
+	mockCpuTotSrv1, mockCpuAvgSrv1 := computeServiceCpuPerc("service1", mockAnalytics, mockStats)
+	mockCpuTotSrv2, mockCpuAvgSrv2 := computeServiceCpuPerc("service2", mockAnalytics, mockStats)
 
-	assert.Equal(t, 0.35, mockCpuSrv1, "Cpu average of service1 should be 0.35")
-	assert.Equal(t, 0.4, mockCpuSrv2, "Cpu average of service1 should be 0.4")
+	assert.Equal(t, 0.7, mockCpuTotSrv1, "Cpu total of service1 should be 0.7")
+	assert.Equal(t, 0.4, mockCpuTotSrv2, "Cpu total of service2 should be 0.4")
 
+	assert.Equal(t, 0.35, mockCpuAvgSrv1, "Cpu average of service1 should be 0.35")
+	assert.Equal(t, 0.4, mockCpuAvgSrv2, "Cpu average of service2 should be 0.4")
+
+}
+
+func TestUpdateSysInstances(t *testing.T) {
+	mockAnalytics := &GruAnalytics{
+		Service:  make(map[string]ServiceAnalytics),
+		Instance: make(map[string]InstanceAnalytics),
+	}
+	mockStats := monitor.CreateMockStats()
+	mockAll := 0
+	mockActive := 0
+	mockPending := 0
+	mockPaused := 0
+	mockStopped := 0
+
+	for _, name := range monitor.ListMockServices() {
+		updateInstances(name, mockAnalytics, mockStats, monitor.MaxNumberOfEntryInHistory())
+		mockAll += len(mockAnalytics.Service[name].Instances.All)
+		mockActive += len(mockAnalytics.Service[name].Instances.Active)
+		mockPending += len(mockAnalytics.Service[name].Instances.Pending)
+		mockPaused += len(mockAnalytics.Service[name].Instances.Paused)
+		mockStopped += len(mockAnalytics.Service[name].Instances.Stopped)
+	}
+
+	updateSystemInstances(mockAnalytics)
+	assert.Equal(t, mockAll, len(mockAnalytics.System.Instances.All),
+		"Number of all instances in system should be", mockAll)
+	assert.Equal(t, mockActive, len(mockAnalytics.System.Instances.Active),
+		"Number of active instances in system should be", mockActive)
+	assert.Equal(t, mockPending, len(mockAnalytics.System.Instances.Pending),
+		"Number of pending instances in system should be", mockPending)
+	assert.Equal(t, mockPaused, len(mockAnalytics.System.Instances.Paused),
+		"Number of paused instances in system should be", mockPaused)
+	assert.Equal(t, mockStopped, len(mockAnalytics.System.Instances.Stopped),
+		"Number of stopped instances in system should be", mockStopped)
 }

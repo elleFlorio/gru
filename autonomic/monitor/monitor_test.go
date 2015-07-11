@@ -14,7 +14,14 @@ func TestMakeSnapshot(t *testing.T) {
 	}
 
 	makeSnapshot(mockStats, &mockStats_cp)
-	assert.Equal(t, len(mockStats.Service["service1"].Instances.Running), len(mockStats_cp.Service["service1"].Instances.Running), "Copy should be equal to the original")
+	assert.Equal(t,
+		len(mockStats.Service["service1"].Instances.Running),
+		len(mockStats_cp.Service["service1"].Instances.Running),
+		"Copy should be equal to the original")
+	assert.Equal(t,
+		len(mockStats.System.Instances.Stopped),
+		len(mockStats_cp.System.Instances.Stopped),
+		"Copy should be equal to the original")
 
 	service := "service1"
 	resetEventsStats(service, mockStats)

@@ -47,22 +47,25 @@ func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 				"error":   ErrNoRunningInstances,
 			}).Warnln("Running analyzer")
 		} else {
-			cpuAvg := computeServiceCpuPerc(name, &gruAnalytics, &stats)
+			cpuTot, cpuAvg := computeServiceCpuPerc(name, &gruAnalytics, &stats)
 			log.WithFields(log.Fields{
 				"status":  "analyzing",
 				"service": name,
+				"CpuTot":  cpuTot,
 				"CpuAvg":  cpuAvg,
 			}).Debugln("Running analyzer")
 
 			srv := gruAnalytics.Service[name]
+			srv.CpuTot = cpuTot
 			srv.CpuAvg = cpuAvg
 			gruAnalytics.Service[name] = srv
 
-			sysCpuPerc += cpuAvg
+			sysCpuPerc += cpuTot
 		}
 	}
 
 	gruAnalytics.System.Cpu.CpuPerc = sysCpuPerc
+	updateSystemInstances(&gruAnalytics)
 
 	log.WithFields(log.Fields{
 		"status":   "analyzing",
@@ -118,8 +121,9 @@ func getActiveInstances(running []string, stats *monitor.GruStats, numberOfData 
 	return active, pending
 }
 
-func computeServiceCpuPerc(name string, analytics *GruAnalytics, stats *monitor.GruStats) float64 {
+func computeServiceCpuPerc(name string, analytics *GruAnalytics, stats *monitor.GruStats) (float64, float64) {
 	sum := 0.0
+	avg := 0.0
 	active := analytics.Service[name].Instances.Active
 
 	for _, id := range active {
@@ -132,7 +136,9 @@ func computeServiceCpuPerc(name string, analytics *GruAnalytics, stats *monitor.
 		sum += instCpuAvg
 	}
 
-	return sum
+	avg = sum / float64(len(active))
+
+	return sum, avg
 }
 
 // Since linux compute the cpu usage in units of jiffies, it needs to be converted
@@ -162,4 +168,21 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 		sum += cpu
 	}
 	return sum / float64(len(instCpus)-1)
+}
+
+func updateSystemInstances(analytics *GruAnalytics) {
+	analytics.System.Instances.All = make([]string, 0)
+	analytics.System.Instances.Active = make([]string, 0)
+	analytics.System.Instances.Pending = make([]string, 0)
+	analytics.System.Instances.Paused = make([]string, 0)
+	analytics.System.Instances.Stopped = make([]string, 0)
+
+	for _, v := range analytics.Service {
+		srvInst := v.Instances
+		analytics.System.Instances.All = append(analytics.System.Instances.All, srvInst.All...)
+		analytics.System.Instances.Active = append(analytics.System.Instances.Active, srvInst.Active...)
+		analytics.System.Instances.Pending = append(analytics.System.Instances.Pending, srvInst.Pending...)
+		analytics.System.Instances.Stopped = append(analytics.System.Instances.Stopped, srvInst.Stopped...)
+		analytics.System.Instances.Paused = append(analytics.System.Instances.Paused, srvInst.Paused...)
+	}
 }

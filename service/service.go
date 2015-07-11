@@ -106,6 +106,31 @@ func getServiceBy(field string, value string) (*Service, error) {
 	return nil, ErrNoSuchService
 }
 
+func AddServices(newServices []Service) {
+	services = append(services, newServices...)
+}
+
+func RemoveServices(rmServices []string) {
+	indexes := make([]int, len(rmServices), len(rmServices))
+
+	for i, rmService := range rmServices {
+		for j, service := range services {
+			if service.Name == rmService {
+				indexes[i] = j
+			}
+		}
+	}
+
+	for _, index := range indexes {
+		services = append(services[:index], services[index+1:]...)
+	}
+}
+
+func UpdateServices(newServices []Service) {
+	CleanServices()
+	services = newServices
+}
+
 func CleanServices() {
 	services = make([]Service, 0)
 }

@@ -7,6 +7,7 @@ type GruAnalytics struct {
 }
 
 type ServiceAnalytics struct {
+	CpuTot    float64
 	CpuAvg    float64
 	Instances InstanceStatus
 }
@@ -24,7 +25,8 @@ type InstanceAnalytics struct {
 }
 
 type SystemAnalytics struct {
-	Cpu CpuAnalytics
+	Cpu       CpuAnalytics
+	Instances InstanceStatus
 }
 
 type CpuAnalytics struct {

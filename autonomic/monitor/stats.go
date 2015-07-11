@@ -37,6 +37,7 @@ type CpuStats struct {
 }
 
 type SystemStats struct {
+	Instances InstanceStatus
 }
 
 type statsHistory struct {
