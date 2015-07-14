@@ -6,3 +6,10 @@ go:
 install:
   - export GOPATH=${TRAVIS_BUILD_DIR}/Godeps/_workspace:$GOPATH
   - export PATH=${TRAVIS_BUILD_DIR}/Godeps/_workspace/bin:$PATH
+  
+before_install:
+  - go get github.com/axw/gocov/gocov
+  - go get github.com/mattn/goveralls
+  - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
+script:
+    - $HOME/gopath/bin/goveralls -service=travis-ci
