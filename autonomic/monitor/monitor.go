@@ -41,6 +41,34 @@ func NewMonitor(c_stop chan struct{}, c_err chan error) *monitor {
 	}
 }
 
+func GetServiceStats(name string) ServiceStats {
+	return gruStats.Service[name]
+}
+
+func GetServicesStats() []ServiceStats {
+	servicesStats := make([]ServiceStats, len(gruStats.Service), len(gruStats.Service))
+	for _, v := range gruStats.Service {
+		servicesStats = append(servicesStats, v)
+	}
+	return servicesStats
+}
+
+func GetInstanceStats(id string) InstanceStats {
+	return gruStats.Instance[id]
+}
+
+func GetInstancesStats() []InstanceStats {
+	instancesStats := make([]InstanceStats, len(gruStats.Instance), len(gruStats.Instance))
+	for _, v := range gruStats.Instance {
+		instancesStats = append(instancesStats, v)
+	}
+	return instancesStats
+}
+
+func GetSystemStats() SystemStats {
+	return gruStats.System
+}
+
 func (p *monitor) Run() GruStats {
 	snapshot := GruStats{
 		Service:  make(map[string]ServiceStats),

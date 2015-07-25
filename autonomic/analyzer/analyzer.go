@@ -31,6 +31,36 @@ func NewAnalyzer(c_err chan error) *analyzer {
 	}
 }
 
+func GetServiceAanalytics(name string) ServiceAnalytics {
+	return gruAnalytics.Service[name]
+}
+
+func GetServicesAanalytics() []ServiceAnalytics {
+	servicesAnalytics := make([]ServiceAnalytics, len(gruAnalytics.Service), len(gruAnalytics.Service))
+	for _, v := range gruAnalytics.Service {
+		servicesAnalytics = append(servicesAnalytics, v)
+	}
+
+	return servicesAnalytics
+}
+
+func GetInstancesAanalytics(id string) InstanceAnalytics {
+	return gruAnalytics.Instance[id]
+}
+
+func GetInstanceAanalytics() []InstanceAnalytics {
+	instancesAnalytics := make([]InstanceAnalytics, len(gruAnalytics.Instance), len(gruAnalytics.Instance))
+	for _, v := range gruAnalytics.Instance {
+		instancesAnalytics = append(instancesAnalytics, v)
+	}
+
+	return instancesAnalytics
+}
+
+func GetSystemAnalytics() SystemAnalytics {
+	return gruAnalytics.System
+}
+
 func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
 	log.WithField("status", "start").Debugln("Running analyzer")
 	defer log.WithField("status", "done").Debugln("Running analyzer")
