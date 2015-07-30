@@ -7,6 +7,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/samalba/dockerclient"
 
+	"github.com/elleFlorio/gru/api"
 	"github.com/elleFlorio/gru/autonomic"
 	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
@@ -48,6 +49,8 @@ func agent(c *cli.Context) {
 		signalErrorInAgent(err)
 		return
 	}
+
+	go api.StartServer(":8080")
 
 	log.WithField("status", "config complete").Infoln("Running gru agent")
 

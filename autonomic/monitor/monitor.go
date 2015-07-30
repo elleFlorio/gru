@@ -45,24 +45,52 @@ func GetServiceStats(name string) ServiceStats {
 	return gruStats.Service[name]
 }
 
-func GetServicesStats() []ServiceStats {
-	servicesStats := make([]ServiceStats, len(gruStats.Service), len(gruStats.Service))
-	for _, v := range gruStats.Service {
-		servicesStats = append(servicesStats, v)
-	}
-	return servicesStats
+func GetServicesStats() map[string]ServiceStats {
+	return gruStats.Service
 }
 
+//TODO The code of the following function is replicated. Refactor please.
 func GetInstanceStats(id string) InstanceStats {
-	return gruStats.Instance[id]
+	instance := history.instance[id]
+
+	instCpuHist := instance.cpu.totalUsage.Slice()
+	instCpuSysHist := instance.cpu.sysUsage.Slice()
+	instCpu_dst := make([]float64, len(instCpuHist), len(instCpuHist))
+	copy(instCpu_dst, instCpuHist)
+	instCpuSys_dst := make([]float64, len(instCpuSysHist), len(instCpuSysHist))
+	copy(instCpuSys_dst, instCpuSysHist)
+	cpuStats_dst := CpuStats{
+		TotalUsage: instCpu_dst,
+		SysUsage:   instCpuSys_dst,
+	}
+	instStats_dst := InstanceStats{
+		Cpu: cpuStats_dst,
+	}
+
+	return instStats_dst
 }
 
-func GetInstancesStats() []InstanceStats {
-	instancesStats := make([]InstanceStats, len(gruStats.Instance), len(gruStats.Instance))
-	for _, v := range gruStats.Instance {
-		instancesStats = append(instancesStats, v)
+func GetInstancesStats() map[string]InstanceStats {
+	currentStats := make(map[string]InstanceStats)
+
+	for k, v := range history.instance {
+		instCpuHist := v.cpu.totalUsage.Slice()
+		instCpuSysHist := v.cpu.sysUsage.Slice()
+		instCpu_dst := make([]float64, len(instCpuHist), len(instCpuHist))
+		copy(instCpu_dst, instCpuHist)
+		instCpuSys_dst := make([]float64, len(instCpuSysHist), len(instCpuSysHist))
+		copy(instCpuSys_dst, instCpuSysHist)
+		cpuStats_dst := CpuStats{
+			TotalUsage: instCpu_dst,
+			SysUsage:   instCpuSys_dst,
+		}
+		instStats_dst := InstanceStats{
+			Cpu: cpuStats_dst,
+		}
+		currentStats[k] = instStats_dst
 	}
-	return instancesStats
+
+	return currentStats
 }
 
 func GetSystemStats() SystemStats {

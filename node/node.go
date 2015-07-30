@@ -8,14 +8,14 @@ import (
 )
 
 type Node struct {
-	Name        string
-	Constraints Constraints
+	Name        string      `json:"name"`
+	Constraints Constraints `json:"constraints"`
 }
 
 type Constraints struct {
-	CpuMin       float64
-	CpuMax       float64
-	MaxInstances int
+	CpuMin       float64 `json:"cpumin"`
+	CpuMax       float64 `json:"cpumax"`
+	MaxInstances int     `json:"maxinstances"`
 }
 
 var node Node

@@ -35,26 +35,16 @@ func GetServiceAanalytics(name string) ServiceAnalytics {
 	return gruAnalytics.Service[name]
 }
 
-func GetServicesAanalytics() []ServiceAnalytics {
-	servicesAnalytics := make([]ServiceAnalytics, len(gruAnalytics.Service), len(gruAnalytics.Service))
-	for _, v := range gruAnalytics.Service {
-		servicesAnalytics = append(servicesAnalytics, v)
-	}
-
-	return servicesAnalytics
+func GetServicesAanalytics() map[string]ServiceAnalytics {
+	return gruAnalytics.Service
 }
 
-func GetInstancesAanalytics(id string) InstanceAnalytics {
+func GetInstanceAanalytics(id string) InstanceAnalytics {
 	return gruAnalytics.Instance[id]
 }
 
-func GetInstanceAanalytics() []InstanceAnalytics {
-	instancesAnalytics := make([]InstanceAnalytics, len(gruAnalytics.Instance), len(gruAnalytics.Instance))
-	for _, v := range gruAnalytics.Instance {
-		instancesAnalytics = append(instancesAnalytics, v)
-	}
-
-	return instancesAnalytics
+func GetInstancesAanalytics() map[string]InstanceAnalytics {
+	return gruAnalytics.Instance
 }
 
 func GetSystemAnalytics() SystemAnalytics {

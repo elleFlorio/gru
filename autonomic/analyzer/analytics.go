@@ -1,34 +1,34 @@
 package analyzer
 
 type GruAnalytics struct {
-	Service  map[string]ServiceAnalytics
-	Instance map[string]InstanceAnalytics
-	System   SystemAnalytics
+	Service  map[string]ServiceAnalytics  `json:"service"`
+	Instance map[string]InstanceAnalytics `json:"instance"`
+	System   SystemAnalytics              `json:"system"`
 }
 
 type ServiceAnalytics struct {
-	CpuTot    float64
-	CpuAvg    float64
-	Instances InstanceStatus
+	CpuTot    float64        `json:"cputot"`
+	CpuAvg    float64        `json:"cpuavg"`
+	Instances InstanceStatus `json:"instances"`
 }
 
 type InstanceStatus struct {
-	All     []string
-	Pending []string
-	Active  []string
-	Stopped []string
-	Paused  []string
+	All     []string `json:"all"`
+	Pending []string `json:"pending"`
+	Active  []string `json:"active"`
+	Stopped []string `json:"stopped"`
+	Paused  []string `json:"paused"`
 }
 
 type InstanceAnalytics struct {
-	Cpu CpuAnalytics
+	Cpu CpuAnalytics `json:"cpu"`
 }
 
 type SystemAnalytics struct {
-	Cpu       CpuAnalytics
-	Instances InstanceStatus
+	Cpu       CpuAnalytics   `json:"cpu"`
+	Instances InstanceStatus `json:"instances"`
 }
 
 type CpuAnalytics struct {
-	CpuPerc float64
+	CpuPerc float64 `json:"cpuperc"`
 }
