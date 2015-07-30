@@ -29,7 +29,7 @@ That translates in something like version 0.0.0.0.0.0.0.0.0.0.0.0.1-pre_developm
 I don't suggest to try it by now, however I will post all the instructions needed to run it ASAP. The same goes for godoc documentation.
 Currently Gru is working on a single node, scaling containers in order to balance the resource of that node between services according to the workload.
 
-## Instruction
+## Instructions
 These are the steps you need to follow to run the current version of Gru in your system (Linux only). Please remember that currently Gru is not able to really manage your containers and it's under active development.
 
 ###### Get Gru
