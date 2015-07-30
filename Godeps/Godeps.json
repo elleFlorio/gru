@@ -21,6 +21,14 @@
 			"Rev": "4ab8b8828666c8d0651e96d61b5c616d26c5e229"
 		},
 		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "f15e0c49460fd49eebe2bcc8486b05d1bef68d3a"
+		},
+		{
 			"ImportPath": "github.com/jbrukh/window",
 			"Rev": "b4044121a7425712565d73a2074304309e7ca2c7"
 		},
