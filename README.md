@@ -74,6 +74,7 @@ These are the steps you need to follow to run the current version of Gru in your
 	}
 }
 ```
+###### Run Gru
 * Run/start the containers of the services you want to manage
 * Run the Gru agent with the command `gru agent`. You can specify the logging level using the flag `-l`: e.g. `gru -l debug agent`
 * Enjoy
