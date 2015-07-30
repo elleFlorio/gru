@@ -26,7 +26,7 @@ Gru will integrate seamlessly with you system based on containers: no need to do
 ## Current status
 The project is at an early stage of development.
 That translates in something like version 0.0.0.0.0.0.0.0.0.0.0.0.1-pre_development_alpha.
-I don't suggest to try it by now, however I will post all the instructions needed to run it ASAP. The same goes for godoc documentation.
+I don't suggest to try it by now, however below you can find the instructions to run it in your local machine.
 Currently Gru is working on a single node, scaling containers in order to balance the resource of that node between services according to the workload.
 
 ## Instructions
@@ -61,6 +61,8 @@ These are the steps you need to follow to run the current version of Gru in your
 * Create the `services` folder at the location specified in `gruagentconfig.json`. Inside it create a `.json` file for each service you want to manage. Each service is bound to a Docker Image. This is an example of a service configuration file:
 ```json
 //example.json
+/* "ContainerConfig" is the Docker container configuaration.
+For information please refer to the Docker documentation */
 {
 	"Name":"service1",
 	"Type":"service1",
@@ -69,8 +71,7 @@ These are the steps you need to follow to run the current version of Gru in your
 		"MinActive":1,
 		"MaxActive":5
 	},
-	"ContainerConfig":{
-		//Docker configuration needed to start the container
+	"ContainerConfig":{ 
 	}
 }
 ```
