@@ -1,10 +1,9 @@
 package action
 
 import (
-	"crypto/rand"
-	"encoding/hex"
-
 	log "github.com/Sirupsen/logrus"
+
+	"github.com/elleFlorio/gru/utils"
 )
 
 type Start struct{}
@@ -50,7 +49,7 @@ func (p *Start) Run(config *GruActionConfig) error {
 }
 
 func createNewContainer(config *GruActionConfig) (string, error) {
-	uuid, err := generateUUID()
+	uuid, err := utils.GenerateUUID()
 	name := config.Service + "_" + uuid
 
 	config.ContainerConfig.Image = config.Target
@@ -65,17 +64,4 @@ func createNewContainer(config *GruActionConfig) (string, error) {
 	}
 
 	return id, nil
-}
-
-func generateUUID() (string, error) {
-	u := make([]byte, 16)
-	_, err := rand.Read(u)
-	if err != nil {
-		return "", err
-	}
-
-	u[8] = (u[8] | 0x80) & 0xBF // what does this do?
-	u[6] = (u[6] | 0x40) & 0x4F // what does this do?
-
-	return hex.EncodeToString(u), nil
 }
