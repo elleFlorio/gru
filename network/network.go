@@ -1,8 +1,11 @@
-package utils
+package network
 
 import (
+	"bytes"
 	"errors"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"strconv"
 )
 
@@ -41,4 +44,26 @@ func GetHostIp() (string, error) {
 	}
 
 	return "", ErrNoIpAddress
+}
+
+func DoRequest(method string, path string, body []byte) ([]byte, error) {
+	b := bytes.NewBuffer(body)
+
+	req, err := http.NewRequest(method, path, b)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	return data, nil
 }

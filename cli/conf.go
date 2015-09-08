@@ -12,6 +12,8 @@ type GruAgentConfig struct {
 	DaemonTimeout       int
 	LoopTimeInterval    int
 	ServiceConfigFolder string
+	DiscoveryService    string
+	DiscoveryServiceUri string
 }
 
 var config GruAgentConfig

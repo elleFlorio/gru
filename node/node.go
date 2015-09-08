@@ -5,10 +5,16 @@ import (
 	"io/ioutil"
 
 	log "github.com/Sirupsen/logrus"
+
+	"github.com/elleFlorio/gru/network"
+	"github.com/elleFlorio/gru/utils"
 )
 
 type Node struct {
+	UUID        string      `json:"uuid"`
 	Name        string      `json:"name"`
+	IpAddr      string      `json:"ipaddr"`
+	Port        string      `json:"port"`
 	Constraints Constraints `json:"constraints"`
 }
 
@@ -21,8 +27,15 @@ type Constraints struct {
 var node Node
 
 func LoadNodeConfig(filename string) error {
+	node.UUID, _ = utils.GenerateUUID()
+
 	log.WithField("status", "start").Infoln("Node configuration loading")
-	defer log.WithField("status", "done").Infoln("Node configuration loading")
+	defer log.WithFields(log.Fields{
+		"status": "done",
+		"ipAddr": node.IpAddr,
+		"port":   node.Port,
+	}).Errorln("Node configuration loading")
+
 	tmp, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.WithField("error", err).Errorln("Error reading node configuration file")
@@ -34,11 +47,26 @@ func LoadNodeConfig(filename string) error {
 		return err
 	}
 
+	if node.IpAddr == "" {
+		node.IpAddr, err = network.GetHostIp()
+		if err != nil {
+			log.WithField("error", err).Errorln("Error retrieving ip address")
+			return err
+		}
+	}
+
+	if node.Port == "" {
+		node.Port, err = network.GetPort()
+		if err != nil {
+			log.WithField("error", err).Errorln("Error retrieving port. Set to default [5000]")
+		}
+	}
+
 	return nil
 }
 
-func GetNodeConfig() *Node {
-	return &node
+func GetNodeConfig() Node {
+	return node
 }
 
 func UpdateNode(newNode Node) {
