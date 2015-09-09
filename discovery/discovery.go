@@ -17,9 +17,9 @@ type Discovery interface {
 }
 
 var (
-	discoveries []Discovery
-
-	ErrNotSupported = errors.New("discovery service is not supported")
+	discoveries     []Discovery
+	discService     int
+	ErrNotSupported = errors.New("discovery service not supported")
 )
 
 func init() {
@@ -30,13 +30,18 @@ func init() {
 
 func New(name string, uri string) (Discovery, error) {
 	nodeUUID := node.GetNodeConfig().UUID
-	for _, dscvr := range discoveries {
+	for index, dscvr := range discoveries {
 		if dscvr.Name() == name {
-			log.WithField("name", name).Debugln("Initializing discovery")
 			err := dscvr.Initialize(nodeUUID, uri)
-			return dscvr, err
+			discService = index
+			log.WithField("name", name).Debugln("Initializing discovery")
+			return discoveries[discService], err
 		}
 	}
 
 	return nil, ErrNotSupported
+}
+
+func Service() Discovery {
+	return discoveries[discService]
 }
