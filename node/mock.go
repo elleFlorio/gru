@@ -11,15 +11,17 @@ func CreateMockNode() Node {
 		MaxInstances: 10,
 	}
 	mockNode := Node{
+		UUID:        "abcdefghi",
 		Name:        "mockNode",
+		IpAddr:      "127.0.0.1",
+		Port:        "8080",
 		Constraints: mockConstraints,
 	}
 
 	return mockNode
 }
 
-func createMockConfigFileNode() string {
-
+func createMockConfigFileNode(ipAddr bool, port bool) string {
 	mockConfigFileNode := `{
 		"Name":"mockNode",
 		"Constraints":{
@@ -28,6 +30,39 @@ func createMockConfigFileNode() string {
 			"MaxInstances":10
 		}
 	}`
+
+	if ipAddr && port {
+		mockConfigFileNode = `{
+		"Name":"mockNode",
+		"IpAddr":"127.0.0.1",
+		"Port":"8080",
+		"Constraints":{
+			"CpuMax":0.8,
+			"CpuMin":0.2,
+			"MaxInstances":10
+			}
+		}`
+	} else if ipAddr {
+		mockConfigFileNode = `{
+		"Name":"mockNode",
+		"IpAddr":"127.0.0.1",
+		"Constraints":{
+			"CpuMax":0.8,
+			"CpuMin":0.2,
+			"MaxInstances":10
+			}
+		}`
+	} else if port {
+		mockConfigFileNode = `{
+		"Name":"mockNode",
+		"Port":"8080",
+		"Constraints":{
+			"CpuMax":0.8,
+			"CpuMin":0.2,
+			"MaxInstances":10
+			}
+		}`
+	}
 
 	tmpfile, err := ioutil.TempFile(".", "gru_test_node_config")
 	if err != nil {

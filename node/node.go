@@ -32,9 +32,8 @@ func LoadNodeConfig(filename string) error {
 	log.WithField("status", "start").Infoln("Node configuration loading")
 	defer log.WithFields(log.Fields{
 		"status": "done",
-		"ipAddr": node.IpAddr,
-		"port":   node.Port,
-	}).Errorln("Node configuration loading")
+		"UUID":   node.UUID,
+	}).Infoln("Node configuration loading")
 
 	tmp, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -61,6 +60,11 @@ func LoadNodeConfig(filename string) error {
 			log.WithField("error", err).Errorln("Error retrieving port. Set to default [5000]")
 		}
 	}
+
+	log.WithFields(log.Fields{
+		"ipAddr": node.IpAddr,
+		"port":   node.Port,
+	}).Infoln("Node address set")
 
 	return nil
 }

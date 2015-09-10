@@ -59,7 +59,7 @@ func DoRequest(method string, path string, body []byte) ([]byte, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	defer resp.Body.Close()
