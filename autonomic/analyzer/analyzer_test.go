@@ -12,7 +12,7 @@ func TestGetActiveInstances(t *testing.T) {
 	maxHist := monitor.MaxNumberOfEntryInHistory()
 	running := mockStats.Service["service1"].Instances.Running
 
-	active, pending := getActiveInstances(running, mockStats, maxHist)
+	active, pending := getActiveInstances(running, &mockStats, maxHist)
 	assert.Equal(t, 2, len(active), "Number of active instances should be 2")
 	assert.Equal(t, 1, len(pending), "Number of pending instances should be 1")
 
@@ -27,7 +27,7 @@ func TestUpdateInstances(t *testing.T) {
 	maxHist := monitor.MaxNumberOfEntryInHistory()
 
 	for _, name := range monitor.ListMockServices() {
-		updateInstances(name, mockAnalytics, mockStats, maxHist)
+		updateInstances(name, mockAnalytics, &mockStats, maxHist)
 	}
 
 	assert.Contains(t, mockAnalytics.Service["service1"].Instances.Active, "instance1_1", "Active instances should contain instance1_1")
@@ -56,11 +56,11 @@ func TestComputeServiceCpuPerc(t *testing.T) {
 	mockStats := monitor.CreateMockStats()
 
 	for _, name := range monitor.ListMockServices() {
-		updateInstances(name, mockAnalytics, mockStats, monitor.MaxNumberOfEntryInHistory())
+		updateInstances(name, mockAnalytics, &mockStats, monitor.MaxNumberOfEntryInHistory())
 	}
 
-	mockCpuTotSrv1, mockCpuAvgSrv1 := computeServiceCpuPerc("service1", mockAnalytics, mockStats)
-	mockCpuTotSrv2, mockCpuAvgSrv2 := computeServiceCpuPerc("service2", mockAnalytics, mockStats)
+	mockCpuTotSrv1, mockCpuAvgSrv1 := computeServiceCpuPerc("service1", mockAnalytics, &mockStats)
+	mockCpuTotSrv2, mockCpuAvgSrv2 := computeServiceCpuPerc("service2", mockAnalytics, &mockStats)
 
 	assert.Equal(t, 0.7, mockCpuTotSrv1, "Cpu total of service1 should be 0.7")
 	assert.Equal(t, 0.4, mockCpuTotSrv2, "Cpu total of service2 should be 0.4")
@@ -83,7 +83,7 @@ func TestUpdateSysInstances(t *testing.T) {
 	mockStopped := 0
 
 	for _, name := range monitor.ListMockServices() {
-		updateInstances(name, mockAnalytics, mockStats, monitor.MaxNumberOfEntryInHistory())
+		updateInstances(name, mockAnalytics, &mockStats, monitor.MaxNumberOfEntryInHistory())
 		mockAll += len(mockAnalytics.Service[name].Instances.All)
 		mockActive += len(mockAnalytics.Service[name].Instances.Active)
 		mockPending += len(mockAnalytics.Service[name].Instances.Pending)

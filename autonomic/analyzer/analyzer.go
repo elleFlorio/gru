@@ -31,6 +31,19 @@ func NewAnalyzer(c_err chan error) *analyzer {
 	}
 }
 
+func GetNodeAnalytics() GruAnalytics {
+	services := GetServicesAanalytics()
+	instances := GetInstancesAanalytics()
+	system := GetSystemAnalytics()
+
+	return GruAnalytics{
+		services,
+		instances,
+		system,
+	}
+
+}
+
 func GetServiceAanalytics(name string) ServiceAnalytics {
 	return gruAnalytics.Service[name]
 }

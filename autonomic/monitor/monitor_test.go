@@ -13,7 +13,7 @@ func TestMakeSnapshot(t *testing.T) {
 		Instance: make(map[string]InstanceStats),
 	}
 
-	makeSnapshot(mockStats, &mockStats_cp)
+	makeSnapshot(&mockStats, &mockStats_cp)
 	assert.Equal(t,
 		len(mockStats.Service["service1"].Instances.Running),
 		len(mockStats_cp.Service["service1"].Instances.Running),
@@ -24,7 +24,7 @@ func TestMakeSnapshot(t *testing.T) {
 		"Copy should be equal to the original")
 
 	service := "service1"
-	resetEventsStats(service, mockStats)
+	resetEventsStats(service, &mockStats)
 	assert.Contains(t, mockStats_cp.Service[service].Events.Stop,
 		"instance1_0", "The copy should be not modified")
 }
@@ -33,7 +33,7 @@ func TestResetEventsStats(t *testing.T) {
 	mockStats := CreateMockStats()
 	srvName := "service1"
 
-	resetEventsStats(srvName, mockStats)
+	resetEventsStats(srvName, &mockStats)
 	assert.Equal(t, 0, len(mockStats.Service[srvName].Events.Stop), "Events Stop should be empty")
 }
 
@@ -46,7 +46,7 @@ func TestAddResource(t *testing.T) {
 	status2_x := "running"
 	status2_y := "stopped"
 
-	addResource(id2_x, srvName, status2_x, mockStats, mockHist)
+	addResource(id2_x, srvName, status2_x, &mockStats, mockHist)
 	assert.Contains(t, mockStats.Service[srvName].Instances.All, id2_x,
 		"Service 2 - instances - all, should contain added instance")
 	assert.Contains(t, mockStats.Service[srvName].Instances.Running, id2_x,
@@ -54,7 +54,7 @@ func TestAddResource(t *testing.T) {
 	assert.Contains(t, mockStats.Service[srvName].Events.Start, id2_x,
 		"Service 2 - events - start, should contain added instance")
 
-	addResource(id2_y, srvName, status2_y, mockStats, mockHist)
+	addResource(id2_y, srvName, status2_y, &mockStats, mockHist)
 	assert.Contains(t, mockStats.Service[srvName].Instances.All, id2_y,
 		"Service 2 - instances - all, should contain added instance")
 	assert.Contains(t, mockStats.Service[srvName].Instances.Stopped, id2_y,
@@ -66,7 +66,7 @@ func TestRemoveResource(t *testing.T) {
 	mockHist := CreateMockHistory()
 	mockInstId := "instance2_1"
 
-	removeResource(mockInstId, mockStats, mockHist)
+	removeResource(mockInstId, &mockStats, mockHist)
 	serviceStatsInst := mockStats.Service["service2"].Instances.Running
 	instancesStats := []string{}
 	for k, _ := range mockStats.Instance {
@@ -83,7 +83,7 @@ func TestFindServiceByInstanceId(t *testing.T) {
 	mockStats := CreateMockStats()
 	mockInstId := "instance1_4"
 
-	mockService := findServiceByInstanceId(mockInstId, mockStats)
+	mockService := findServiceByInstanceId(mockInstId, &mockStats)
 	assert.Equal(t, "service1", mockService, "found service should be 'service2'")
 }
 

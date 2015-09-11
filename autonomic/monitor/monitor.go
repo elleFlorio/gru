@@ -7,7 +7,9 @@ import (
 	"github.com/jbrukh/window"
 	"github.com/samalba/dockerclient"
 
+	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/storage"
 )
 
 var (
@@ -17,8 +19,12 @@ var (
 	ErrNoIndexById error = errors.New("No index for such Id")
 )
 
+//History window
 const W_SIZE = 50
 const W_MULT = 1000
+
+//My data type
+const dataType string = "stats"
 
 type monitor struct {
 	c_stop chan struct{}
@@ -38,6 +44,21 @@ func NewMonitor(c_stop chan struct{}, c_err chan error) *monitor {
 	return &monitor{
 		c_stop,
 		c_err,
+	}
+}
+
+func GetNodeStats() GruStats {
+	services := GetServicesStats()
+	instances := GetInstancesStats()
+	system := GetSystemStats()
+	// this is not relevant for the node stats, no need to get it
+	group := GroupStats{}
+
+	return GruStats{
+		services,
+		instances,
+		system,
+		group,
 	}
 }
 
@@ -105,12 +126,27 @@ func (p *monitor) Run() GruStats {
 
 	makeSnapshot(&gruStats, &snapshot)
 
+	friendsData, _ := storage.DataStore().GetAllData(dataType)
+	if len(friendsData) == 0 {
+		log.WithFields(log.Fields{
+			"status": "error",
+			"error":  "No friends data to merge",
+		}).Debugln("Running monitor")
+
+		return snapshot
+	}
+
+	friendsStats := convertDataToStats(friendsData)
+	friendsStats[node.Config().UUID] = snapshot
+
+	mergedStats := mergeStats(friendsStats)
+
 	services := service.List()
 	for _, name := range services {
 		resetEventsStats(name, &gruStats)
 	}
 
-	return snapshot
+	return mergedStats
 }
 
 func makeSnapshot(src *GruStats, dst *GruStats) {

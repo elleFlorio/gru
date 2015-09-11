@@ -10,12 +10,17 @@ import (
 	"github.com/elleFlorio/gru/autonomic/executor"
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
+	"github.com/elleFlorio/gru/communication"
 )
 
 type autoManager struct {
 	Docker           *dockerclient.DockerClient
 	LoopTimeInterval int
 }
+
+//TODO this should be parametrized
+const nFriends int = 5
+const dataType string = "stats"
 
 var manager autoManager
 
@@ -52,6 +57,13 @@ func (man *autoManager) loop() {
 	for {
 		select {
 		case <-ticker.C:
+
+			communication.KeepAlive(uint64(man.LoopTimeInterval))
+			err := communication.UpdateFriendsData(nFriends, dataType)
+			if err != nil {
+				log.WithField("waring", err).Warnln("Running autonomic loop")
+			}
+
 			stats := m.Run()
 
 			log.WithFields(log.Fields{
