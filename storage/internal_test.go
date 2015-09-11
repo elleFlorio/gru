@@ -34,6 +34,18 @@ func TestGetData(t *testing.T) {
 
 }
 
+func TestGetAllData(t *testing.T) {
+	test := createInternalStorage()
+	statsType := "stats"
+	notSupported := "notSupported"
+
+	_, err := test.GetAllData(statsType)
+	assert.NoError(t, err, "(stats type) Get data should produce no error")
+
+	_, err = test.GetAllData(notSupported)
+	assert.Error(t, err, "(not supported type) Get data should produce an error")
+}
+
 func TestDeleteData(t *testing.T) {
 	test := createInternalStorage()
 	statsType := "stats"

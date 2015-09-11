@@ -12,7 +12,7 @@ func TestLoadNodeConfig(t *testing.T) {
 	tmpFile := createMockConfigFileNode(true, true)
 
 	err := LoadNodeConfig(tmpFile)
-	config := GetNodeConfig()
+	config := Config()
 
 	if assert.NoError(t, err, "Node config loading should be done without errors") {
 		assert.NotEmpty(t, config.UUID, "Node UUID should be set")
@@ -31,7 +31,7 @@ func TestLoadNodeConfig(t *testing.T) {
 	tmpFile = createMockConfigFileNode(true, false)
 
 	err = LoadNodeConfig(tmpFile)
-	config = GetNodeConfig()
+	config = Config()
 	assert.NotEmpty(t, config.Port, "Port should be set by agent")
 
 	UpdateNode(Node{})
@@ -41,7 +41,7 @@ func TestLoadNodeConfig(t *testing.T) {
 	tmpFile = createMockConfigFileNode(false, true)
 
 	err = LoadNodeConfig(tmpFile)
-	config = GetNodeConfig()
+	config = Config()
 	assert.NotEmpty(t, config.IpAddr, "Ip address should be set by agent")
 
 	UpdateNode(Node{})

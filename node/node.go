@@ -69,7 +69,7 @@ func LoadNodeConfig(filename string) error {
 	return nil
 }
 
-func GetNodeConfig() Node {
+func Config() Node {
 	return node
 }
 

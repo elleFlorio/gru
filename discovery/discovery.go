@@ -29,7 +29,7 @@ func init() {
 }
 
 func New(name string, uri string) (Discovery, error) {
-	nodeUUID := node.GetNodeConfig().UUID
+	nodeUUID := node.Config().UUID
 	for index, dscvr := range discoveries {
 		if dscvr.Name() == name {
 			err := dscvr.Initialize(nodeUUID, uri)

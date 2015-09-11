@@ -12,6 +12,7 @@ import (
 	"github.com/elleFlorio/gru/storage"
 )
 
+//TODO get these in an automatic way?
 const path string = "/nodes/"
 const routeStats string = "/gru/v1/stats"
 
@@ -23,8 +24,8 @@ var (
 )
 
 func KeepAlive(ttl uint64) {
-	agentAddress := "http://" + node.GetNodeConfig().IpAddr + ":" + node.GetNodeConfig().Port
-	key := path + node.GetNodeConfig().UUID
+	agentAddress := "http://" + node.Config().IpAddr + ":" + node.Config().Port
+	key := path + node.Config().UUID
 	err := discovery.Service().Set(key, agentAddress, ttl)
 	if err != nil {
 		log.WithField("error", err).Errorln("Keeping alive the agent")
@@ -95,7 +96,7 @@ func chooseRandomFriends(peers map[string]string, n int) (map[string]string, err
 	friendsKeys := make([]string, 0, n)
 	indexes := rand.Perm(nPeers)[:n]
 	for _, index := range indexes {
-		if peersKeys[index] != node.GetNodeConfig().UUID {
+		if peersKeys[index] != node.Config().UUID {
 			friendsKeys = append(friendsKeys, peersKeys[index])
 		}
 	}
@@ -113,7 +114,7 @@ func getFriendsData(friends map[string]string, dataType string) error {
 		for friend, address := range friends {
 			// This should not be possible, but in a local test (multiple nodes on the same node with
 			//different ports) it happened.
-			myAddress := "http://" + node.GetNodeConfig().IpAddr + ":" + node.GetNodeConfig().Port
+			myAddress := "http://" + node.Config().IpAddr + ":" + node.Config().Port
 			if address != myAddress {
 				friendRoute := address + routeStats
 				friendData, err := network.DoRequest("GET", friendRoute, nil)

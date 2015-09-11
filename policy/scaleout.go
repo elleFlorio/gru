@@ -32,14 +32,14 @@ func (p *ScaleOut) Weight(name string, a *analyzer.GruAnalytics) float64 {
 	srv, _ := service.GetServiceByName(name)
 	cpuMax := srv.Constraints.CpuMax
 	maxActive := srv.Constraints.MaxActive
-	maxActiveNode := node.GetNodeConfig().Constraints.MaxInstances
+	maxActiveNode := node.Config().Constraints.MaxInstances
 	cpuTot := a.Service[name].CpuTot
 	curActive := len(a.Service[name].Instances.Active) + len(a.Service[name].Instances.Pending)
 	curActiveNode := len(a.System.Instances.Active) + len(a.System.Instances.Pending)
 
 	// check if the constraints of service are not specified
 	if cpuMax == 0.0 {
-		cpuMax = 1.0 / float64(node.GetNodeConfig().Constraints.MaxInstances)
+		cpuMax = 1.0 / float64(node.Config().Constraints.MaxInstances)
 	}
 	if maxActive == 0 {
 		maxActive = maxActiveNode

@@ -36,7 +36,7 @@ func (p *ScaleIn) Weight(name string, a *analyzer.GruAnalytics) float64 {
 
 	// check if the constraints of service are not specified
 	if cpuMax == 0.0 {
-		cpuMax = 1.0 / float64(node.GetNodeConfig().Constraints.MaxInstances)
+		cpuMax = 1.0 / float64(node.Config().Constraints.MaxInstances)
 	}
 	if cpuMin == 0 {
 		cpuMin = float64(curActive-1) * cpuMax

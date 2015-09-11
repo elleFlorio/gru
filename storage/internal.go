@@ -43,6 +43,15 @@ func (p *internal) GetData(key string, dataType string) ([]byte, error) {
 	return nil, ErrInvalidDataType
 }
 
+func (p *internal) GetAllData(dataType string) (map[string][]byte, error) {
+	switch dataType {
+	case "stats":
+		return p.statsData, nil
+	}
+
+	return nil, ErrInvalidDataType
+}
+
 func (p *internal) DeleteData(key string, dataType string) error {
 	switch dataType {
 	case "stats":

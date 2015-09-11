@@ -25,7 +25,7 @@ func TestChooseRandomFriends(t *testing.T) {
 	}
 	assert.NoError(t, err, "(nFrineds > nPeers) Choose friends should produce no error")
 	assert.Len(t, test, len(mockPeers)-1, "(nFrineds > nPeers) Choose peers should return the map of all peers except me")
-	assert.NotContains(t, friendsKeys, node.GetNodeConfig().UUID, "(nFrineds > nPeers) Choose friends should not contain my key")
+	assert.NotContains(t, friendsKeys, node.Config().UUID, "(nFrineds > nPeers) Choose friends should not contain my key")
 
 	nFriends = 0
 	test, err = chooseRandomFriends(mockPeers, nFriends)
@@ -46,7 +46,7 @@ func TestChooseRandomFriends(t *testing.T) {
 	test, err = chooseRandomFriends(mockPeers, nFriends)
 	assert.NoError(t, err, "(nFrineds == 2) Choose friends should produce no error")
 	assert.Len(t, test, len(mockPeers)-1, "(nFrineds == 2) Choose peers should return the map of all peers except me")
-	assert.NotContains(t, friendsKeys, node.GetNodeConfig().UUID, "(nFrineds == 2) Choose friends should not contain my key")
+	assert.NotContains(t, friendsKeys, node.Config().UUID, "(nFrineds == 2) Choose friends should not contain my key")
 
 }
 

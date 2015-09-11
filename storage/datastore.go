@@ -11,6 +11,7 @@ type Storage interface {
 	Initialize() error
 	StoreData(string, []byte, string) error
 	GetData(string, string) ([]byte, error)
+	GetAllData(string) (map[string][]byte, error)
 	DeleteData(string, string) error
 	DeleteAllData(string) error
 }
