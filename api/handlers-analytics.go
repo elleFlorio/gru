@@ -10,6 +10,21 @@ import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 )
 
+// /gru/v1/analytics/
+func GetAnalyticsNode(w http.ResponseWriter, r *http.Request) {
+	analytics := analyzer.GetNodeAnalytics()
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(analytics); err != nil {
+		log.WithFields(log.Fields{
+			"status":  "http response",
+			"request": "GetAnalyticsNode",
+			"error":   err,
+		}).Errorln("API Server")
+	}
+}
+
 // /gru/v1/analytics/services
 func GetAnalyticsServices(w http.ResponseWriter, r *http.Request) {
 	analytics := analyzer.GetServicesAanalytics()

@@ -11,7 +11,7 @@ import (
 
 // /gru/v1/node
 func GetInfoNode(w http.ResponseWriter, r *http.Request) {
-	info := node.GetNodeConfig()
+	info := node.Config()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)

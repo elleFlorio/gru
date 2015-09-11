@@ -10,6 +10,21 @@ import (
 	"github.com/elleFlorio/gru/autonomic/monitor"
 )
 
+// /gru/v1/stats
+func GetStatsNode(w http.ResponseWriter, r *http.Request) {
+	stats := monitor.GetNodeStats()
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(stats); err != nil {
+		log.WithFields(log.Fields{
+			"status":  "http response",
+			"request": "GetStatsNode",
+			"error":   err,
+		}).Errorln("API Server")
+	}
+}
+
 // /gru/v1/stats/services
 func GetStatsServices(w http.ResponseWriter, r *http.Request) {
 	stats := monitor.GetServicesStats()

@@ -24,6 +24,13 @@ var routes = Routes{
 
 	// STATS
 	Route{
+		"StatsNode",
+		"GET",
+		"/gru/v1/stats",
+		GetStatsNode,
+	},
+
+	Route{
 		"StatsServices",
 		"GET",
 		"/gru/v1/stats/services",
@@ -59,6 +66,13 @@ var routes = Routes{
 	},
 
 	//ANALYTICS
+	Route{
+		"AnalyticsNode",
+		"GET",
+		"/gru/v1/analytics",
+		GetAnalyticsNode,
+	},
+
 	Route{
 		"AnalyticsServices",
 		"GET",
