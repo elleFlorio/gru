@@ -9,8 +9,10 @@ import (
 
 	"github.com/elleFlorio/gru/api"
 	"github.com/elleFlorio/gru/autonomic"
+	"github.com/elleFlorio/gru/discovery"
 	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/storage"
 )
 
 const gruAgentConfigFile string = "/gru/config/gruagentconfig.json"
@@ -50,7 +52,25 @@ func agent(c *cli.Context) {
 		return
 	}
 
-	go api.StartServer(":8080")
+	_, err = discovery.New(config.DiscoveryService, config.DiscoveryServiceUri)
+	if err != nil {
+		signalErrorInAgent(err)
+		return
+	}
+
+	//TODO this should be parametrized in configuration
+	_, err = storage.New("internal")
+	if err != nil {
+		log.WithFields(log.Fields{
+			"status":  "waring",
+			"error":   err,
+			"default": storage.DataStore().Name(),
+		}).Warnln("Running gru agent")
+	}
+	storage.DataStore().Initialize()
+
+	agentPort := ":" + node.Config().Port
+	go api.StartServer(agentPort)
 
 	log.WithField("status", "config complete").Infoln("Running gru agent")
 
