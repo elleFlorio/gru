@@ -54,8 +54,11 @@ func agent(c *cli.Context) {
 
 	_, err = discovery.New(config.DiscoveryService, config.DiscoveryServiceUri)
 	if err != nil {
-		signalErrorInAgent(err)
-		return
+		log.WithFields(log.Fields{
+			"status":  "waring",
+			"error":   err,
+			"default": "No discovery service, running in single node mode",
+		}).Warnln("Running gru agent")
 	}
 
 	//TODO this should be parametrized in configuration

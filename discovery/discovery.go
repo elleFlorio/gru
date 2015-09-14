@@ -24,11 +24,13 @@ var (
 
 func init() {
 	discoveries = []Discovery{
-		&EtcdDiscovery{},
+		&noService{},
+		&etcdDiscovery{},
 	}
 }
 
 func New(name string, uri string) (Discovery, error) {
+	discService = 0
 	nodeUUID := node.Config().UUID
 	for index, dscvr := range discoveries {
 		if dscvr.Name() == name {
@@ -39,7 +41,7 @@ func New(name string, uri string) (Discovery, error) {
 		}
 	}
 
-	return nil, ErrNotSupported
+	return discoveries[discService], ErrNotSupported
 }
 
 func Service() Discovery {

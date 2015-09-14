@@ -16,5 +16,6 @@ func TestNew(t *testing.T) {
 
 	dscvr, err = New(notSupported, "http://localhost:5000")
 	assert.Error(t, err, "Not supported service should produce an error")
+	assert.Equal(t, "noservice", dscvr.Name(), "(not supported) Discovery name should be 'noservice'")
 
 }
