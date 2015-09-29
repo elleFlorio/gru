@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 )
 
 func TestLoadServices(t *testing.T) {
@@ -13,10 +13,10 @@ func TestLoadServices(t *testing.T) {
 	tmpdir := CreateMockFiles()
 	defer os.RemoveAll(tmpdir)
 
-	result, err := LoadServices(tmpdir)
+	err := LoadServices(tmpdir)
 	assert.NoError(t, err, "Loading should presente no errors")
-	if assert.Len(t, result, NumberOfServiceFiles(), "Number of loaded services is wrong") {
-		names := [2]string{result[0].Name, result[1].Name}
+	if assert.Len(t, services, NumberOfServiceFiles(), "Number of loaded services is wrong") {
+		names := [2]string{services[0].Name, services[1].Name}
 		assert.Contains(t, names, "service1", "The name of a service should be 'service1'")
 	}
 }

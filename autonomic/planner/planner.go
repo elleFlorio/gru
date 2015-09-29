@@ -1,7 +1,7 @@
 package planner
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
@@ -9,12 +9,9 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-type planner struct {
-	strtg strategy.GruStrategy
-	c_err chan error
-}
+var currentStrategy strategy.GruStrategy
 
-func NewPlanner(strategyName string, c_err chan error) *planner {
+func SetPlannerStrategy(strategyName string) {
 	strtg, err := strategy.New(strategyName)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -26,29 +23,26 @@ func NewPlanner(strategyName string, c_err chan error) *planner {
 		strtg, err = strategy.New("dummy")
 	}
 
+	currentStrategy = strtg
+
 	log.WithFields(log.Fields{
 		"status":   "init",
 		"strategy": strtg.Name(),
 	}).Infoln("Running Planner")
-
-	return &planner{
-		strtg,
-		c_err,
-	}
 }
 
-func (p *planner) Run(analytics analyzer.GruAnalytics) strategy.GruPlan {
+func Run(analytics analyzer.GruAnalytics) strategy.GruPlan {
 	log.WithField("status", "start").Debugln("Running planner")
 	defer log.WithField("status", "done").Debugln("Running planner")
 
-	plans := p.buildPlans(&analytics)
+	plans := buildPlans(analytics)
 
 	log.WithFields(log.Fields{
 		"status": "plans builded",
 		"plans":  len(plans),
 	}).Debugln("Running Planner")
 
-	thePlan, err := p.strtg.MakeDecision(plans, &analytics)
+	thePlan, err := currentStrategy.MakeDecision(plans, analytics)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"status": "planning",
@@ -64,7 +58,7 @@ func (p *planner) Run(analytics analyzer.GruAnalytics) strategy.GruPlan {
 	return *thePlan
 }
 
-func (p *planner) buildPlans(analytics *analyzer.GruAnalytics) []strategy.GruPlan {
+func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
 	policies := policy.GetPolicies("proactive")
 	plans := []strategy.GruPlan{}
 

@@ -1,8 +1,9 @@
 package strategy
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/service"

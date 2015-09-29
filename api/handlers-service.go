@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/service"
 )

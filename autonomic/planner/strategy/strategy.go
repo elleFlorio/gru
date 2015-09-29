@@ -3,7 +3,7 @@ package strategy
 import (
 	"errors"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 )
@@ -11,8 +11,8 @@ import (
 type GruStrategy interface {
 	Name() string
 	Initialize() error
-	//TODO
-	MakeDecision([]GruPlan, *analyzer.GruAnalytics) (*GruPlan, error)
+	//TODO this should be done in a proper way...
+	MakeDecision([]GruPlan, analyzer.GruAnalytics) (*GruPlan, error)
 }
 
 var (

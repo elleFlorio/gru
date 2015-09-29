@@ -3,10 +3,11 @@ package monitor
 import (
 	"errors"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/jbrukh/window"
-	"github.com/samalba/dockerclient"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 
+	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
@@ -16,6 +17,8 @@ var (
 	monitorActive  bool
 	gruStats       GruStats
 	history        statsHistory
+	c_stop         chan struct{}
+	c_err          chan error
 	ErrNoIndexById error = errors.New("No index for such Id")
 )
 
@@ -26,11 +29,6 @@ const W_MULT = 1000
 //My data type
 const dataType string = "stats"
 
-type monitor struct {
-	c_stop chan struct{}
-	c_err  chan error
-}
-
 func init() {
 	gruStats = GruStats{
 		Service:  make(map[string]ServiceStats),
@@ -38,13 +36,6 @@ func init() {
 	}
 
 	history = statsHistory{make(map[string]instanceHistory)}
-}
-
-func NewMonitor(c_stop chan struct{}, c_err chan error) *monitor {
-	return &monitor{
-		c_stop,
-		c_err,
-	}
 }
 
 func GetNodeStats() GruStats {
@@ -118,7 +109,7 @@ func GetSystemStats() SystemStats {
 	return gruStats.System
 }
 
-func (p *monitor) Run() GruStats {
+func Run() GruStats {
 	snapshot := GruStats{
 		Service:  make(map[string]ServiceStats),
 		Instance: make(map[string]InstanceStats),
@@ -131,7 +122,7 @@ func (p *monitor) Run() GruStats {
 		log.WithFields(log.Fields{
 			"status": "error",
 			"error":  "No friends data to merge",
-		}).Debugln("Running monitor")
+		}).Warnln("Running monitor")
 
 		return snapshot
 	}
@@ -236,23 +227,26 @@ func resetEventsStats(srvName string, stats *GruStats) {
 	stats.Service[srvName] = srvStats
 }
 
-func (p *monitor) Start(docker *dockerclient.DockerClient) {
+func Start(cError chan error, cStop chan struct{}) {
 	log.WithField("status", "start").Debugln("Running monitor")
 	monitorActive = true
+	c_err = cError
+	cStop = cStop
+
 	c_mntrerr := make(chan error)
 	c_evntstart := make(chan string)
 
-	docker.StartMonitorEvents(eventCallback, c_mntrerr, c_evntstart)
+	container.Docker().Client.StartMonitorEvents(eventCallback, c_mntrerr, c_evntstart)
 
 	// Get the list of containers (running or not) to monitor
-	containers, err := docker.ListContainers(true, false, "")
+	containers, err := container.Docker().Client.ListContainers(true, false, "")
 	if err != nil {
-		p.monitorError(err)
+		monitorError(err)
 	}
 
 	// Start the monitor for each configured service
 	for _, c := range containers {
-		info, _ := docker.InspectContainer(c.Id)
+		info, _ := container.Docker().Client.InspectContainer(c.Id)
 		status := getContainerStatus(info)
 		srv, err := service.GetServiceByImage(c.Image)
 		if err != nil {
@@ -262,16 +256,16 @@ func (p *monitor) Start(docker *dockerclient.DockerClient) {
 			}).Warningln("Running monitor")
 		} else {
 			addResource(c.Id, srv.Name, status, &gruStats, &history)
-			docker.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
+			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
 		}
 	}
 
 	for monitorActive {
 		select {
 		case err := <-c_mntrerr:
-			p.monitorError(err)
+			monitorError(err)
 		case newId := <-c_evntstart:
-			docker.StartMonitorStats(newId, statCallBack, c_mntrerr)
+			container.Docker().Client.StartMonitorStats(newId, statCallBack, c_mntrerr)
 		}
 	}
 }
@@ -451,16 +445,16 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 	history.instance[id] = instHist
 }
 
-func (p *monitor) monitorError(err error) {
+func monitorError(err error) {
 	log.WithFields(log.Fields{
 		"status": "error",
 		"error:": err,
 	}).Errorln("Running monitor")
-	p.c_err <- err
+	c_err <- err
 }
 
-func (p *monitor) Stop() {
+func Stop() {
 	monitorActive = false
 	log.WithField("status", "done").Warnln("Running monitor")
-	p.c_stop <- struct{}{}
+	c_stop <- struct{}{}
 }

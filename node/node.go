@@ -4,24 +4,30 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	"github.com/elleFlorio/gru/network"
+	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/utils"
 )
 
 type Node struct {
 	UUID        string      `json:"uuid"`
 	Name        string      `json:"name"`
-	IpAddr      string      `json:"ipaddr"`
-	Port        string      `json:"port"`
 	Constraints Constraints `json:"constraints"`
+	Resources   Resources   `json:resources`
 }
 
 type Constraints struct {
 	CpuMin       float64 `json:"cpumin"`
 	CpuMax       float64 `json:"cpumax"`
-	MaxInstances int     `json:"maxinstances"`
+	MaxInstances int     `json:"maxinstances"` // TODO this will ne removed
+}
+
+type Resources struct {
+	TotalMemory int64 `json:"totalmemory"`
+	TotalCpus   int64 `json:"totalcpus"`
+	usedMemory  int64 `json:"usedmemory"`
+	usedCpu     int64 `json:"usedcpu"`
 }
 
 var node Node
@@ -46,27 +52,62 @@ func LoadNodeConfig(filename string) error {
 		return err
 	}
 
-	if node.IpAddr == "" {
-		node.IpAddr, err = network.GetHostIp()
-		if err != nil {
-			log.WithField("error", err).Errorln("Error retrieving ip address")
-			return err
-		}
-	}
-
-	if node.Port == "" {
-		node.Port, err = network.GetPort()
-		if err != nil {
-			log.WithField("error", err).Errorln("Error retrieving port. Set to default [5000]")
-		}
-	}
-
-	log.WithFields(log.Fields{
-		"ipAddr": node.IpAddr,
-		"port":   node.Port,
-	}).Infoln("Node address set")
-
 	return nil
+}
+
+//Use overcommit ratio?
+func ComputeTotalResources() {
+	info, err := container.Docker().Client.Info()
+	if err != nil {
+		log.WithField("error", err).Errorln("Error reading total resources")
+		return
+	}
+	node.Resources.TotalCpus = info.NCPU
+	node.Resources.TotalMemory = info.MemTotal
+}
+
+func UsedCpus() (int64, error) {
+	var cpus int64
+
+	containers, err := container.Docker().Client.ListContainers(false, false, "")
+	if err != nil {
+		return 0, err
+	}
+
+	for _, c := range containers {
+		cData, err := container.Docker().Client.InspectContainer(c.Id)
+		if err != nil {
+			return 0, err
+		}
+
+		cpus += cData.Config.CpuShares
+	}
+
+	node.Resources.TotalCpus = cpus
+
+	return cpus, nil
+}
+
+func UsedMemory() (int64, error) {
+	var memory int64
+
+	containers, err := container.Docker().Client.ListContainers(false, false, "")
+	if err != nil {
+		return 0, err
+	}
+
+	for _, c := range containers {
+		cData, err := container.Docker().Client.InspectContainer(c.Id)
+		if err != nil {
+			return 0, err
+		}
+
+		memory += cData.Config.Memory
+	}
+
+	node.Resources.TotalMemory = memory
+
+	return memory, nil
 }
 
 func Config() Node {

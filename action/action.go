@@ -3,7 +3,7 @@ package action
 import (
 	"errors"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
 type GruAction interface {

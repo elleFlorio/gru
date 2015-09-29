@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/gorilla/mux"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/gorilla/mux"
 
 	"github.com/elleFlorio/gru/policy"
 )

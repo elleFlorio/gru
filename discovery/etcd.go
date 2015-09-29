@@ -1,33 +1,56 @@
 package discovery
 
 import (
-	log "github.com/Sirupsen/logrus"
-	"github.com/coreos/go-etcd/etcd"
+	"time"
+
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/coreos/etcd/client"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
-// make these parameters?
-const sortResults = false
-const recursiveResults = false
-
 type etcdDiscovery struct {
-	uuid   string
-	client *etcd.Client
+	kAPI client.KeysAPI
 }
 
 func (p *etcdDiscovery) Name() string {
 	return "etcd"
 }
 
-func (p *etcdDiscovery) Initialize(uuid string, uri string) error {
-	p.uuid = uuid
-	p.client = etcd.NewClient([]string{uri})
+func (p *etcdDiscovery) Initialize(uri string) error {
+	cfg := client.Config{
+		Endpoints: []string{uri},
+	}
+
+	etcd, err := client.New(cfg)
+	if err != nil {
+		return err
+	}
+
+	p.kAPI = client.NewKeysAPI(etcd)
+
+	//This is needed to probe if the etcd server is reachable
+	_, err = p.kAPI.Set(
+		context.Background(),
+		"/probe",
+		"etcd",
+		&client.SetOptions{TTL: time.Duration(1) * time.Millisecond},
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (p *etcdDiscovery) Register(myAddress string, ttl uint64) error {
-	path := "/nodes/" + p.uuid
+func (p *etcdDiscovery) Register(myUUID string, myAddress string, ttl int) error {
+	path := "/nodes/" + myUUID
 
-	_, err := p.client.Set(path, myAddress, ttl)
+	_, err := p.kAPI.CreateInOrder(
+		context.Background(),
+		path,
+		myAddress,
+		&client.CreateInOrderOptions{TTL: time.Duration(ttl) * time.Second},
+	)
 	if err != nil {
 		log.WithField("error", err).Errorln("Registering to discovery service")
 		return err
@@ -39,7 +62,7 @@ func (p *etcdDiscovery) Register(myAddress string, ttl uint64) error {
 func (p *etcdDiscovery) Get(key string) (map[string]string, error) {
 	result := make(map[string]string)
 
-	resp, err := p.client.Get(key, sortResults, recursiveResults)
+	resp, err := p.kAPI.Get(context.Background(), key, nil)
 	if err != nil {
 		log.WithField("error", err).Errorln("Querying discovery service")
 		return nil, err
@@ -52,8 +75,13 @@ func (p *etcdDiscovery) Get(key string) (map[string]string, error) {
 	return result, nil
 }
 
-func (p *etcdDiscovery) Set(key string, value string, ttl uint64) error {
-	_, err := p.client.Set(key, value, ttl)
+func (p *etcdDiscovery) Set(key string, value string, ttl int) error {
+
+	_, err := p.kAPI.Set(
+		context.Background(),
+		key,
+		value,
+		&client.SetOptions{TTL: time.Duration(ttl) * time.Second})
 	if err != nil {
 		log.WithField("error", err).Errorln("Setting value to discovery service")
 		return err

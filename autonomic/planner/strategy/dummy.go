@@ -3,7 +3,7 @@ package strategy
 import (
 	"math/rand"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/service"
@@ -19,7 +19,7 @@ func (p *DummyStrategy) Initialize() error {
 	return nil
 }
 
-func (p *DummyStrategy) MakeDecision(plans []GruPlan, analytics *analyzer.GruAnalytics) (*GruPlan, error) {
+func (p *DummyStrategy) MakeDecision(plans []GruPlan, analytics analyzer.GruAnalytics) (*GruPlan, error) {
 	thePlan := p.chosePlan(plans)
 	srv, _ := service.GetServiceByName(thePlan.Service)
 	target, err := p.choseTarget(thePlan.TargetType, thePlan.TargetStatus, analytics, srv)
@@ -61,7 +61,7 @@ func (p *DummyStrategy) chosePlan(plans []GruPlan) *GruPlan {
 	return &thePlan
 }
 
-func (p *DummyStrategy) choseTarget(tType string, tStatus string, analytics *analyzer.GruAnalytics, srv *service.Service) (string, error) {
+func (p *DummyStrategy) choseTarget(tType string, tStatus string, analytics analyzer.GruAnalytics, srv *service.Service) (string, error) {
 	var target string
 	var pool []string
 	switch tType {

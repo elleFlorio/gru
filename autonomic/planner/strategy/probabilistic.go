@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math/rand"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/service"
@@ -24,7 +24,7 @@ func (p *ProbabilisticStrategy) Initialize() error {
 	return nil
 }
 
-func (p *ProbabilisticStrategy) MakeDecision(plans []GruPlan, analytics *analyzer.GruAnalytics) (*GruPlan, error) {
+func (p *ProbabilisticStrategy) MakeDecision(plans []GruPlan, analytics analyzer.GruAnalytics) (*GruPlan, error) {
 	thePlan := p.chosePlan(plans)
 	srv, _ := service.GetServiceByName(thePlan.Service)
 	target, err := p.choseTarget(thePlan.TargetType, thePlan.TargetStatus, analytics, srv)
@@ -92,7 +92,7 @@ func (p *ProbabilisticStrategy) randUniform(min, max float64) float64 {
 	return rand.Float64()*(max-min) + min
 }
 
-func (p *ProbabilisticStrategy) choseTarget(tType string, tStatus string, analytics *analyzer.GruAnalytics, srv *service.Service) (string, error) {
+func (p *ProbabilisticStrategy) choseTarget(tType string, tStatus string, analytics analyzer.GruAnalytics, srv *service.Service) (string, error) {
 	var target string
 	var pool []string
 	switch tType {

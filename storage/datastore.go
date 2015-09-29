@@ -3,7 +3,7 @@ package storage
 import (
 	"errors"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
 type Storage interface {
@@ -26,10 +26,10 @@ func init() {
 	dataStores = []Storage{
 		&internal{},
 	}
-	dataStore = 0
 }
 
 func New(name string) (Storage, error) {
+	dataStore = 0
 	for index, dtstr := range dataStores {
 		if name == dtstr.Name() {
 			dataStore = index

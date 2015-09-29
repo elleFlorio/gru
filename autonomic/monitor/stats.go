@@ -3,8 +3,8 @@ package monitor
 import (
 	"encoding/json"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/jbrukh/window"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
 
 	"github.com/elleFlorio/gru/node"
 )

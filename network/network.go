@@ -9,9 +9,54 @@ import (
 	"strconv"
 )
 
-var ErrNoIpAddress error = errors.New("Cannot retrieve node ip address.")
+var (
+	config         NetworkConfig
+	ErrNoIpAddress error = errors.New("Cannot retrieve node ip address.")
+)
 
-func GetPort() (string, error) {
+func SetNetworkConfig(ipAddress string, port string) error {
+	if ipAddress != "" {
+		config.IpAddress = ipAddress
+	} else {
+		ip, err := getHostIp()
+		if err != nil {
+			return err
+		}
+
+		config.IpAddress = ip
+	}
+
+	if port != "" {
+		config.Port = port
+	} else {
+		p, err := getPort()
+		if err != nil {
+			return err
+		}
+
+		config.Port = p
+	}
+
+	return nil
+}
+
+func getHostIp() (string, error) {
+	addrs, _ := net.InterfaceAddrs()
+	for _, address := range addrs {
+
+		// check the address type and if it is not a loopback then display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(), nil
+			}
+
+		}
+	}
+
+	return "", ErrNoIpAddress
+}
+
+func getPort() (string, error) {
 	port := "5000"
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
@@ -30,20 +75,8 @@ func GetPort() (string, error) {
 	return port, err
 }
 
-func GetHostIp() (string, error) {
-	addrs, _ := net.InterfaceAddrs()
-	for _, address := range addrs {
-
-		// check the address type and if it is not a loopback then display it
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				return ipnet.IP.String(), nil
-			}
-
-		}
-	}
-
-	return "", ErrNoIpAddress
+func Config() NetworkConfig {
+	return config
 }
 
 func DoRequest(method string, path string, body []byte) ([]byte, error) {

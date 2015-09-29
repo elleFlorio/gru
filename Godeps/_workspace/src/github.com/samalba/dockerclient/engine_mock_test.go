@@ -14,7 +14,7 @@ import (
 	"github.com/docker/docker/pkg/jsonlog"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/timeutils"
-	"github.com/gorilla/mux"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/gorilla/mux"
 )
 
 var (

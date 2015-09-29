@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/docker/docker/pkg/units"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/docker/docker/pkg/units"
 )
 
 type ContainerConfig struct {

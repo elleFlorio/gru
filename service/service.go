@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/samalba/dockerclient"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 )
 
 type Service struct {
@@ -31,11 +31,11 @@ var (
 	ErrNoSuchService = errors.New("Service does not exists")
 )
 
-func LoadServices(path string) ([]Service, error) {
+func LoadServices(path string) error {
 	folder, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Errorln("Error opening services folder", err.Error())
-		return nil, err
+		return err
 	}
 
 	for _, file := range folder {
@@ -56,7 +56,7 @@ func LoadServices(path string) ([]Service, error) {
 
 	log.Infoln("Services loading complete. Loaded files: ", len(services))
 
-	return services, nil
+	return nil
 }
 
 func List() []string {

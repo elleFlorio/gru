@@ -26,7 +26,9 @@ func (p *ScaleIn) Actions() []string {
 	}
 }
 
-func (p *ScaleIn) Weight(name string, a *analyzer.GruAnalytics) float64 {
+// FIXME this is just not right. I need to re-do it from scratch taking into account
+//		 the response time of services
+func (p *ScaleIn) Weight(name string, a analyzer.GruAnalytics) float64 {
 	weight := 0.0
 	srv, _ := service.GetServiceByName(name)
 	cpuMin := srv.Constraints.CpuMin

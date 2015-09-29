@@ -3,8 +3,7 @@ package autonomic
 import (
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/samalba/dockerclient"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/executor"
@@ -13,58 +12,38 @@ import (
 	"github.com/elleFlorio/gru/communication"
 )
 
-type autoManager struct {
-	Docker           *dockerclient.DockerClient
-	LoopTimeInterval int
+var manager AutonomicConfig
+
+func Initialize(loopTimeInterval int, nFriends int, dataType string) {
+	manager.LoopTimeInterval = loopTimeInterval
+	manager.MaxFrineds = nFriends
+	manager.DataToShare = dataType
 }
 
-//TODO this should be parametrized
-const nFriends int = 5
-const dataType string = "stats"
-
-var manager autoManager
-
-func NewAutoManager(docker *dockerclient.DockerClient, loopTimeInternval int) *autoManager {
-	manager = autoManager{
-		docker,
-		loopTimeInternval,
-	}
-	return &manager
-}
-
-func (man *autoManager) RunLoop() {
+func RunLoop() {
 	log.WithField("status", "start").Infoln("Running autonomic loop")
+	defer log.WithField("status", "done").Infoln("Running autonomic loop")
 
-	man.loop()
-
-	log.WithField("status", "done").Infoln("Running autonomic loop")
-}
-
-func (man *autoManager) loop() {
 	c_err := make(chan error)
 	c_stop := make(chan struct{})
 
-	m := monitor.NewMonitor(c_stop, c_err)
-	a := analyzer.NewAnalyzer(c_err)
-	p := planner.NewPlanner("probabilistic", c_err)
-	e := executor.NewExecutor(c_err)
-
-	go m.Start(man.Docker)
+	go monitor.Start(c_err, c_stop)
+	planner.SetPlannerStrategy("probabilistic")
 
 	// Set the ticker for the periodic execution
-	ticker := time.NewTicker(time.Duration(man.LoopTimeInterval) * time.Second)
+	ticker := time.NewTicker(time.Duration(manager.LoopTimeInterval) * time.Second)
 
 	for {
 		select {
 		case <-ticker.C:
 
-			communication.KeepAlive(uint64(man.LoopTimeInterval))
-			err := communication.UpdateFriendsData(nFriends, dataType)
+			communication.KeepAlive(manager.LoopTimeInterval)
+			err := communication.UpdateFriendsData(manager.MaxFrineds, manager.DataToShare)
 			if err != nil {
 				log.WithField("waring", err).Warnln("Running autonomic loop")
 			}
 
-			stats := m.Run()
+			stats := monitor.Run()
 
 			log.WithFields(log.Fields{
 				"status":    "received stats",
@@ -72,7 +51,7 @@ func (man *autoManager) loop() {
 				"services":  len(stats.Service),
 			}).Debugln("Running autonomic loop")
 
-			analytics := a.Run(stats)
+			analytics := analyzer.Run(stats)
 
 			log.WithFields(log.Fields{
 				"status":    "received analytics",
@@ -80,7 +59,7 @@ func (man *autoManager) loop() {
 				"services":  len(analytics.Service),
 			}).Debugln("Running autonomic loop")
 
-			plan := p.Run(analytics)
+			plan := planner.Run(analytics)
 
 			log.WithFields(log.Fields{
 				"status":     "received plan",
@@ -91,7 +70,7 @@ func (man *autoManager) loop() {
 				"Actions":    plan.Actions,
 			}).Debugln("Running autonomic loop")
 
-			e.Run(plan, man.Docker)
+			executor.Run(plan)
 		case <-c_err:
 			log.WithField("status", "error").Errorln("Running autonomic loop")
 		case <-c_stop:

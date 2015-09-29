@@ -3,7 +3,7 @@ package policy
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/node"
@@ -46,7 +46,7 @@ func TestWeight(t *testing.T) {
 }
 
 // Too specific to use the one provided by the analyzer
-func createMockAnalytics() *analyzer.GruAnalytics {
+func createMockAnalytics() analyzer.GruAnalytics {
 	active1 := []string{"instance1_1", "instance1_2", "instance1_3"}
 	instances1 := analyzer.InstanceStatus{
 		Active: active1,
@@ -86,5 +86,5 @@ func createMockAnalytics() *analyzer.GruAnalytics {
 		Service: services,
 	}
 
-	return &mockAnalytics
+	return mockAnalytics
 }

@@ -3,16 +3,16 @@ package planner
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 )
 
-func TestNewPlanner(t *testing.T) {
-	c_err := make(chan error)
+func TestSetPlannerStrategy(t *testing.T) {
+	probabilistic := "probabilistic"
+	notSupported := "notsupported"
 
-	planDummy := NewPlanner("dummy", c_err)
-	assert.Equal(t, "dummy", planDummy.strtg.Name(), "Strategy should be dummy")
+	SetPlannerStrategy(probabilistic)
+	assert.Equal(t, probabilistic, currentStrategy.Name(), "(probabilistic) Current strategy should be probabilistic")
 
-	planError := NewPlanner("notImplementedStrategy", c_err)
-	assert.Equal(t, "dummy", planError.strtg.Name(), "Default strategy in case of error should be dummy")
-
+	SetPlannerStrategy(notSupported)
+	assert.Equal(t, "dummy", currentStrategy.Name(), "(notsupported) Current strategy should be dummy")
 }

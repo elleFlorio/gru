@@ -1,6 +1,6 @@
 package monitor
 
-import "github.com/jbrukh/window"
+import "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
 
 const maxHistory = 6
 

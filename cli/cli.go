@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/codegangsta/cli"
 )
 
 func Run() {
@@ -40,9 +40,9 @@ func Run() {
 
 	app.Commands = []cli.Command{
 		{
-			Name:   "agent",
+			Name:   "start",
 			Usage:  "Start the GRU agent",
-			Action: agent,
+			Action: start,
 		},
 	}
 

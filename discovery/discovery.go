@@ -3,17 +3,15 @@ package discovery
 import (
 	"errors"
 
-	log "github.com/Sirupsen/logrus"
-
-	"github.com/elleFlorio/gru/node"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
 type Discovery interface {
 	Name() string
-	Initialize(string, string) error
-	Register(string, uint64) error
+	Initialize(string) error
+	Register(string, string, int) error
 	Get(string) (map[string]string, error)
-	Set(string, string, uint64) error
+	Set(string, string, int) error
 }
 
 var (
@@ -31,13 +29,15 @@ func init() {
 
 func New(name string, uri string) (Discovery, error) {
 	discService = 0
-	nodeUUID := node.Config().UUID
 	for index, dscvr := range discoveries {
 		if dscvr.Name() == name {
-			err := dscvr.Initialize(nodeUUID, uri)
+			err := dscvr.Initialize(uri)
+			if err != nil {
+				return discoveries[discService], err
+			}
 			discService = index
 			log.WithField("name", name).Debugln("Initializing discovery")
-			return discoveries[discService], err
+			return discoveries[discService], nil
 		}
 	}
 

@@ -8,7 +8,7 @@ type GruPolicy interface {
 	Name() string
 	Type() string
 	Level() string
-	Weight(name string, a *analyzer.GruAnalytics) float64
+	Weight(name string, a analyzer.GruAnalytics) float64
 	Target() string
 	TargetStatus() string
 	Actions() []string

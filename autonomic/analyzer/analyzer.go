@@ -3,15 +3,11 @@ package analyzer
 import (
 	"errors"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/service"
 )
-
-type analyzer struct {
-	c_err chan error
-}
 
 var (
 	gruAnalytics          GruAnalytics
@@ -22,12 +18,6 @@ func init() {
 	gruAnalytics = GruAnalytics{
 		Service:  make(map[string]ServiceAnalytics),
 		Instance: make(map[string]InstanceAnalytics),
-	}
-}
-
-func NewAnalyzer(c_err chan error) *analyzer {
-	return &analyzer{
-		c_err,
 	}
 }
 
@@ -64,7 +54,7 @@ func GetSystemAnalytics() SystemAnalytics {
 	return gruAnalytics.System
 }
 
-func (p *analyzer) Run(stats monitor.GruStats) GruAnalytics {
+func Run(stats monitor.GruStats) GruAnalytics {
 	log.WithField("status", "start").Debugln("Running analyzer")
 	defer log.WithField("status", "done").Debugln("Running analyzer")
 

@@ -16,10 +16,10 @@ If you like my work and want to help me in some way, you can contact me at **luc
 
 ## Goals
 **Distributed**
-Gru will be able to automatic manage containers distributed in a huge number of nodes
+Gru will be able to automagically manage containers distributed in a huge number of nodes
 
 **Decentralized**
-Gru will use a decentralized approach based on the idea of self-organizing multi-agets system: Gru Agents are deployed in every node and communicate with the Docker daemon and with other agents to monitor the system and plan the best action to actuate. In this way there is no single point of failure.
+Gru will use a decentralized approach based on the idea of self-organizing multiagent system: Gru Agents are deployed in every node and communicate with the Docker daemon and with other agents to monitor the system and plan the best action to actuate. In this way there is no single point of failure.
 
 **Plug & Play**
 Gru will integrate seamlessly with you system based on containers: no need to do something strange, just start the Gru Agents in every node and let them manage your distributed application!
@@ -27,10 +27,10 @@ Gru will integrate seamlessly with you system based on containers: no need to do
 ## Current status
 The project is at an early stage of development.
 That translates in something like version 0.0.0.0.0.0.0.0.0.0.0.0.1-pre_development_alpha.
-I don't suggest to try it by now, however below you can find the instructions to run it in your local machine.
-Currently Gru is working on a single node, scaling containers in order to balance the resource of that node between services according to the workload.
+I don't suggest to try it by now, however below you can find the documentation to run it in your local machine.
+Currently Gru is working on a single node, scaling containers in order to balance the resource of that node between services according to the workload. The implementation of the distributed system is in progress; if you want to run Gru on multiple nodes you need an etcd server (https://github.com/coreos/etcd) for agents discovery.
 
-## Instructions
+## Documentation
 These are the steps you need to follow to run the current version of Gru in your system (Linux only). Please remember that currently Gru is not able to really manage your containers and it's under active development.
 
 ###### Get Gru
@@ -42,10 +42,38 @@ These are the steps you need to follow to run the current version of Gru in your
 ```json
 //gruagentconfig.json
 {
-	"DaemonUrl":"unix:///var/run/docker.sock",
-	"DaemonTimeout":10,
-	"LoopTimeInterval":5,
-	"ServiceConfigFolder":"/home/gru/config/services"
+	"Service": {
+		"ServiceConfigFolder":"/gru/config/services"
+	},
+
+	"Node": {
+		"NodeConfigFile":"/gru/config/nodeconfig.json"
+	},
+
+	"Network": {
+		"IpAddress":"127.0.0.1",
+		"Port":"5000"
+	},
+
+	"Docker": {
+		"DaemonUrl":"unix:///var/run/docker.sock",
+		"DaemonTimeout":10
+	},
+
+	"Autonomic": {
+		"LoopTimeInterval":5,
+		"MaxFrineds":5,
+		"DataToShare":"stats"
+	},
+
+	"Discovery": {
+		"DiscoveryService":"etcd",
+		"DiscoveryServiceUri":"http://127.0.0.1:4001"
+	},
+	
+	"Storage": {
+		"StorageService":"internal"
+	}
 }
 ```
 ```json
@@ -63,7 +91,9 @@ These are the steps you need to follow to run the current version of Gru in your
 ```json
 //example.json
 /* "ContainerConfig" is the Docker container configuaration.
-For information please refer to the Docker documentation */
+For information please refer to the Docker documentation.
+If you don't have any specific configuration for the container,
+you can just skip it */
 {
 	"Name":"service1",
 	"Type":"service1",
@@ -78,6 +108,6 @@ For information please refer to the Docker documentation */
 ```
 ###### Run Gru
 * Run/start the containers of the services you want to manage
-* Run the Gru agent with the command `gru agent`. You can specify the logging level using the flag `-l`: e.g. `gru -l debug agent`
+* Run the Gru agent with the command `gru start`. You can specify the logging level using the flag `-l`: e.g. `gru -l debug start`
 * Enjoy
 

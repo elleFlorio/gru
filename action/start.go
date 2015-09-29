@@ -1,8 +1,9 @@
 package action
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
+	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/utils"
 )
 
@@ -53,7 +54,7 @@ func createNewContainer(config *GruActionConfig) (string, error) {
 	name := config.Service + "_" + uuid
 
 	config.ContainerConfig.Image = config.Target
-	id, err := config.Client.CreateContainer(config.ContainerConfig, name)
+	id, err := container.Docker().Client.CreateContainer(config.ContainerConfig, name)
 
 	if err != nil {
 		log.WithFields(log.Fields{

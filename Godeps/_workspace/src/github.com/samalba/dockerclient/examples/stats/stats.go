@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/samalba/dockerclient"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 	"log"
 	"os"
 	"os/signal"

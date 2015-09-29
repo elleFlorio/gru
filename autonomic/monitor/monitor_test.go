@@ -3,7 +3,7 @@ package monitor
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 )
 
 func TestMakeSnapshot(t *testing.T) {

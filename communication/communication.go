@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math/rand"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/discovery"
 	"github.com/elleFlorio/gru/network"
@@ -23,8 +23,8 @@ var (
 	ErrNoFriends            error = errors.New("There are no friends to reach")
 )
 
-func KeepAlive(ttl uint64) {
-	agentAddress := "http://" + node.Config().IpAddr + ":" + node.Config().Port
+func KeepAlive(ttl int) {
+	agentAddress := "http://" + network.Config().IpAddress + ":" + network.Config().Port
 	key := path + node.Config().UUID
 	err := discovery.Service().Set(key, agentAddress, ttl)
 	if err != nil {
@@ -66,7 +66,6 @@ func UpdateFriendsData(nFriends int, dataType string) error {
 func getAllPeers() (map[string]string, error) {
 	peers, err := discovery.Service().Get(path)
 	if err != nil {
-		log.WithField("error", err).Errorln("Getting all the peers")
 		return nil, err
 	}
 
@@ -114,7 +113,7 @@ func getFriendsData(friends map[string]string, dataType string) error {
 		for friend, address := range friends {
 			// This should not be possible, but in a local test (multiple nodes on the same node with
 			//different ports) it happened.
-			myAddress := "http://" + node.Config().IpAddr + ":" + node.Config().Port
+			myAddress := "http://" + network.Config().IpAddress + ":" + network.Config().Port
 			if address != myAddress {
 				friendRoute := address + routeStats
 				friendData, err := network.DoRequest("GET", friendRoute, nil)

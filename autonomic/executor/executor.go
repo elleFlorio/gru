@@ -1,26 +1,20 @@
 package executor
 
 import (
-	log "github.com/Sirupsen/logrus"
-	"github.com/samalba/dockerclient"
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/action"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
 	"github.com/elleFlorio/gru/service"
 )
 
-type executor struct{ c_err chan error }
-
-func NewExecutor(c_err chan error) *executor {
-	return &executor{c_err}
-}
-
-func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient) {
+//FIXME should build a configuration for each service
+func Run(plan strategy.GruPlan) {
 	log.WithField("status", "start").Debugln("Running executor")
 	defer log.WithField("status", "done").Debugln("Running executor")
 
 	config := &action.GruActionConfig{}
-	actions, err := p.buildActions(&plan)
+	actions, err := buildActions(plan)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"status": "error",
@@ -31,7 +25,7 @@ func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient)
 	srv, err := service.GetServiceByName(plan.Service)
 
 	if err == nil {
-		config = p.buildConfig(&plan, srv, docker)
+		config = buildConfig(plan, srv)
 	}
 
 	log.WithFields(log.Fields{
@@ -49,7 +43,7 @@ func (p *executor) Run(plan strategy.GruPlan, docker *dockerclient.DockerClient)
 	}
 }
 
-func (p *executor) buildActions(plan *strategy.GruPlan) ([]action.GruAction, error) {
+func buildActions(plan strategy.GruPlan) ([]action.GruAction, error) {
 	var err error
 	actions := make([]action.GruAction, 0, len(plan.Actions))
 	for _, name := range plan.Actions {
@@ -65,12 +59,11 @@ func (p *executor) buildActions(plan *strategy.GruPlan) ([]action.GruAction, err
 }
 
 // TODO container config should be configured properly
-func (p *executor) buildConfig(plan *strategy.GruPlan, srv *service.Service, docker *dockerclient.DockerClient) *action.GruActionConfig {
+func buildConfig(plan strategy.GruPlan, srv *service.Service) *action.GruActionConfig {
 	config := action.GruActionConfig{
 		Service:         plan.Service,
 		Target:          plan.Target,
 		TargetType:      plan.TargetType,
-		Client:          docker,
 		HostConfig:      &srv.HostConfig,
 		ContainerConfig: &srv.ContainerConfig,
 	}

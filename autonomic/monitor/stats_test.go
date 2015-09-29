@@ -3,8 +3,8 @@ package monitor
 import (
 	"testing"
 
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 	"github.com/elleFlorio/gru/node"
-	"github.com/stretchr/testify/assert"
 )
 
 //TODO ok, I know it is not a very good test...
