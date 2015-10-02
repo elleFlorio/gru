@@ -38,129 +38,128 @@ func init() {
 	history = statsHistory{make(map[string]instanceHistory)}
 }
 
-func GetNodeStats() GruStats {
-	services := GetServicesStats()
-	instances := GetInstancesStats()
-	system := GetSystemStats()
-	// this is not relevant for the node stats, no need to get it
-	group := GroupStats{}
-
-	return GruStats{
-		services,
-		instances,
-		system,
-		group,
-	}
-}
-
-func GetServiceStats(name string) ServiceStats {
-	return gruStats.Service[name]
-}
-
-func GetServicesStats() map[string]ServiceStats {
-	return gruStats.Service
-}
-
-//TODO The code of the following function is replicated. Refactor please.
-func GetInstanceStats(id string) InstanceStats {
-	instance := history.instance[id]
-
-	instCpuHist := instance.cpu.totalUsage.Slice()
-	instCpuSysHist := instance.cpu.sysUsage.Slice()
-	instCpu_dst := make([]float64, len(instCpuHist), len(instCpuHist))
-	copy(instCpu_dst, instCpuHist)
-	instCpuSys_dst := make([]float64, len(instCpuSysHist), len(instCpuSysHist))
-	copy(instCpuSys_dst, instCpuSysHist)
-	cpuStats_dst := CpuStats{
-		TotalUsage: instCpu_dst,
-		SysUsage:   instCpuSys_dst,
-	}
-	instStats_dst := InstanceStats{
-		Cpu: cpuStats_dst,
-	}
-
-	return instStats_dst
-}
-
-func GetInstancesStats() map[string]InstanceStats {
-	currentStats := make(map[string]InstanceStats)
-
-	for k, v := range history.instance {
-		instCpuHist := v.cpu.totalUsage.Slice()
-		instCpuSysHist := v.cpu.sysUsage.Slice()
-		instCpu_dst := make([]float64, len(instCpuHist), len(instCpuHist))
-		copy(instCpu_dst, instCpuHist)
-		instCpuSys_dst := make([]float64, len(instCpuSysHist), len(instCpuSysHist))
-		copy(instCpuSys_dst, instCpuSysHist)
-		cpuStats_dst := CpuStats{
-			TotalUsage: instCpu_dst,
-			SysUsage:   instCpuSys_dst,
-		}
-		instStats_dst := InstanceStats{
-			Cpu: cpuStats_dst,
-		}
-		currentStats[k] = instStats_dst
-	}
-
-	return currentStats
-}
-
-func GetSystemStats() SystemStats {
-	return gruStats.System
-}
-
-func Run() GruStats {
+func Run() {
 	snapshot := GruStats{
 		Service:  make(map[string]ServiceStats),
 		Instance: make(map[string]InstanceStats),
 	}
 
-	makeSnapshot(&gruStats, &snapshot)
-
-	friendsData, _ := storage.DataStore().GetAllData(dataType)
-	if len(friendsData) == 0 {
-		log.WithFields(log.Fields{
-			"status": "error",
-			"error":  "No friends data to merge",
-		}).Warnln("Running monitor")
-
-		return snapshot
+	for name, _ := range gruStats.Service {
+		updateRunningInstances(name, &gruStats, W_SIZE)
+		computeServiceCpuPerc(name, &gruStats)
 	}
+	computeSystemCpu(&gruStats)
 
-	friendsStats := convertDataToStats(friendsData)
-	friendsStats[node.Config().UUID] = snapshot
-
-	mergedStats := mergeStats(friendsStats)
+	makeSnapshot(&gruStats, &snapshot)
+	data, err := convertStatsToData(snapshot)
+	if err != nil {
+		log.WithField("error", "Cannot convert stats to data").Debugln("Running monitor")
+	} else {
+		storage.DataStore().StoreData(node.Config().UUID, data, "stats")
+	}
 
 	services := service.List()
 	for _, name := range services {
 		resetEventsStats(name, &gruStats)
 	}
-
-	return mergedStats
 }
 
+func updateRunningInstances(name string, stats *GruStats, wsize int) {
+	srvStats := stats.Service[name]
+	pending := srvStats.Instances.Pending
+	for _, inst := range pending {
+		if history.instance[inst].cpu.sysUsage.Size() >= W_SIZE {
+			addResource(inst, name, "running", stats, &history)
+		}
+	}
+}
+
+func computeServiceCpuPerc(name string, stats *GruStats) {
+	sum := 0.0
+	avg := 0.0
+	srvStats := stats.Service[name]
+
+	for _, id := range srvStats.Instances.Running {
+		instCpus := history.instance[id].cpu.totalUsage.Slice()
+		sysCpus := history.instance[id].cpu.sysUsage.Slice()
+		instCpuAvg := computeInstanceCpuPerc(instCpus, sysCpus)
+		inst := stats.Instance[id]
+		inst.Cpu = instCpuAvg
+		stats.Instance[id] = inst
+		sum += instCpuAvg
+	}
+
+	avg = sum / float64(len(srvStats.Instances.Running))
+
+	srvStats.Cpu.Avg = avg
+	srvStats.Cpu.Tot = sum
+	stats.Service[name] = srvStats
+}
+
+// Since linux compute the cpu usage in units of jiffies, it needs to be converted
+// in % using the formula used in this function.
+// Explaination: http://stackoverflow.com/questions/1420426/calculating-cpu-usage-of-a-process-in-linux
+func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
+	sum := 0.0
+	instNext := 0.0
+	sysNext := 0.0
+	instPrev := 0.0
+	sysPrev := 0.0
+	cpu := 0.0
+
+	for i := 1; i < len(instCpus); i++ {
+		instPrev = instCpus[i-1]
+		sysPrev = sysCpus[i-1]
+		instNext = instCpus[i]
+		sysNext = sysCpus[i]
+		instDelta := instNext - instPrev
+		sysDelta := sysNext - sysPrev
+		if sysDelta == 0 {
+			cpu = 0
+		} else {
+			// "100 * cpu" should produce values in [0, 100]
+			cpu = instDelta / sysDelta
+		}
+		sum += cpu
+	}
+	return sum / float64(len(instCpus)-1)
+}
+
+func computeSystemCpu(stats *GruStats) {
+	sum := 0.0
+	for _, value := range stats.Service {
+		sum += value.Cpu.Tot
+	}
+	stats.System.Cpu = sum
+}
+
+//TODO maybe I can just compute historical data without make a deep copy
+// since now I'm serializing the structure in a string of bytes...
+// check this possibility.
 func makeSnapshot(src *GruStats, dst *GruStats) {
 	// Copy service stats
-	for k, v := range src.Service {
-		srv_src := v
+	for name, stats := range src.Service {
+		srv_src := stats
 		// Copy instances status
-		status_src := v.Instances
+		status_src := stats.Instances
 		all_dst := make([]string, len(status_src.All), len(status_src.All))
 		runnig_dst := make([]string, len(status_src.Running), len(status_src.Running))
+		pending_dst := make([]string, len(status_src.Pending), len(status_src.Pending))
 		stopped_dst := make([]string, len(status_src.Stopped), len(status_src.Stopped))
 		paused_dst := make([]string, len(status_src.Paused), len(status_src.Paused))
 		copy(all_dst, status_src.All)
 		copy(runnig_dst, status_src.Running)
+		copy(pending_dst, status_src.Pending)
 		copy(stopped_dst, status_src.Stopped)
 		copy(paused_dst, status_src.Paused)
 		status_dst := InstanceStatus{
 			all_dst,
 			runnig_dst,
+			pending_dst,
 			stopped_dst,
 			paused_dst,
 		}
-		// Copy events
+		// Copy events (NEEDED?)
 		events_src := srv_src.Events
 		stop_dst := make([]string, len(events_src.Stop), len(events_src.Stop))
 		start_dst := make([]string, len(events_src.Start), len(events_src.Start))
@@ -171,46 +170,56 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 			start_dst,
 			stop_dst,
 		}
-		srv_dst := ServiceStats{status_dst, events_dst}
-		dst.Service[k] = srv_dst
+		cpu_dst := CpuStats{stats.Cpu.Avg, stats.Cpu.Tot}
+		srv_dst := ServiceStats{status_dst, events_dst, cpu_dst}
+		dst.Service[name] = srv_dst
 	}
 
 	//Copy instance stats
-
-	for k, v := range history.instance {
-		instCpuHist := v.cpu.totalUsage.Slice()
-		instCpuSysHist := v.cpu.sysUsage.Slice()
-		instCpu_dst := make([]float64, len(instCpuHist), len(instCpuHist))
-		copy(instCpu_dst, instCpuHist)
-		instCpuSys_dst := make([]float64, len(instCpuSysHist), len(instCpuSysHist))
-		copy(instCpuSys_dst, instCpuSysHist)
-		cpuStats_dst := CpuStats{
-			TotalUsage: instCpu_dst,
-			SysUsage:   instCpuSys_dst,
-		}
-		instStats_dst := InstanceStats{
-			Cpu: cpuStats_dst,
-		}
-		dst.Instance[k] = instStats_dst
+	for id, value := range src.Instance {
+		inst_dst := InstanceStats{value.Cpu}
+		dst.Instance[id] = inst_dst
 	}
+
+	// PROBABLY NOT NEEDED ANYMORE
+	// for k, v := range history.instance {
+	// 	instCpuHist := v.cpu.totalUsage.Slice()
+	// 	instCpuSysHist := v.cpu.sysUsage.Slice()
+	// 	instCpu_dst := make([]float64, len(instCpuHist), len(instCpuHist))
+	// 	copy(instCpu_dst, instCpuHist)
+	// 	instCpuSys_dst := make([]float64, len(instCpuSysHist), len(instCpuSysHist))
+	// 	copy(instCpuSys_dst, instCpuSysHist)
+	// 	cpuStats_dst := CpuStats{
+	// 		TotalUsage: instCpu_dst,
+	// 		SysUsage:   instCpuSys_dst,
+	// 	}
+	// 	instStats_dst := InstanceStats{
+	// 		Cpu: cpuStats_dst,
+	// 	}
+	// 	dst.Instance[k] = instStats_dst
+	// }
 
 	//Copy system stats
 	sys_status_src := src.System.Instances
 	sys_all_dst := make([]string, len(sys_status_src.All), len(sys_status_src.All))
 	sys_runnig_dst := make([]string, len(sys_status_src.Running), len(sys_status_src.Running))
+	sys_pending_dst := make([]string, len(sys_status_src.Pending), len(sys_status_src.Pending))
 	sys_stopped_dst := make([]string, len(sys_status_src.Stopped), len(sys_status_src.Stopped))
 	sys_paused_dst := make([]string, len(sys_status_src.Paused), len(sys_status_src.Paused))
 	copy(sys_all_dst, sys_status_src.All)
 	copy(sys_runnig_dst, sys_status_src.Running)
+	copy(sys_pending_dst, sys_status_src.Pending)
 	copy(sys_stopped_dst, sys_status_src.Stopped)
 	copy(sys_paused_dst, sys_status_src.Paused)
 	sys_status_dst := InstanceStatus{
 		sys_all_dst,
 		sys_runnig_dst,
+		sys_pending_dst,
 		sys_stopped_dst,
 		sys_paused_dst,
 	}
 	dst.System.Instances = sys_status_dst
+	dst.System.Cpu = src.System.Cpu
 }
 
 func resetEventsStats(srvName string, stats *GruStats) {
@@ -255,6 +264,12 @@ func Start(cError chan error, cStop chan struct{}) {
 				"image": c.Image,
 			}).Warningln("Running monitor")
 		} else {
+			// This is needed becasuse on start I don't have data
+			// to analyze the container, so every running container
+			// is in a pending state
+			if status == "running" {
+				status = "pending"
+			}
 			addResource(c.Id, srv.Name, status, &gruStats, &history)
 			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
 		}
@@ -294,7 +309,7 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 				"error":  err,
 			}).Warnln("Running monitor")
 		} else {
-			addResource(event.Id, srv.Name, "running", &gruStats, &history)
+			addResource(event.Id, srv.Name, "pending", &gruStats, &history)
 			c_evntstart <- event.Id
 		}
 
@@ -328,11 +343,29 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 
 	switch status {
 	case "running":
+		index, err := findIdIndex(id, servStats.Instances.Pending)
 		servStats.Instances.Running = append(servStats.Instances.Running, id)
 		stats.System.Instances.Running = append(stats.System.Instances.Running, id)
+		if err != nil {
+			log.WithField("error", err).Errorln("Cannot find pending instance to promote running")
+		} else {
+			servStats.Instances.Pending = append(
+				servStats.Instances.Pending[:index],
+				servStats.Instances.Pending[index+1:]...)
+
+			sysIndex, _ := findIdIndex(id, stats.System.Instances.Pending)
+			stats.System.Instances.Pending = append(
+				stats.System.Instances.Pending[:sysIndex],
+				stats.System.Instances.Pending[sysIndex+1:]...)
+		}
+	case "pending":
+		servStats.Instances.Pending = append(servStats.Instances.Pending, id)
+		stats.System.Instances.Pending = append(stats.System.Instances.Pending, id)
 
 		index, err := findIdIndex(id, servStats.Instances.Stopped)
-		if err == nil {
+		if err != nil {
+			log.WithField("error", err).Warnln("Cannot find stopped instance to promote pending")
+		} else {
 			servStats.Instances.Stopped = append(
 				servStats.Instances.Stopped[:index],
 				servStats.Instances.Stopped[index+1:]...)
@@ -380,16 +413,32 @@ func removeResource(id string, stats *GruStats, hist *statsHistory) {
 	// Updating service stats
 	srvStats := stats.Service[srvName]
 	running := srvStats.Instances.Running
-	index, _ := findIdIndex(id, running)
-	running = append(running[:index], running[index+1:]...)
-	srvStats.Instances.Running = running
-	srvStats.Instances.Stopped = append(srvStats.Instances.Stopped, id)
+	pending := srvStats.Instances.Pending
 
-	// Updating system stats
-	sysIndex, _ := findIdIndex(id, stats.System.Instances.Running)
-	stats.System.Instances.Running = append(
-		stats.System.Instances.Running[:sysIndex],
-		stats.System.Instances.Running[sysIndex+1:]...)
+	index, err := findIdIndex(id, running)
+	if err != nil {
+		// If it is not runnig it should be pending
+		index, _ = findIdIndex(id, pending)
+		pending = append(pending[:index], pending[index+1:]...)
+		srvStats.Instances.Pending = pending
+
+		// Updating system stats
+		sysIndex, _ := findIdIndex(id, stats.System.Instances.Pending)
+		stats.System.Instances.Pending = append(
+			stats.System.Instances.Pending[:sysIndex],
+			stats.System.Instances.Pending[sysIndex+1:]...)
+	} else {
+		running = append(running[:index], running[index+1:]...)
+		srvStats.Instances.Running = running
+
+		// Updating system stats
+		sysIndex, _ := findIdIndex(id, stats.System.Instances.Running)
+		stats.System.Instances.Running = append(
+			stats.System.Instances.Running[:sysIndex],
+			stats.System.Instances.Running[sysIndex+1:]...)
+	}
+
+	srvStats.Instances.Stopped = append(srvStats.Instances.Stopped, id)
 	stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
 
 	// Upating Event stats

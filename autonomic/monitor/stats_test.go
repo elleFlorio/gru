@@ -4,22 +4,22 @@ import (
 	"testing"
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
-	"github.com/elleFlorio/gru/node"
 )
 
-//TODO ok, I know it is not a very good test...
-func TestMergeStats(t *testing.T) {
-	node.UpdateNode(node.CreateMockNode())
-	stats1 := CreateMockStats()
-	stats2 := CreateMockStats()
-	stats3 := CreateMockStats()
+func TestConvertStatsToData(t *testing.T) {
+	stats_ok := CreateMockStats()
 
-	mockStats := map[string]GruStats{
-		"stats1":           stats1,
-		"stats2":           stats2,
-		node.Config().UUID: stats3,
-	}
+	_, err := convertStatsToData(stats_ok)
+	assert.NoError(t, err, "(ok) stats convertion should produce no error")
+}
 
-	test := mergeStats(mockStats)
-	assert.NotEmpty(t, test, "Merge stats should produce a non empty map")
+func TestConvertDataToStats(t *testing.T) {
+	data_ok, err := convertStatsToData(CreateMockStats())
+	data_bad := []byte{}
+
+	_, err = ConvertDataToStats(data_ok)
+	assert.NoError(t, err, "(ok) data convertion should produce no error")
+
+	_, err = ConvertDataToStats(data_bad)
+	assert.Error(t, err, "(bad) data convertion should produce an error")
 }
