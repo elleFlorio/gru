@@ -2,6 +2,8 @@ package storage
 
 import (
 	"errors"
+
+	"github.com/elleFlorio/gru/enum"
 )
 
 var (
@@ -23,51 +25,59 @@ func (p *internal) Initialize() error {
 	return nil
 }
 
-func (p *internal) StoreData(key string, data []byte, dataType string) error {
+func (p *internal) StoreData(key string, data []byte, dataType enum.Datatype) error {
 	switch dataType {
-	case "stats":
+	case enum.STATS:
 		p.statsData[key] = data
-	default:
-		return ErrInvalidDataType
+	case enum.ANALYTICS:
+		p.analyticsData[key] = data
 	}
 
 	return nil
 }
 
-func (p *internal) GetData(key string, dataType string) ([]byte, error) {
+func (p *internal) GetData(key string, dataType enum.Datatype) ([]byte, error) {
+	var data []byte
 	switch dataType {
-	case "stats":
-		return p.statsData[key], nil
+	case enum.STATS:
+		data = p.statsData[key]
+	case enum.ANALYTICS:
+		data = p.analyticsData[key]
 	}
 
-	return nil, ErrInvalidDataType
+	return data, nil
 }
 
-func (p *internal) GetAllData(dataType string) (map[string][]byte, error) {
+func (p *internal) GetAllData(dataType enum.Datatype) (map[string][]byte, error) {
+	var data map[string][]byte
 	switch dataType {
-	case "stats":
-		return p.statsData, nil
+	case enum.STATS:
+		data = p.statsData
+	case enum.ANALYTICS:
+		data = p.analyticsData
 	}
 
-	return nil, ErrInvalidDataType
+	return data, nil
 }
 
-func (p *internal) DeleteData(key string, dataType string) error {
+func (p *internal) DeleteData(key string, dataType enum.Datatype) error {
 	switch dataType {
-	case "stats":
+	case enum.STATS:
 		delete(p.statsData, key)
-		return nil
+	case enum.ANALYTICS:
+		delete(p.analyticsData, key)
 	}
 
-	return ErrInvalidDataType
+	return nil
 }
 
-func (p *internal) DeleteAllData(dataType string) error {
+func (p *internal) DeleteAllData(dataType enum.Datatype) error {
 	switch dataType {
-	case "stats":
+	case enum.STATS:
 		p.statsData = make(map[string][]byte)
-		return nil
+	case enum.ANALYTICS:
+		p.analyticsData = make(map[string][]byte)
 	}
 
-	return ErrInvalidDataType
+	return nil
 }
