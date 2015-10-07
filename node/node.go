@@ -10,35 +10,15 @@ import (
 	"github.com/elleFlorio/gru/utils"
 )
 
-type Node struct {
-	UUID        string      `json:"uuid"`
-	Name        string      `json:"name"`
-	Constraints Constraints `json:"constraints"`
-	Resources   Resources   `json:resources`
-}
-
-type Constraints struct {
-	CpuMin       float64 `json:"cpumin"`
-	CpuMax       float64 `json:"cpumax"`
-	MaxInstances int     `json:"maxinstances"` // TODO this will ne removed
-}
-
-type Resources struct {
-	TotalMemory int64 `json:"totalmemory"`
-	TotalCpus   int64 `json:"totalcpus"`
-	usedMemory  int64 `json:"usedmemory"`
-	usedCpu     int64 `json:"usedcpu"`
-}
-
-var node Node
+var config Node
 
 func LoadNodeConfig(filename string) error {
-	node.UUID, _ = utils.GenerateUUID()
+	config.UUID, _ = utils.GenerateUUID()
 
 	log.WithField("status", "start").Infoln("Node configuration loading")
 	defer log.WithFields(log.Fields{
 		"status": "done",
-		"UUID":   node.UUID,
+		"UUID":   config.UUID,
 	}).Infoln("Node configuration loading")
 
 	tmp, err := ioutil.ReadFile(filename)
@@ -46,7 +26,7 @@ func LoadNodeConfig(filename string) error {
 		log.WithField("error", err).Errorln("Error reading node configuration file")
 		return err
 	}
-	err = json.Unmarshal(tmp, &node)
+	err = json.Unmarshal(tmp, &config)
 	if err != nil {
 		log.WithField("error", err).Errorln("Error unmarshaling node configuration file")
 		return err
@@ -55,15 +35,14 @@ func LoadNodeConfig(filename string) error {
 	return nil
 }
 
-//Use overcommit ratio?
 func ComputeTotalResources() {
 	info, err := container.Docker().Client.Info()
 	if err != nil {
 		log.WithField("error", err).Errorln("Error reading total resources")
 		return
 	}
-	node.Resources.TotalCpus = info.NCPU
-	node.Resources.TotalMemory = info.MemTotal
+	config.Resources.TotalCpus = info.NCPU
+	config.Resources.TotalMemory = info.MemTotal
 }
 
 func UsedCpus() (int64, error) {
@@ -83,7 +62,7 @@ func UsedCpus() (int64, error) {
 		cpus += cData.Config.CpuShares
 	}
 
-	node.Resources.TotalCpus = cpus
+	config.Resources.UsedCpu = cpus
 
 	return cpus, nil
 }
@@ -105,15 +84,15 @@ func UsedMemory() (int64, error) {
 		memory += cData.Config.Memory
 	}
 
-	node.Resources.TotalMemory = memory
+	config.Resources.UsedMemory = memory
 
 	return memory, nil
 }
 
 func Config() Node {
-	return node
+	return config
 }
 
-func UpdateNode(newNode Node) {
-	node = newNode
+func UpdateNodeConfig(newNode Node) {
+	config = newNode
 }

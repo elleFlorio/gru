@@ -10,9 +10,18 @@ func CreateMockNode() Node {
 		CpuMax:       0.8,
 		MaxInstances: 10, //TODO this will be removed
 	}
+
+	mockResources := Resources{
+		TotalMemory: int64(8 * 1024 * 1024 * 1024),
+		TotalCpus:   int64(4),
+		UsedMemory:  int64(0),
+		UsedCpu:     int64(0),
+	}
+
 	mockNode := Node{
 		UUID:        "abcdefghi",
 		Constraints: mockConstraints,
+		Resources:   mockResources,
 	}
 
 	return mockNode

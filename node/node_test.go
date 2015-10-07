@@ -21,6 +21,6 @@ func TestLoadNodeConfig(t *testing.T) {
 		assert.Equal(t, 10, config.Constraints.MaxInstances, "Node max instances should be 10")
 	}
 
-	UpdateNode(Node{})
+	UpdateNodeConfig(Node{})
 	os.Remove(tmpFile)
 }
