@@ -7,24 +7,7 @@ import (
 	"path/filepath"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 )
-
-type Service struct {
-	Name            string                       `json:"name"`
-	Type            string                       `json:"type"`
-	Image           string                       `json:"image"`
-	Constraints     Constraints                  `json:"constraints"`
-	ContainerConfig dockerclient.ContainerConfig `json:"containerconfig"`
-	HostConfig      dockerclient.HostConfig      `json:"hostconfig"`
-}
-
-type Constraints struct {
-	CpuMax    float64 `json:"cpumax"`
-	CpuMin    float64 `json:"cpumin"`
-	MinActive int     `json:"minactive"`
-	MaxActive int     `json:"maxactive"`
-}
 
 var (
 	services         []Service

@@ -18,6 +18,12 @@ func CreateMockFiles() string {
             "Constraints":{
                 "CpuMax":0.3,
                 "CpuMin":0.3
+            },
+            "Configuration":{
+            	"Cmd":[
+				"say",
+				"yeah!"
+				]
             }
 
         }`
@@ -29,6 +35,9 @@ func CreateMockFiles() string {
             "Constraints":{
                 "MinActive":1,
                 "MaxActive":3
+            },
+            "Configuration":{
+            	"Memory": "1G"
             }
         }`
 
@@ -38,7 +47,12 @@ func CreateMockFiles() string {
             "Image":"test/mysql",
             "Constraints":{
                 "MinActive":1
+            },
+            "Configuration":{
+            	"CpuShares":512,
+            	"CpuSet":1
             }
+
         }`
 
 	tmpdir, err := ioutil.TempDir("", "gru_test_services")
