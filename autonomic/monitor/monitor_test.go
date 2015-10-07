@@ -4,7 +4,15 @@ import (
 	"testing"
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+
+	"github.com/elleFlorio/gru/storage"
 )
+
+func init() {
+	//Initialize storage
+	datastore, _ := storage.New("internal")
+	datastore.Initialize()
+}
 
 func TestUpdateRunningInstances(t *testing.T) {
 	mockStats := CreateMockStats()

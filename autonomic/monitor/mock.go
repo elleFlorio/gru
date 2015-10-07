@@ -11,6 +11,11 @@ func ListMockServices() []string {
 	}
 }
 
+func StoreMockStats() {
+	stats := CreateMockStats()
+	saveStats(stats)
+}
+
 func MaxNumberOfEntryInHistory() int {
 	return maxHistory
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 
 	"github.com/elleFlorio/gru/container"
-	"github.com/elleFlorio/gru/node"
+	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
@@ -25,9 +25,6 @@ var (
 //History window
 const W_SIZE = 50
 const W_MULT = 1000
-
-//My data type
-const dataType string = "stats"
 
 func init() {
 	gruStats = GruStats{
@@ -49,13 +46,10 @@ func Run() {
 		computeServiceCpuPerc(name, &gruStats)
 	}
 	computeSystemCpu(&gruStats)
-
 	makeSnapshot(&gruStats, &snapshot)
-	data, err := convertStatsToData(snapshot)
+	err := saveStats(snapshot)
 	if err != nil {
-		log.WithField("error", "Cannot convert stats to data").Debugln("Running monitor")
-	} else {
-		storage.DataStore().StoreData(node.Config().UUID, data, "stats")
+		log.WithField("error", "Stats data not saved").Errorln("Running monitor")
 	}
 
 	services := service.List()
@@ -181,24 +175,6 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		dst.Instance[id] = inst_dst
 	}
 
-	// PROBABLY NOT NEEDED ANYMORE
-	// for k, v := range history.instance {
-	// 	instCpuHist := v.cpu.totalUsage.Slice()
-	// 	instCpuSysHist := v.cpu.sysUsage.Slice()
-	// 	instCpu_dst := make([]float64, len(instCpuHist), len(instCpuHist))
-	// 	copy(instCpu_dst, instCpuHist)
-	// 	instCpuSys_dst := make([]float64, len(instCpuSysHist), len(instCpuSysHist))
-	// 	copy(instCpuSys_dst, instCpuSysHist)
-	// 	cpuStats_dst := CpuStats{
-	// 		TotalUsage: instCpu_dst,
-	// 		SysUsage:   instCpuSys_dst,
-	// 	}
-	// 	instStats_dst := InstanceStats{
-	// 		Cpu: cpuStats_dst,
-	// 	}
-	// 	dst.Instance[k] = instStats_dst
-	// }
-
 	//Copy system stats
 	sys_status_src := src.System.Instances
 	sys_all_dst := make([]string, len(sys_status_src.All), len(sys_status_src.All))
@@ -220,6 +196,18 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 	}
 	dst.System.Instances = sys_status_dst
 	dst.System.Cpu = src.System.Cpu
+}
+
+func saveStats(stats GruStats) error {
+	data, err := convertStatsToData(stats)
+	if err != nil {
+		log.WithField("error", "Cannot convert stats to data").Debugln("Running monitor")
+		return err
+	} else {
+		storage.StoreLocalData(data, enum.STATS)
+	}
+
+	return nil
 }
 
 func resetEventsStats(srvName string, stats *GruStats) {
