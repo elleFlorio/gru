@@ -5,13 +5,13 @@ import (
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
+	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
 
 func init() {
 	//Initialize storage
-	datastore, _ := storage.New("internal")
-	datastore.Initialize()
+	storage.New("internal")
 }
 
 func TestUpdateRunningInstances(t *testing.T) {
@@ -196,4 +196,12 @@ func TestFindIdIndex(t *testing.T) {
 
 	index, _ := findIdIndex("instance1_3", instances)
 	assert.Equal(t, 2, index, "index of 'instance3' should be 2")
+}
+
+func TestRun(t *testing.T) {
+	gruStats = CreateMockStats()
+	history = CreateMockHistory()
+	service.UpdateServices(service.CreateMockServices())
+
+	assert.NotPanics(t, Run)
 }

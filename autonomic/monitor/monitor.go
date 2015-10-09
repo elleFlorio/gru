@@ -47,6 +47,7 @@ func Run() {
 	}
 	computeSystemCpu(&gruStats)
 	makeSnapshot(&gruStats, &snapshot)
+	updateServicesInstances(snapshot)
 	err := saveStats(snapshot)
 	if err != nil {
 		log.WithField("error", "Stats data not saved").Errorln("Running monitor")
@@ -146,7 +147,7 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		copy(pending_dst, status_src.Pending)
 		copy(stopped_dst, status_src.Stopped)
 		copy(paused_dst, status_src.Paused)
-		status_dst := InstanceStatus{
+		status_dst := service.InstanceStatus{
 			all_dst,
 			runnig_dst,
 			pending_dst,
@@ -187,7 +188,7 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 	copy(sys_pending_dst, sys_status_src.Pending)
 	copy(sys_stopped_dst, sys_status_src.Stopped)
 	copy(sys_paused_dst, sys_status_src.Paused)
-	sys_status_dst := InstanceStatus{
+	sys_status_dst := service.InstanceStatus{
 		sys_all_dst,
 		sys_runnig_dst,
 		sys_pending_dst,
@@ -196,6 +197,13 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 	}
 	dst.System.Instances = sys_status_dst
 	dst.System.Cpu = src.System.Cpu
+}
+
+func updateServicesInstances(stats GruStats) {
+	for name, item := range stats.Service {
+		srv, _ := service.GetServiceByName(name)
+		srv.Instances = item.Instances
+	}
 }
 
 func saveStats(stats GruStats) error {

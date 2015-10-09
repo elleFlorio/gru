@@ -1,6 +1,10 @@
 package monitor
 
-import "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
+import (
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
+
+	"github.com/elleFlorio/gru/service"
+)
 
 const maxHistory = 6
 
@@ -30,7 +34,7 @@ func CreateMockStats() GruStats {
 		Stop:  []string{"instance1_0"},
 		Start: []string{"instance1_4"},
 	}
-	instances1 := InstanceStatus{
+	instances1 := service.InstanceStatus{
 		All:     all1,
 		Running: running1,
 		Pending: pending1,
@@ -49,7 +53,7 @@ func CreateMockStats() GruStats {
 
 	all2 := []string{"instance2_1"}
 	running2 := []string{"instance2_1"}
-	instances2 := InstanceStatus{
+	instances2 := service.InstanceStatus{
 		All:     all2,
 		Running: running2,
 	}
@@ -89,7 +93,7 @@ func CreateMockStats() GruStats {
 	pendingSys := []string{"instance1_3", "instance1_4"}
 	stoppedSys := []string{"instance1_0"}
 	pausedSys := []string{}
-	instancesSys := InstanceStatus{
+	instancesSys := service.InstanceStatus{
 		All:     allSys,
 		Running: runningSys,
 		Pending: pendingSys,

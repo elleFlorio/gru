@@ -5,6 +5,8 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
+
+	"github.com/elleFlorio/gru/service"
 )
 
 type GruStats struct {
@@ -14,17 +16,9 @@ type GruStats struct {
 }
 
 type ServiceStats struct {
-	Instances InstanceStatus `json:"instances"`
-	Events    EventStats     `json:"events"`
-	Cpu       CpuStats       `json:"cpu"`
-}
-
-type InstanceStatus struct {
-	All     []string `json:"all"`
-	Running []string `json:"running"`
-	Pending []string `json:"pending"`
-	Stopped []string `json:"stopped"`
-	Paused  []string `json:"paused"`
+	Instances service.InstanceStatus `json:"instances"`
+	Events    EventStats             `json:"events"`
+	Cpu       CpuStats               `json:"cpu"`
 }
 
 type EventStats struct {
@@ -42,8 +36,8 @@ type InstanceStats struct {
 }
 
 type SystemStats struct {
-	Instances InstanceStatus `json:"instances"`
-	Cpu       float64        `json:"cpu"`
+	Instances service.InstanceStatus `json:"instances"`
+	Cpu       float64                `json:"cpu"`
 }
 
 type statsHistory struct {
