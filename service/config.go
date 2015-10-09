@@ -1,11 +1,20 @@
 package service
 
 type Service struct {
-	Name          string      `json:"name"`
-	Type          string      `json:"type"`
-	Image         string      `json:"image"`
-	Constraints   Constraints `json:"constraints"` //Needed?
-	Configuration Config      `json: "configuration"`
+	Name          string         `json:"name"`
+	Type          string         `json:"type"`
+	Image         string         `json:"image"`
+	Instances     InstanceStatus `json:"instances"`
+	Constraints   Constraints    `json:"constraints"` //Needed?
+	Configuration Config         `json: "configuration"`
+}
+
+type InstanceStatus struct {
+	All     []string `json:"all"`
+	Running []string `json:"running"`
+	Pending []string `json:"pending"`
+	Stopped []string `json:"stopped"`
+	Paused  []string `json:"paused"`
 }
 
 // This can maybe be eliminated
