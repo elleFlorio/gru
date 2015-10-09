@@ -6,8 +6,16 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/monitor"
+	"github.com/elleFlorio/gru/enum"
+	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/storage"
+	"github.com/elleFlorio/gru/utils"
 )
+
+const dataType string = "analytics"
+const statsDataType string = "stats"
+const overcommitratio float64 = 0.25
 
 var (
 	gruAnalytics          GruAnalytics
@@ -16,196 +24,318 @@ var (
 
 func init() {
 	gruAnalytics = GruAnalytics{
-		Service:  make(map[string]ServiceAnalytics),
-		Instance: make(map[string]InstanceAnalytics),
+		Service: make(map[string]ServiceAnalytics),
 	}
 }
 
-func GetNodeAnalytics() GruAnalytics {
-	services := GetServicesAanalytics()
-	instances := GetInstancesAanalytics()
-	system := GetSystemAnalytics()
-
-	return GruAnalytics{
-		services,
-		instances,
-		system,
-	}
-
-}
-
-func GetServiceAanalytics(name string) ServiceAnalytics {
-	return gruAnalytics.Service[name]
-}
-
-func GetServicesAanalytics() map[string]ServiceAnalytics {
-	return gruAnalytics.Service
-}
-
-func GetInstanceAanalytics(id string) InstanceAnalytics {
-	return gruAnalytics.Instance[id]
-}
-
-func GetInstancesAanalytics() map[string]InstanceAnalytics {
-	return gruAnalytics.Instance
-}
-
-func GetSystemAnalytics() SystemAnalytics {
-	return gruAnalytics.System
-}
-
-func Run(stats monitor.GruStats) GruAnalytics {
+func Run() {
 	log.WithField("status", "start").Debugln("Running analyzer")
 	defer log.WithField("status", "done").Debugln("Running analyzer")
 
-	sysCpuPerc := 0.0
+	stats, err := retrieveStats()
+	if err != nil {
+		log.WithField("error", "Cannot compute analytics").Errorln("Running Analyzer.")
+	} else {
+		storage.DeleteData(enum.CLUSTER.ToString(), enum.ANALYTICS)
+		updateNodeResources()
+		analyzeServices(&gruAnalytics, stats)
+		analyzeSystem(&gruAnalytics, stats)
+		computeNodeHealth(&gruAnalytics)
+		analyzeCluster(&gruAnalytics)
+		err = saveAnalytics(gruAnalytics)
+		if err != nil {
+			log.WithField("error", "Cluster analytics data not saved ").Errorln("Running Analyzer")
+		}
+	}
+}
+
+func retrieveStats() (monitor.GruStats, error) {
+	stats := monitor.GruStats{}
+	dataStats, err := storage.GetLocalData(enum.STATS)
+	if err != nil {
+		log.WithField("error", err).Errorln("Cannot retrieve stats data.")
+	} else {
+		stats, err = monitor.ConvertDataToStats(dataStats)
+	}
+
+	return stats, err
+}
+
+func updateNodeResources() {
+	_, err := node.UsedCpus()
+	if err != nil {
+		log.WithField("error", err).Errorln("Computing node used CPU")
+	}
+	_, err = node.UsedMemory()
+	if err != nil {
+		log.WithField("error", err).Errorln("Computing node used memory")
+	}
+}
+
+func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
+	for name, value := range stats.Service {
+		//TODO some labels are not yet ready
+		temp := 0.0
+		loadLabel := enum.FromValue(temp)
+		cpuLabel := enum.FromValue(value.Cpu.Tot)
+		memLabel := enum.FromValue(temp)
+		srvResources := computeServiceResources(name)
+		instances := value.Instances
+
+		health := (loadLabel + cpuLabel + memLabel + srvResources) / 4 //I don't like this...
+
+		srvRes := ResourcesAnalytics{
+			cpuLabel,
+			memLabel,
+			srvResources,
+		}
+
+		srvAnalytics := ServiceAnalytics{
+			loadLabel,
+			srvRes,
+			instances,
+			health,
+		}
+
+		analytics.Service[name] = srvAnalytics
+	}
+}
+
+func computeServiceResources(name string) enum.Label {
+	nodeMem := node.Config().Resources.TotalMemory
+	nodeCpu := node.Config().Resources.TotalCpus
+	nodeUsedMem := node.Config().Resources.UsedMemory
+	nodeUsedCpu := node.Config().Resources.UsedCpu
+
+	srv, _ := service.GetServiceByName(name)
+	//I use CpuSetValue despite Swarm
+	//srvCpu := srv.Configuration.CpuShares
+	srvCpu := srv.Configuration.CpuSet
+	srvMem, err := utils.RAMInBytes(srv.Configuration.Memory)
+	if err != nil {
+		log.WithField("error", err).Errorln("Cannot convert service RAM in Bytes.")
+		return enum.RED
+	}
+
+	var (
+		cpuScore float64 = 1
+		memScore float64 = 1
+		weight   float64 = 1
+	)
+
+	if nodeMem < int64(srvMem) || nodeCpu < int64(srvCpu) {
+		return enum.RED
+	}
+
+	nodeCpuOverCommit := (float64(nodeCpu) * overcommitratio) + float64(nodeCpu)
+	nodeMemOverCommit := (float64(nodeMem) * overcommitratio) + float64(nodeMem)
+
+	if srvCpu > 0 {
+		cpuScore = float64(nodeUsedCpu+srvCpu) / nodeCpuOverCommit
+	}
+
+	if srvMem > 0 {
+		memScore = float64(nodeUsedMem+srvMem) / nodeMemOverCommit
+	}
+
+	if cpuScore <= 1.0 && memScore <= 1.0 {
+		weight = (cpuScore + memScore) / 2
+	}
+
+	return enum.FromValue(weight)
+
+}
+
+func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
+	sysSrvs := []string{}
+	for name, _ := range stats.Service {
+		sysSrvs = append(sysSrvs, name)
+	}
+
+	temp := 0.0
+	cpuLabel := enum.FromValue(stats.System.Cpu)
+	memLabel := enum.FromValue(temp)
+	resLabel := computeSystemResources()
+	instances := stats.System.Instances
+
+	health := resLabel //Ok, maybe this is a bit... "mah"...
+
+	sysRes := ResourcesAnalytics{
+		cpuLabel,
+		memLabel,
+		resLabel,
+	}
+
+	SystemAnalytics := SystemAnalytics{
+		sysSrvs,
+		sysRes,
+		instances,
+		health,
+	}
+
+	gruAnalytics.System = SystemAnalytics
+}
+
+func computeSystemResources() enum.Label {
+	totalCpu := float64(node.Config().Resources.TotalCpus)
+	totalMemory := float64(node.Config().Resources.TotalMemory)
+	usedCpu := float64(node.Config().Resources.UsedCpu)
+	usedMemory := float64(node.Config().Resources.UsedMemory)
+
+	cpuRatio := usedCpu / totalCpu
+	memRatio := usedMemory / totalMemory
+	avgRatio := (cpuRatio + memRatio) / 2
+
+	return enum.FromValue(avgRatio)
+}
+
+func computeNodeHealth(analytics *GruAnalytics) {
+	nServices := len(analytics.Service)
+	sumHealth := 0.0
+	for _, value := range analytics.Service {
+		sumHealth += value.Health.Value()
+	}
+	srvAvgHealth := sumHealth / float64(nServices)
+
+	sysHealth := analytics.System.Health.Value()
+
+	totHealth := (srvAvgHealth + sysHealth) / 2
+	totHealthLabel := enum.FromValue(totHealth)
+
+	analytics.Health = totHealthLabel
+}
+
+func analyzeCluster(analytics *GruAnalytics) {
+	peers := getPeersAnalytics()
+	computeServicesAvg(peers, analytics)
+	computeClusterAvg(peers, analytics)
+}
+
+func getPeersAnalytics() []GruAnalytics {
+	peers := make([]GruAnalytics, 0)
+	dataAn, _ := storage.GetAllData(enum.ANALYTICS)
+	for _, data := range dataAn {
+		a, _ := ConvertDataToAnalytics(data)
+		peers = append(peers, a)
+	}
+
+	return peers
+}
+
+func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
+	avg := make(map[string]ServiceAnalytics)
 
 	for _, name := range service.List() {
-		updateInstances(name, &gruAnalytics, &stats, monitor.W_SIZE)
-		if len(gruAnalytics.Service[name].Instances.Active) < 1 {
-			log.WithFields(log.Fields{
-				"status":  "analyzing",
-				"service": name,
-				"pending": len(gruAnalytics.Service[name].Instances.Pending),
-				"error":   ErrNoRunningInstances,
-			}).Warnln("Running analyzer")
-		} else {
-			cpuTot, cpuAvg := computeServiceCpuPerc(name, &gruAnalytics, &stats)
-			log.WithFields(log.Fields{
-				"status":  "analyzing",
-				"service": name,
-				"CpuTot":  cpuTot,
-				"CpuAvg":  cpuAvg,
-			}).Debugln("Running analyzer")
+		active := []ServiceAnalytics{}
+		var avgSa ServiceAnalytics
 
-			srv := gruAnalytics.Service[name]
-			srv.CpuTot = cpuTot
-			srv.CpuAvg = cpuAvg
-			gruAnalytics.Service[name] = srv
+		if ls, ok := analytics.Service[name]; ok {
+			active = append(active, ls)
+		}
 
-			sysCpuPerc += cpuTot
+		for _, peer := range peers {
+			if ps, ok := peer.Service[name]; ok {
+				active = append(active, ps)
+			}
+		}
+
+		if len(active) > 1 {
+			avgSa = active[0]
+			active = active[1:]
+
+			sumLoad := avgSa.Load.Value()
+			sumCpu := avgSa.Resources.Cpu.Value()
+			sumMem := avgSa.Resources.Memory.Value()
+			sumH := avgSa.Health.Value()
+
+			for _, actv := range active {
+				//LABELS
+				sumLoad += actv.Load.Value()
+				sumCpu += actv.Resources.Cpu.Value()
+				sumMem += actv.Resources.Memory.Value()
+				sumH += actv.Health.Value()
+
+				//INSTANCES
+				avgSa.Instances.All = append(avgSa.Instances.All, actv.Instances.All...)
+				avgSa.Instances.Running = append(avgSa.Instances.Running, actv.Instances.Running...)
+				avgSa.Instances.Pending = append(avgSa.Instances.Pending, actv.Instances.Pending...)
+				avgSa.Instances.Stopped = append(avgSa.Instances.Stopped, actv.Instances.Stopped...)
+				avgSa.Instances.Paused = append(avgSa.Instances.Paused, actv.Instances.Paused...)
+			}
+
+			total := float64(len(active) + 1)
+			avgLoad := sumLoad / total
+			avgCpu := sumCpu / total
+			avgMem := sumMem / total
+			avgH := sumH / total
+
+			avgSa.Load = enum.FromLabelValue(avgLoad)
+			avgSa.Resources.Cpu = enum.FromLabelValue(avgCpu)
+			avgSa.Resources.Memory = enum.FromLabelValue(avgMem)
+			avgSa.Health = enum.FromLabelValue(avgH)
+
+			avg[name] = avgSa
+
+		} else if len(active) == 1 {
+			avg[name] = active[0]
 		}
 	}
 
-	gruAnalytics.System.Cpu.CpuPerc = sysCpuPerc
-	updateSystemInstances(&gruAnalytics)
-
-	log.WithFields(log.Fields{
-		"status":   "analyzing",
-		"CpuTotal": sysCpuPerc,
-	}).Debugln("Running analyzer")
-
-	return gruAnalytics
+	analytics.Service = avg
 }
 
-func updateInstances(name string, analytics *GruAnalytics, stats *monitor.GruStats, numberOfData int) {
-	srvStats := stats.Service[name]
-	srvAnalytics := analytics.Service[name]
+func computeClusterAvg(peers []GruAnalytics, analytics *GruAnalytics) {
+	clstrSrvs := []string{}
+	var sumCpu float64 = 0
+	var sumMem float64 = 0
+	var sumH float64 = 0
 
-	srvAnalytics.Instances.All = srvStats.Instances.All
-	active, pending := getActiveInstances(srvStats.Instances.Running, stats, numberOfData)
-
-	srvAnalytics.Instances.Active = active
-	srvAnalytics.Instances.Pending = pending
-	srvAnalytics.Instances.Stopped = srvStats.Instances.Stopped
-	srvAnalytics.Instances.Paused = srvStats.Instances.Paused
-
-	log.WithFields(log.Fields{
-		"status":  "instance updated",
-		"service": name,
-		"all":     len(srvAnalytics.Instances.All),
-		"pending": len(srvAnalytics.Instances.Pending),
-		"active":  len(srvAnalytics.Instances.Active),
-		"stopped": len(srvAnalytics.Instances.Stopped),
-		"paused":  len(srvAnalytics.Instances.Paused),
-	}).Debugln("Running analyzer")
-
-	analytics.Service[name] = srvAnalytics
-
-	toBeRemoved := srvStats.Events.Stop
-	for _, stopped := range toBeRemoved {
-		delete(analytics.Instance, stopped)
+	for _, peer := range peers {
+		clstrSrvs = checkAndAppend(clstrSrvs, peer.System.Services)
+		sumCpu += peer.System.Resources.Cpu.Value()
+		sumMem += peer.System.Resources.Memory.Value()
+		sumH += peer.System.Health.Value()
 	}
+
+	clstrSrvs = checkAndAppend(clstrSrvs, analytics.System.Services)
+	total := float64(len(peers) + 1)
+	avgCpu := (analytics.System.Resources.Cpu.Value() + sumCpu) / total
+	avgMem := (analytics.System.Resources.Memory.Value() + sumMem) / total
+	avgH := (analytics.System.Health.Value() + sumH) / total
+
+	analytics.Cluster.Services = clstrSrvs
+	analytics.Cluster.ResourcesAnalytics.Cpu = enum.FromLabelValue(avgCpu)
+	analytics.Cluster.ResourcesAnalytics.Memory = enum.FromLabelValue(avgMem)
+	analytics.Cluster.Health = enum.FromLabelValue(avgH)
 }
 
-func getActiveInstances(running []string, stats *monitor.GruStats, numberOfData int) ([]string, []string) {
-	active := []string{}
-	pending := []string{}
+func checkAndAppend(slice []string, values []string) []string {
+	var notContains bool
+	for _, value := range values {
+		notContains = true
+		for _, item := range slice {
+			if item == value {
+				notContains = false
+			}
+		}
 
-	for _, id := range running {
-		instHistory := stats.Instance[id].Cpu.TotalUsage
-		if len(instHistory) < numberOfData {
-			pending = append(pending, id)
-		} else {
-			active = append(active, id)
+		if notContains {
+			slice = append(slice, value)
 		}
 	}
 
-	return active, pending
+	return slice
 }
 
-func computeServiceCpuPerc(name string, analytics *GruAnalytics, stats *monitor.GruStats) (float64, float64) {
-	sum := 0.0
-	avg := 0.0
-	active := analytics.Service[name].Instances.Active
-
-	for _, id := range active {
-		instCpus := stats.Instance[id].Cpu.TotalUsage
-		sysCpus := stats.Instance[id].Cpu.SysUsage
-		instCpuAvg := computeInstanceCpuPerc(instCpus, sysCpus)
-		inst := analytics.Instance[id]
-		inst.Cpu.CpuPerc = instCpuAvg
-		analytics.Instance[id] = inst
-		sum += instCpuAvg
+// This is trivial, but improve readability
+func saveAnalytics(analytics GruAnalytics) error {
+	data, err := convertAnalyticsToData(analytics)
+	if err != nil {
+		log.WithField("error", "Cannot convert analytics to data").Debugln("Running Analyzer")
+		return err
+	} else {
+		storage.StoreData(enum.CLUSTER.ToString(), data, enum.ANALYTICS)
 	}
 
-	avg = sum / float64(len(active))
-
-	return sum, avg
-}
-
-// Since linux compute the cpu usage in units of jiffies, it needs to be converted
-// in % using the formula used in this function.
-// Explaination: http://stackoverflow.com/questions/1420426/calculating-cpu-usage-of-a-process-in-linux
-func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
-	sum := 0.0
-	instNext := 0.0
-	sysNext := 0.0
-	instPrev := 0.0
-	sysPrev := 0.0
-	cpu := 0.0
-
-	for i := 1; i < len(instCpus); i++ {
-		instPrev = instCpus[i-1]
-		sysPrev = sysCpus[i-1]
-		instNext = instCpus[i]
-		sysNext = sysCpus[i]
-		instDelta := instNext - instPrev
-		sysDelta := sysNext - sysPrev
-		if sysDelta == 0 {
-			cpu = 0
-		} else {
-			// "100 * cpu" should produce values in [0, 100]
-			cpu = instDelta / sysDelta
-		}
-		sum += cpu
-	}
-	return sum / float64(len(instCpus)-1)
-}
-
-func updateSystemInstances(analytics *GruAnalytics) {
-	analytics.System.Instances.All = make([]string, 0)
-	analytics.System.Instances.Active = make([]string, 0)
-	analytics.System.Instances.Pending = make([]string, 0)
-	analytics.System.Instances.Paused = make([]string, 0)
-	analytics.System.Instances.Stopped = make([]string, 0)
-
-	for _, v := range analytics.Service {
-		srvInst := v.Instances
-		analytics.System.Instances.All = append(analytics.System.Instances.All, srvInst.All...)
-		analytics.System.Instances.Active = append(analytics.System.Instances.Active, srvInst.Active...)
-		analytics.System.Instances.Pending = append(analytics.System.Instances.Pending, srvInst.Pending...)
-		analytics.System.Instances.Stopped = append(analytics.System.Instances.Stopped, srvInst.Stopped...)
-		analytics.System.Instances.Paused = append(analytics.System.Instances.Paused, srvInst.Paused...)
-	}
+	return nil
 }

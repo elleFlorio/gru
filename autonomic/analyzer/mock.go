@@ -2,24 +2,21 @@ package analyzer
 
 import (
 	"github.com/elleFlorio/gru/autonomic/monitor"
+	"github.com/elleFlorio/gru/service"
 )
 
+//FIXME when Analyzer is ready update mock generation
 func CreateMockAnalytics() GruAnalytics {
 	mockAnalytics := GruAnalytics{
-		Service:  make(map[string]ServiceAnalytics),
-		Instance: make(map[string]InstanceAnalytics),
+		Service: make(map[string]ServiceAnalytics),
 	}
+	mockServices := service.CreateMockServices()
+	service.UpdateServices(mockServices)
 	mockStats := monitor.CreateMockStats()
 
-	for _, name := range monitor.ListMockServices() {
-		updateInstances(name, &mockAnalytics, &mockStats, monitor.MaxNumberOfEntryInHistory())
-		mockCpuTot, mockCpuAvg := computeServiceCpuPerc(name, &mockAnalytics, &mockStats)
-		mockSrv := mockAnalytics.Service[name]
-		mockSrv.CpuTot = mockCpuTot
-		mockSrv.CpuAvg = mockCpuAvg
-		mockAnalytics.Service[name] = mockSrv
-		updateSystemInstances(&mockAnalytics)
-	}
+	analyzeServices(&mockAnalytics, mockStats)
+	analyzeSystem(&mockAnalytics, mockStats)
+	computeNodeHealth(&mockAnalytics)
 
 	return mockAnalytics
 }
