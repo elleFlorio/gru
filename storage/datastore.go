@@ -8,9 +8,6 @@ import (
 	"github.com/elleFlorio/gru/enum"
 )
 
-//Local data key
-const local string = "local"
-
 type Storage interface {
 	Name() string
 	Initialize() error
@@ -38,22 +35,55 @@ func New(name string) (Storage, error) {
 	for index, dtstr := range dataStores {
 		if name == dtstr.Name() {
 			dataStore = index
-			log.WithField("name", dtstr.Name()).Debugln("Initializing storage")
-			return dataStores[index], nil
+			log.WithField("name", name).Debugln("Initializing datastore")
+			err := dataStores[dataStore].Initialize()
+			return dataStores[index], err
 		}
 	}
 
 	return dataStores[dataStore], ErrNotSupported
 }
 
-func DataStore() Storage {
+func Initialize() error {
+	return client().Initialize()
+}
+
+func client() Storage {
 	return dataStores[dataStore]
 }
 
+func StoreData(key string, data []byte, dataType enum.Datatype) error {
+	return client().StoreData(key, data, dataType)
+}
+
+func GetData(key string, dataType enum.Datatype) ([]byte, error) {
+	return client().GetData(key, dataType)
+}
+
+func GetAllData(dataType enum.Datatype) (map[string][]byte, error) {
+	return client().GetAllData(dataType)
+}
+
+func DeleteData(key string, dataType enum.Datatype) error {
+	return client().DeleteData(key, dataType)
+}
+
+func DeleteAllData(dataType enum.Datatype) error {
+	return client().DeleteAllData(dataType)
+}
+
 func GetLocalData(dataType enum.Datatype) ([]byte, error) {
-	return DataStore().GetData(local, dataType)
+	return client().GetData(enum.LOCAL.ToString(), dataType)
 }
 
 func StoreLocalData(data []byte, dataType enum.Datatype) error {
-	return DataStore().StoreData(local, data, dataType)
+	return client().StoreData(enum.LOCAL.ToString(), data, dataType)
+}
+
+func GetClusterData(dataType enum.Datatype) ([]byte, error) {
+	return client().GetData(enum.CLUSTER.ToString(), dataType)
+}
+
+func StoreClusterData(data []byte, dataType enum.Datatype) error {
+	return client().StoreData(enum.CLUSTER.ToString(), data, dataType)
 }
