@@ -10,7 +10,7 @@ const (
 	RED    Label = 1
 )
 
-func GetLabel(value float64) Label {
+func FromValue(value float64) Label {
 	switch {
 	case value <= 0.2:
 		return WHITE
@@ -19,6 +19,21 @@ func GetLabel(value float64) Label {
 	case value <= 0.6:
 		return YELLOW
 	case value <= 0.8:
+		return ORANGE
+	default:
+		return RED
+	}
+}
+
+func FromLabelValue(l_value float64) Label {
+	switch {
+	case l_value < -0.5:
+		return WHITE
+	case l_value >= -0.5 && l_value < 0.0:
+		return GREEN
+	case l_value >= 0.0 && l_value < 0.5:
+		return YELLOW
+	case l_value >= 0.5 && l_value < 1:
 		return ORANGE
 	default:
 		return RED

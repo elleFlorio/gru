@@ -6,7 +6,6 @@ const (
 	STATS     Datatype = iota
 	ANALYTICS Datatype = iota
 	PLANS     Datatype = iota
-	ACTIONS   Datatype = iota
 )
 
 func (d Datatype) Value() float64 {

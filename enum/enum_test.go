@@ -20,6 +20,9 @@ var (
 	action_no Enum = NOACTION
 	action_st Enum = START
 	action_sp Enum = STOP
+
+	owner_l Enum = LOCAL
+	owner_c Enum = CLUSTER
 )
 
 func TestValue(t *testing.T) {
@@ -38,6 +41,9 @@ func TestValue(t *testing.T) {
 	assert.Equal(t, 1.0, action_st.Value())
 	assert.Equal(t, 2.0, action_sp.Value())
 
+	assert.Equal(t, 0.0, owner_l.Value())
+	assert.Equal(t, 1.0, owner_c.Value())
+
 }
 
 func TestToString(t *testing.T) {
@@ -55,4 +61,7 @@ func TestToString(t *testing.T) {
 	assert.Equal(t, "NOACTION", action_no.ToString())
 	assert.Equal(t, "START", action_st.ToString())
 	assert.Equal(t, "STOP", action_sp.ToString())
+
+	assert.Equal(t, "LOCAL", owner_l.ToString())
+	assert.Equal(t, "CLUSTER", owner_c.ToString())
 }

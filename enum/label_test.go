@@ -6,25 +6,31 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 )
 
-func TestGetLabel(t *testing.T) {
+func TestFromValue(t *testing.T) {
 	value_w := 0.2
 	value_g := 0.4
 	value_y := 0.6
 	value_o := 0.8
 	value_r := 1.0
 
-	label := GetLabel(value_w)
-	assert.Equal(t, WHITE, label, "(0.2) label should be white")
+	assert.Equal(t, WHITE, FromValue(value_w))
+	assert.Equal(t, GREEN, FromValue(value_g))
+	assert.Equal(t, YELLOW, FromValue(value_y))
+	assert.Equal(t, ORANGE, FromValue(value_o))
+	assert.Equal(t, RED, FromValue(value_r))
+}
 
-	label = GetLabel(value_g)
-	assert.Equal(t, GREEN, label, "(0.4) label should be green")
+func TestFromLabelValue(t *testing.T) {
+	l_value_w := -0.9
+	l_value_g := -0.4
+	l_value_y := 0.1
+	l_value_o := 0.6
+	l_value_r := 1.0
 
-	label = GetLabel(value_y)
-	assert.Equal(t, YELLOW, label, "(0.6) label should be yellow")
+	assert.Equal(t, WHITE, FromLabelValue(l_value_w))
+	assert.Equal(t, GREEN, FromLabelValue(l_value_g))
+	assert.Equal(t, YELLOW, FromLabelValue(l_value_y))
+	assert.Equal(t, ORANGE, FromLabelValue(l_value_o))
+	assert.Equal(t, RED, FromLabelValue(l_value_r))
 
-	label = GetLabel(value_o)
-	assert.Equal(t, ORANGE, label, "(0.8) label should be orange")
-
-	label = GetLabel(value_r)
-	assert.Equal(t, RED, label, "(1.0) label should be red")
 }
