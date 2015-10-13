@@ -4,43 +4,39 @@ import (
 	"errors"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-
-	"github.com/elleFlorio/gru/autonomic/analyzer"
 )
 
 type GruStrategy interface {
 	Name() string
 	Initialize() error
-	//TODO this should be done in a proper way...
-	MakeDecision([]GruPlan, analyzer.GruAnalytics) (*GruPlan, error)
+	MakeDecision([]GruPlan) *GruPlan
 }
 
 var (
+	strategy            int
 	strategies          []GruStrategy
 	ErrorNoSuchStrategy error = errors.New("Strategy not implemented")
-	ErrorNoSuchTarget   error = errors.New("Unrecognized Target type")
-	ErrorNoSuchStatus   error = errors.New("Unrecognized Target status")
-	ErrorNoStoppedCont  error = errors.New("No stopped container for this service")
 )
 
 func init() {
 	strategies = []GruStrategy{
-		&DummyStrategy{},
-		&ProbabilisticStrategy{},
+		&dummyStrategy{},
+		&probabilisticStrategy{},
 	}
 }
 
 func New(name string) (GruStrategy, error) {
-
-	for _, strategy := range strategies {
-		if strategy.Name() == name {
+	strategy = 0
+	for index, strtg := range strategies {
+		if strtg.Name() == name {
+			strategy = index
 			log.WithField("name", name).Debugln("Initializing strategy")
-			err := strategy.Initialize()
-			return strategy, err
+			err := strategies[strategy].Initialize()
+			return strategies[strategy], err
 		}
 	}
 
-	return nil, ErrorNoSuchStrategy
+	return strategies[strategy], ErrorNoSuchStrategy
 }
 
 func List() []string {
@@ -51,4 +47,20 @@ func List() []string {
 	}
 
 	return names
+}
+
+func active() GruStrategy {
+	return strategies[strategy]
+}
+
+func Name() string {
+	return active().Name()
+}
+
+func Initialize() error {
+	return active().Initialize()
+}
+
+func MakeDecision(plans []GruPlan) *GruPlan {
+	return active().MakeDecision(plans)
 }

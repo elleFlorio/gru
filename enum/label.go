@@ -25,6 +25,21 @@ func FromValue(value float64) Label {
 	}
 }
 
+func ValueFrom(label Label) float64 {
+	switch {
+	case label == WHITE:
+		return 0
+	case label == GREEN:
+		return 0.2
+	case label == YELLOW:
+		return 0.4
+	case label == ORANGE:
+		return 0.6
+	default:
+		return 0.8
+	}
+}
+
 func FromLabelValue(l_value float64) Label {
 	switch {
 	case l_value < -0.5:

@@ -20,3 +20,7 @@ func CreateMockAnalytics() GruAnalytics {
 
 	return mockAnalytics
 }
+
+func StoreMockAnalytics() {
+	saveAnalytics(CreateMockAnalytics())
+}

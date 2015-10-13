@@ -4,9 +4,11 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
+	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
-	"github.com/elleFlorio/gru/policy"
+	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/storage"
 )
 
 var currentStrategy strategy.GruStrategy
@@ -14,10 +16,7 @@ var currentStrategy strategy.GruStrategy
 func SetPlannerStrategy(strategyName string) {
 	strtg, err := strategy.New(strategyName)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"status": "init",
-			"error":  err,
-		}).Errorln("Running Planner")
+		log.WithField("error", err).Errorln("Strategy cannot be set")
 
 		// If error use default one
 		strtg, err = strategy.New("dummy")
@@ -25,66 +24,64 @@ func SetPlannerStrategy(strategyName string) {
 
 	currentStrategy = strtg
 
-	log.WithFields(log.Fields{
-		"status":   "init",
-		"strategy": strtg.Name(),
-	}).Infoln("Running Planner")
+	log.WithField("strategy", strtg.Name()).Infoln("Strategy initialized")
 }
 
-func Run(analytics analyzer.GruAnalytics) strategy.GruPlan {
+func Run() {
 	log.WithField("status", "start").Debugln("Running planner")
 	defer log.WithField("status", "done").Debugln("Running planner")
 
-	plans := buildPlans(analytics)
-
-	log.WithFields(log.Fields{
-		"status": "plans builded",
-		"plans":  len(plans),
-	}).Debugln("Running Planner")
-
-	thePlan, err := currentStrategy.MakeDecision(plans, analytics)
+	analytics, err := retrieveAnalytics()
 	if err != nil {
-		log.WithFields(log.Fields{
-			"status": "planning",
-			"error":  err,
-		}).Errorln("Running Planner")
+		log.WithField("error", "Cannot compute plans").Errorln("Running Planner.")
+	} else {
+		plans := buildPlans(analytics)
+		thePlan := currentStrategy.MakeDecision(plans)
+		err := savePlan(thePlan)
+		if err != nil {
+			log.WithField("error", "Plan data not saved ").Errorln("Running Planner")
+		}
+	}
+}
+
+func retrieveAnalytics() (analyzer.GruAnalytics, error) {
+	analytics := analyzer.GruAnalytics{}
+	dataAnalyics, err := storage.GetData(enum.CLUSTER.ToString(), enum.ANALYTICS)
+	if err != nil {
+		log.WithField("error", err).Errorln("Cannot retrieve analytics data.")
+	} else {
+		analytics, err = analyzer.ConvertDataToAnalytics(dataAnalyics)
 	}
 
-	log.WithFields(log.Fields{
-		"status": "plan chosen",
-		"plan":   thePlan,
-	}).Debugln("Running Planner")
-
-	return *thePlan
+	return analytics, err
 }
 
 func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
-	policies := policy.GetPolicies("proactive")
 	plans := []strategy.GruPlan{}
-
-	log.WithFields(log.Fields{
-		"status":   "building plans",
-		"policies": len(policies),
-	}).Debugln("Running Planner")
+	policies := policy.GetPolicies()
 
 	for _, name := range service.List() {
 		for _, plc := range policies {
-			if plc.Level() == "service" {
+			label := plc.Label(name, analytics)
+			target, _ := service.GetServiceByName(name)
+			actions := plc.Actions()
+			plan := strategy.GruPlan{label, target, actions}
 
-				if len(analytics.Service[name].Instances.Active) > 0 {
-					plan := strategy.GruPlan{
-						Service:      name,
-						Weight:       plc.Weight(name, analytics),
-						TargetType:   plc.Target(),
-						TargetStatus: plc.TargetStatus(),
-						Actions:      plc.Actions(),
-					}
-
-					plans = append(plans, plan)
-				}
-			}
+			plans = append(plans, plan)
 		}
 	}
 
 	return plans
+}
+
+func savePlan(plan *strategy.GruPlan) error {
+	data, err := strategy.ConvertPlanToData(*plan)
+	if err != nil {
+		log.WithField("error", "Cannot convert plan to data").Debugln("Running Planner")
+		return err
+	} else {
+		storage.StoreData(enum.LOCAL.ToString(), data, enum.PLANS)
+	}
+
+	return nil
 }
