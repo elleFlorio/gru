@@ -1,15 +1,15 @@
 package action
 
+import (
+	"github.com/elleFlorio/gru/enum"
+)
+
 type NoAction struct{}
 
-func (p *NoAction) Name() string {
-	return "noAction"
+func (p *NoAction) Type() enum.Action {
+	return enum.NOACTION
 }
 
-func (p *NoAction) Initialize() error {
-	return nil
-}
-
-func (p *NoAction) Run(config *GruActionConfig) error {
+func (p *NoAction) Run(config GruActionConfig) error {
 	return nil
 }

@@ -1,29 +1,38 @@
 package action
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+
+	"github.com/elleFlorio/gru/enum"
 )
 
-const number int = 3
-
-func TestNew(t *testing.T) {
-	correct := "start"
-	notImplemented := "notImplemented"
-
-	act, _ := New(correct)
-	assert.Equal(t, "start", act.Name(), "The name of the function should be 'start'")
-
-	act, err := New(notImplemented)
-	assert.Error(t, err, "If an action is not implemented an error should be raised")
+func TestGet(t *testing.T) {
+	assert.Equal(t, &NoAction{}, Get(enum.NOACTION))
+	assert.Equal(t, &Start{}, Get(enum.START))
+	assert.Equal(t, &Stop{}, Get(enum.STOP))
 }
 
 func TestList(t *testing.T) {
-	actions := List()
+	actionsList := List()
 
-	assert.Len(t, actions, number, "Number of current actions should be "+strconv.Itoa(number))
+	assert.Len(t, actionsList, len(actions))
+}
 
-	assert.Equal(t, "noAction", actions[0], "The name of the first action should be 'start'")
+func TestRun(t *testing.T) {
+	var err error
+
+	noAction := &NoAction{}
+	//start := &Start{}
+	stop := &Stop{}
+	config := GruActionConfig{}
+
+	err = noAction.Run(config)
+	assert.NoError(t, err)
+	err = stop.Run(config)
+	assert.Error(t, err)
+
+	// Need to create a mock
+	// container to complete the test
 }

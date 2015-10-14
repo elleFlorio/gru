@@ -4,63 +4,56 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/container"
+	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/utils"
 )
 
 type Start struct{}
 
-func (p *Start) Name() string {
-	return "start"
+func (p *Start) Type() enum.Action {
+	return enum.START
 }
 
-func (p *Start) Initialize() error {
-	return nil
-}
+func (p *Start) Run(config GruActionConfig) error {
+	var toStart string
+	var err error
+	paused := config.Instances.Paused
+	stopped := config.Instances.Stopped
 
-func (p *Start) Run(config *GruActionConfig) error {
-	var err error = nil
-	var id string
-
-	// If my target type is a container I have to start a stopped one (the target)
-	// Otherwise I have to create a new one starting from its image, then start it
-	if config.TargetType == "container" {
-		id = config.Target
-
-	} else {
-		id, err = createNewContainer(config)
-
-		if err != nil {
-			log.WithFields(log.Fields{
-				"id":    id,
-				"error": err,
-			}).Errorln("Error creating container")
-		}
-	}
-
-	config.Client.StartContainer(id, config.HostConfig)
-	if err != nil {
+	if len(paused) > 0 {
 		log.WithFields(log.Fields{
-			"id":    config.Target,
-			"error": err,
-		}).Errorln("Error starting container")
+			"start":   "Paused",
+			"service": config.Service,
+		}).Errorln("Starting a paused container")
+		toStart = paused[0]
+		err = container.Docker().Client.UnpauseContainer(toStart)
 		return err
 	}
 
-	return nil
+	if len(stopped) > 0 {
+		log.WithFields(log.Fields{
+			"start":   "Stopped",
+			"service": config.Service,
+		}).Errorln("Starting a stopped container")
+		toStart = stopped[0]
+		err = container.Docker().Client.StartContainer(toStart, config.HostConfig)
+		return err
+	}
+
+	log.WithFields(log.Fields{
+		"start":   "New",
+		"service": config.Service,
+	}).Errorln("No stopped/paused container to start: creating new one")
+	_, err = createNewContainer(config)
+	return err
 }
 
-func createNewContainer(config *GruActionConfig) (string, error) {
+func createNewContainer(config GruActionConfig) (string, error) {
 	uuid, err := utils.GenerateUUID()
 	name := config.Service + "_" + uuid
-
-	config.ContainerConfig.Image = config.Target
 	id, err := container.Docker().Client.CreateContainer(config.ContainerConfig, name)
-
 	if err != nil {
-		log.WithFields(log.Fields{
-			"id":    id,
-			"error": err,
-		}).Errorln("Error creating container")
+		log.WithField("error", err).Errorln("Cannot create a new container for service ", config.Service)
 		return "", err
 	}
 

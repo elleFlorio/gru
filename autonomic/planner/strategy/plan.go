@@ -18,7 +18,7 @@ type GruPlan struct {
 func ConvertPlanToData(plan GruPlan) ([]byte, error) {
 	data, err := json.Marshal(plan)
 	if err != nil {
-		log.WithField("error", err).Errorln("Error marshaling analytics data")
+		log.WithField("error", err).Errorln("Error marshaling plan data")
 		return nil, err
 	}
 
@@ -29,7 +29,7 @@ func ConvertDataToPlan(data []byte) (GruPlan, error) {
 	plan := GruPlan{}
 	err := json.Unmarshal(data, &plan)
 	if err != nil {
-		log.WithField("error", err).Errorln("Error unmarshaling analytics data")
+		log.WithField("error", err).Errorln("Error unmarshaling plan data")
 	}
 
 	return plan, err

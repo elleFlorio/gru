@@ -5,68 +5,56 @@ import (
 
 	"github.com/elleFlorio/gru/action"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/storage"
 )
 
-//FIXME should build a configuration for each service
-func Run(plan strategy.GruPlan) {
-	log.WithField("status", "start").Debugln("Running executor")
-	defer log.WithField("status", "done").Debugln("Running executor")
+func Run() {
+	log.WithField("status", "start").Debugln("Running Executor")
+	defer log.WithField("status", "done").Debugln("Running Executor")
 
-	config := &action.GruActionConfig{}
-	actions, err := buildActions(plan)
+	plan, err := retrievePlan()
 	if err != nil {
-		log.WithFields(log.Fields{
-			"status": "error",
-			"error":  err,
-		}).Debugln("Running executor")
-	}
-
-	srv, err := service.GetServiceByName(plan.Service)
-
-	if err == nil {
-		config = buildConfig(plan, srv)
-	}
-
-	log.WithFields(log.Fields{
-		"status": "config builded",
-		"config": config,
-	}).Debugln("Running executor")
-
-	log.WithFields(log.Fields{
-		"status":  "actuation",
-		"actions": len(actions),
-	}).Debugln("Running executor")
-
-	for _, act := range actions {
-		act.Run(config)
+		log.WithField("error", "Cannot execute actions").Errorln("Running Executor.")
+	} else {
+		config := buildConfig(plan.Target)
+		executeActions(plan.Actions, config)
 	}
 }
 
-func buildActions(plan strategy.GruPlan) ([]action.GruAction, error) {
+func retrievePlan() (strategy.GruPlan, error) {
+	plan := strategy.GruPlan{}
+	dataPlan, err := storage.GetLocalData(enum.PLANS)
+	if err != nil {
+		log.WithField("error", err).Errorln("Cannot retrieve plan data.")
+	} else {
+		plan, err = strategy.ConvertDataToPlan(dataPlan)
+	}
+
+	return plan, err
+}
+
+func buildConfig(srv *service.Service) action.GruActionConfig {
+	actConfig := action.GruActionConfig{}
+	actConfig.Service = srv.Name
+	actConfig.Instances = srv.Instances
+	actConfig.HostConfig = action.CreateHostConfig(srv.Configuration)
+	actConfig.ContainerConfig = action.CreateContainerConfig(srv.Configuration)
+
+	return actConfig
+}
+
+func executeActions(actions []enum.Action, config action.GruActionConfig) {
 	var err error
-	actions := make([]action.GruAction, 0, len(plan.Actions))
-	for _, name := range plan.Actions {
-		act, err := action.New(name)
+	for _, actionType := range actions {
+		act := action.Get(actionType)
+		err = act.Run(config)
 		if err != nil {
-			return actions, err
-		} else {
-			actions = append(actions, act)
+			log.WithFields(log.Fields{
+				"error":  err,
+				"action": act.Type().ToString(),
+			}).Errorln("Action not executed")
 		}
 	}
-
-	return actions, err
-}
-
-// TODO container config should be configured properly
-func buildConfig(plan strategy.GruPlan, srv *service.Service) *action.GruActionConfig {
-	config := action.GruActionConfig{
-		Service:         plan.Service,
-		Target:          plan.Target,
-		TargetType:      plan.TargetType,
-		HostConfig:      &srv.HostConfig,
-		ContainerConfig: &srv.ContainerConfig,
-	}
-
-	return &config
 }

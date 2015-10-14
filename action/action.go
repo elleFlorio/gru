@@ -3,13 +3,12 @@ package action
 import (
 	"errors"
 
-	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/elleFlorio/gru/enum"
 )
 
 type GruAction interface {
-	Name() string
-	Initialize() error
-	Run(*GruActionConfig) error
+	Type() enum.Action
+	Run(GruActionConfig) error
 }
 
 var (
@@ -25,24 +24,23 @@ func init() {
 	}
 }
 
-func New(name string) (GruAction, error) {
+func Get(aType enum.Action) GruAction {
+	var act GruAction
 	for _, action := range actions {
-		if action.Name() == name {
-			log.WithField("name", name).Debugln("Initializing action")
-			err := action.Initialize()
-			return action, err
+		if action.Type() == aType {
+			act = action
 		}
 	}
 
-	return nil, ErrNotSupported
+	return act
 }
 
-func List() []string {
-	names := []string{}
+func List() []enum.Action {
+	types := []enum.Action{}
 
 	for _, action := range actions {
-		names = append(names, action.Name())
+		types = append(types, action.Type())
 	}
 
-	return names
+	return types
 }

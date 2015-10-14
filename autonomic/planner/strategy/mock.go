@@ -5,12 +5,19 @@ import (
 
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/storage"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func CreateMockPlan(l enum.Label, s service.Service, a []enum.Action) GruPlan {
 	return GruPlan{l, &s, a}
+}
+
+func StoreMockPlan(l enum.Label, s service.Service, a []enum.Action) {
+	plan := CreateMockPlan(l, s, a)
+	data, _ := ConvertPlanToData(plan)
+	storage.StoreLocalData(data, enum.PLANS)
 }
 
 func CreateRandomPlans(n int) []GruPlan {
@@ -36,29 +43,3 @@ func randStringBytes(n int) string {
 	}
 	return string(b)
 }
-
-// func CreateMockPlans(w1, w2, w3 float64) []GruPlan {
-// 	p1 := GruPlan{
-// 		Service:    "service1",
-// 		Weight:     w1,
-// 		TargetType: "container",
-// 		Actions:    []string{"start", "stop"},
-// 	}
-
-// 	p2 := GruPlan{
-// 		Service:    "service2",
-// 		Weight:     w2,
-// 		TargetType: "image",
-// 		Actions:    []string{"open"},
-// 	}
-
-// 	p3 := GruPlan{
-// 		Service:    "service3",
-// 		Weight:     w3,
-// 		TargetType: "notExist",
-// 		Actions:    []string{"close, shutdown"},
-// 	}
-
-// 	return []GruPlan{p1, p2, p3}
-
-// }

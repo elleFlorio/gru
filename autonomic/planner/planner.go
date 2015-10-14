@@ -80,7 +80,7 @@ func savePlan(plan *strategy.GruPlan) error {
 		log.WithField("error", "Cannot convert plan to data").Debugln("Running Planner")
 		return err
 	} else {
-		storage.StoreData(enum.LOCAL.ToString(), data, enum.PLANS)
+		storage.StoreLocalData(data, enum.PLANS)
 	}
 
 	return nil
