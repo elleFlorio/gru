@@ -88,24 +88,17 @@ var routes = Routes{
 	},
 
 	Route{
-		"AnalyticsInstances",
-		"GET",
-		"/gru/v1/analytics/instances",
-		GetAnalyticsInstances,
-	},
-
-	Route{
-		"AnalyticsInstance",
-		"GET",
-		"/gru/v1/analytics/instances/{id}",
-		GetAnalyticsInstance,
-	},
-
-	Route{
 		"AnalyticsSystem",
 		"GET",
 		"/gru/v1/analytics/system",
 		GetAnalyticsSystem,
+	},
+
+	Route{
+		"AnalyticsCluster",
+		"GET",
+		"/gru/v1/analytics/cluster",
+		GetAnalyticsCluster,
 	},
 
 	//NODE
@@ -122,13 +115,6 @@ var routes = Routes{
 		"GET",
 		"/gru/v1/policies",
 		GetInfoPolicies,
-	},
-
-	Route{
-		"InfoPoliciesByType",
-		"GET",
-		"/gru/v1/policies/{type}",
-		GetInfoPoliciesByType,
 	},
 
 	//ACTION
