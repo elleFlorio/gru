@@ -62,8 +62,7 @@ These are the steps you need to follow to run the current version of Gru in your
 
 	"Autonomic": {
 		"LoopTimeInterval":5,
-		"MaxFrineds":5,
-		"DataToShare":"stats"
+		"MaxFrineds":5
 	},
 
 	"Discovery": {
@@ -79,33 +78,37 @@ These are the steps you need to follow to run the current version of Gru in your
 ```json
 //nodeconfig.json
 {
-	"Name":"node1",
+	"Name":"node_name",
 	"Constraints":{
-		"CpuMax":0.8,
-		"CpuMin":0.2,
-		"MaxInstances":8
+		"CpuMax":0.0,
+		"CpuMin":0.0,
 	}
 }
 ```
 * Create the `services` folder at the location specified in `gruagentconfig.json`. Inside it create a `.json` file for each service you want to manage. Each service is bound to a Docker Image. This is an example of a service configuration file:
 ```json
 //example.json
-/* "ContainerConfig" is the Docker container configuaration.
-For information please refer to the Docker documentation.
-If you don't have any specific configuration for the container,
-you can just skip it */
 {
-	"Name":"service1",
-	"Type":"service1",
-	"Image":"service1",
+	"Name":"service_name",
+	"Type":"service_type",
+	"Image":"service_image",
 	"Constraints":{
-		"MinActive":1,
-		"MaxActive":5
+		"MinActive":0,
+		"MaxActive":0
 	},
-	"ContainerConfig":{ 
+	"Configuration":{
+		"Cmd":[],
+		"Volumes":null,
+		"Entrypoint":[],
+		"Memory":"0Gb",
+		"CpuShares": 0,
+		"CpuSet": 0,
+		"PortBindings": {},
+		"Links":[]
 	}
 }
 ```
+The field type can be used to specify the type of the service (e.g. Database, Webserver, etc.) and it is not used yet. The configuration field allow to specify some parameters related to the docker container. Please refer to the Docker documentation to an explanation of each configuration field.
 ###### Run Gru
 * Run/start the containers of the services you want to manage
 * Run the Gru agent with the command `gru start`. You can specify the logging level using the flag `-l`: e.g. `gru -l debug start`
