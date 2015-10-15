@@ -38,39 +38,16 @@ func RunLoop() {
 		case <-ticker.C:
 
 			communication.KeepAlive(manager.LoopTimeInterval)
-			err := communication.UpdateFriendsData(manager.MaxFrineds, manager.DataToShare)
+			err := communication.UpdateFriendsData(manager.MaxFrineds)
 			if err != nil {
-				log.WithField("waring", err).Warnln("Running autonomic loop")
+				log.WithField("warning", err).Warnln("Cannot update friends data")
 			}
 
-			stats := monitor.Run()
+			monitor.Run()
+			analyzer.Run()
+			planner.Run()
+			executor.Run()
 
-			log.WithFields(log.Fields{
-				"status":    "received stats",
-				"instances": len(stats.Instance),
-				"services":  len(stats.Service),
-			}).Debugln("Running autonomic loop")
-
-			analytics := analyzer.Run(stats)
-
-			log.WithFields(log.Fields{
-				"status":    "received analytics",
-				"instances": len(analytics.Instance),
-				"services":  len(analytics.Service),
-			}).Debugln("Running autonomic loop")
-
-			plan := planner.Run(analytics)
-
-			log.WithFields(log.Fields{
-				"status":     "received plan",
-				"Service":    plan.Service,
-				"TargetType": plan.TargetType,
-				"Target":     plan.Target,
-				"Weight":     plan.Weight,
-				"Actions":    plan.Actions,
-			}).Debugln("Running autonomic loop")
-
-			executor.Run(plan)
 		case <-c_err:
 			log.WithField("status", "error").Errorln("Running autonomic loop")
 		case <-c_stop:

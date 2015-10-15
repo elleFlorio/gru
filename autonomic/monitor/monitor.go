@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"errors"
+	"fmt"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
@@ -57,14 +58,32 @@ func Run() {
 	for _, name := range services {
 		resetEventsStats(name, &gruStats)
 	}
+
+	for srv, value := range snapshot.Service {
+		log.WithFields(log.Fields{
+			"service":  srv,
+			"pending:": len(value.Instances.Pending),
+			"running:": len(value.Instances.Running),
+			"stopped:": len(value.Instances.Stopped),
+			"paused:":  len(value.Instances.Paused),
+			"cpu avg":  fmt.Sprintf("%.2f", value.Cpu.Avg),
+			"cpu tot":  fmt.Sprintf("%.2f", value.Cpu.Tot),
+		}).Infoln("Stats computed")
+	}
+
 }
 
 func updateRunningInstances(name string, stats *GruStats, wsize int) {
 	srvStats := stats.Service[name]
 	pending := srvStats.Instances.Pending
 	for _, inst := range pending {
-		if history.instance[inst].cpu.sysUsage.Size() >= W_SIZE {
+		if len(history.instance[inst].cpu.sysUsage.Slice()) >= wsize {
 			addResource(inst, name, "running", stats, &history)
+
+			log.WithFields(log.Fields{
+				"service": name,
+				"id":      inst,
+			}).Debugln("Promoted resource to running state")
 		}
 	}
 }
@@ -74,21 +93,34 @@ func computeServiceCpuPerc(name string, stats *GruStats) {
 	avg := 0.0
 	srvStats := stats.Service[name]
 
-	for _, id := range srvStats.Instances.Running {
-		instCpus := history.instance[id].cpu.totalUsage.Slice()
-		sysCpus := history.instance[id].cpu.sysUsage.Slice()
-		instCpuAvg := computeInstanceCpuPerc(instCpus, sysCpus)
-		inst := stats.Instance[id]
-		inst.Cpu = instCpuAvg
-		stats.Instance[id] = inst
-		sum += instCpuAvg
-	}
+	if len(srvStats.Instances.Running) > 0 {
+		for _, id := range srvStats.Instances.Running {
+			instCpus := history.instance[id].cpu.totalUsage.Slice()
+			sysCpus := history.instance[id].cpu.sysUsage.Slice()
+			instCpuAvg := computeInstanceCpuPerc(instCpus, sysCpus)
+			inst := stats.Instance[id]
+			inst.Cpu = instCpuAvg
+			stats.Instance[id] = inst
+			sum += instCpuAvg
 
-	avg = sum / float64(len(srvStats.Instances.Running))
+			log.WithFields(log.Fields{
+				"instance": id,
+				"CPUavg":   instCpuAvg,
+			}).Debugln("Computed instance average CPU")
+		}
+
+		avg = sum / float64(len(srvStats.Instances.Running))
+	}
 
 	srvStats.Cpu.Avg = avg
 	srvStats.Cpu.Tot = sum
 	stats.Service[name] = srvStats
+
+	log.WithFields(log.Fields{
+		"Service": name,
+		"CPUavg":  avg,
+		"CPUsum":  sum,
+	}).Debugln("Computed service CPU usage")
 }
 
 // Since linux compute the cpu usage in units of jiffies, it needs to be converted
@@ -392,15 +424,14 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 			"error":   "Unknown container state: " + status,
 			"service": srvName,
 			"id":      id,
-		}).Warnln("Running monitor")
+		}).Warnln("Cannot add resource to monitor")
 	}
 	stats.Service[srvName] = servStats
 
 	log.WithFields(log.Fields{
-		"status":  "started monitor on container",
+		"status":  status,
 		"service": srvName,
-		"id":      id,
-	}).Infoln("Running monitor")
+	}).Infoln("Added resource to monitor")
 }
 
 func removeResource(id string, stats *GruStats, hist *statsHistory) {

@@ -21,6 +21,10 @@ func Connect(daemonUrl string, timeout int) error {
 		return err
 	}
 
+	if _, err = client.Info(); err != nil {
+		return err
+	}
+
 	docker.DaemonUrl = daemonUrl
 	docker.DaemonTimeout = timeout
 	docker.Client = client

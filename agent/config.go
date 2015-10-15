@@ -36,7 +36,7 @@ type AutonomicConfig struct {
 
 type DiscoveryConfig struct {
 	DiscoveryService    string `json:"discoveryservice"`
-	DiscoveryServiceUri string `json:"discoveryurl"`
+	DiscoveryServiceUri string `json:"discoveryserviceuri"`
 }
 
 type StorageConfig struct {

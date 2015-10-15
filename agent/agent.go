@@ -63,6 +63,8 @@ func initializeNode() {
 }
 
 func initializeDiscovery() {
+	log.Debugln("discovery service: ", config.Discovery.DiscoveryService)
+	log.Debugln("discovery uri: ", config.Discovery.DiscoveryServiceUri)
 	_, err := discovery.New(config.Discovery.DiscoveryService, config.Discovery.DiscoveryServiceUri)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -79,10 +81,9 @@ func initializeStorage() {
 		log.WithFields(log.Fields{
 			"status":  "waring",
 			"error":   err,
-			"default": storage.DataStore().Name(),
+			"default": storage.Name(),
 		}).Warnln("Running gru agent")
 	}
-	storage.DataStore().Initialize()
 }
 
 func initializeContainerEngine() {
@@ -90,13 +91,14 @@ func initializeContainerEngine() {
 	if err != nil {
 		signalErrorInAgent(err)
 	}
+	log.WithField("docker", "ok").Infoln("Container engine initialized")
 }
 
 func signalErrorInAgent(err error) {
 	log.WithFields(log.Fields{
 		"status": "error",
 		"error":  err,
-	}).Fatalln("Running gru agent")
+	}).Fatal("Running gru agent")
 }
 
 func startAutonomicManager() {

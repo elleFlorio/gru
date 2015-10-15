@@ -14,7 +14,7 @@ func (p *ScaleIn) Name() string {
 //TODO find a way to compute a label that make some sense...
 func (p *ScaleIn) Label(name string, analytics analyzer.GruAnalytics) enum.Label {
 
-	return enum.YELLOW
+	return enum.WHITE
 }
 
 func (p *ScaleIn) Actions() []enum.Action {

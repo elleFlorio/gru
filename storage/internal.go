@@ -13,6 +13,7 @@ var (
 type internal struct {
 	statsData     map[string][]byte
 	analyticsData map[string][]byte
+	plansData     map[string][]byte
 }
 
 func (p *internal) Name() string {
@@ -22,6 +23,7 @@ func (p *internal) Name() string {
 func (p *internal) Initialize() error {
 	p.statsData = make(map[string][]byte)
 	p.analyticsData = make(map[string][]byte)
+	p.plansData = make(map[string][]byte)
 	return nil
 }
 
@@ -31,6 +33,8 @@ func (p *internal) StoreData(key string, data []byte, dataType enum.Datatype) er
 		p.statsData[key] = data
 	case enum.ANALYTICS:
 		p.analyticsData[key] = data
+	case enum.PLANS:
+		p.plansData[key] = data
 	}
 
 	return nil
@@ -43,6 +47,8 @@ func (p *internal) GetData(key string, dataType enum.Datatype) ([]byte, error) {
 		data = p.statsData[key]
 	case enum.ANALYTICS:
 		data = p.analyticsData[key]
+	case enum.PLANS:
+		data = p.plansData[key]
 	}
 
 	return data, nil
@@ -55,6 +61,8 @@ func (p *internal) GetAllData(dataType enum.Datatype) (map[string][]byte, error)
 		data = p.statsData
 	case enum.ANALYTICS:
 		data = p.analyticsData
+	case enum.PLANS:
+		data = p.plansData
 	}
 
 	return data, nil
@@ -66,6 +74,8 @@ func (p *internal) DeleteData(key string, dataType enum.Datatype) error {
 		delete(p.statsData, key)
 	case enum.ANALYTICS:
 		delete(p.analyticsData, key)
+	case enum.PLANS:
+		delete(p.plansData, key)
 	}
 
 	return nil
@@ -77,6 +87,8 @@ func (p *internal) DeleteAllData(dataType enum.Datatype) error {
 		p.statsData = make(map[string][]byte)
 	case enum.ANALYTICS:
 		p.analyticsData = make(map[string][]byte)
+	case enum.PLANS:
+		p.plansData = make(map[string][]byte)
 	}
 
 	return nil

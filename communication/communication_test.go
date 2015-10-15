@@ -11,7 +11,7 @@ import (
 )
 
 func TestChooseRandomFriends(t *testing.T) {
-	node.UpdateNode(node.CreateMockNode())
+	node.UpdateNodeConfig(node.CreateMockNode())
 	mockPeers := createMockPeers(100)
 	nFriends := 10
 	test, err := chooseRandomFriends(mockPeers, nFriends)

@@ -15,7 +15,7 @@ func (p *dummyStrategy) Initialize() error {
 }
 
 func (p *dummyStrategy) MakeDecision(plans []GruPlan) *GruPlan {
-	thePlan := GruPlan{Actions: []enum.Action{enum.NOACTION}}
+	thePlan := createNoActionPlan()
 	maxWeight := enum.ValueFrom(enum.WHITE)
 	for _, plan := range plans {
 		if enum.ValueFrom(plan.Label) > maxWeight {

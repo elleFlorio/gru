@@ -4,6 +4,9 @@ import (
 	"errors"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+
+	"github.com/elleFlorio/gru/enum"
+	"github.com/elleFlorio/gru/service"
 )
 
 type GruStrategy interface {
@@ -63,4 +66,9 @@ func Initialize() error {
 
 func MakeDecision(plans []GruPlan) *GruPlan {
 	return active().MakeDecision(plans)
+}
+
+func createNoActionPlan() GruPlan {
+	srv := service.Service{Name: "NoService"}
+	return GruPlan{enum.RED, &srv, []enum.Action{enum.NOACTION}}
 }

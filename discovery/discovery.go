@@ -44,6 +44,26 @@ func New(name string, uri string) (Discovery, error) {
 	return discoveries[discService], ErrNotSupported
 }
 
-func Service() Discovery {
+func service() Discovery {
 	return discoveries[discService]
+}
+
+func Name() string {
+	return service().Name()
+}
+
+func Initialize(uri string) error {
+	return service().Initialize(uri)
+}
+
+func Register(myUUID string, myAddress string, ttl int) error {
+	return service().Register(myUUID, myAddress, ttl)
+}
+
+func Get(key string) (map[string]string, error) {
+	return service().Get(key)
+}
+
+func Set(key string, value string, ttl int) error {
+	return service().Set(key, value, ttl)
 }

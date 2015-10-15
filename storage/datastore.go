@@ -44,12 +44,16 @@ func New(name string) (Storage, error) {
 	return dataStores[dataStore], ErrNotSupported
 }
 
+func client() Storage {
+	return dataStores[dataStore]
+}
+
 func Initialize() error {
 	return client().Initialize()
 }
 
-func client() Storage {
-	return dataStores[dataStore]
+func Name() string {
+	return client().Name()
 }
 
 func StoreData(key string, data []byte, dataType enum.Datatype) error {

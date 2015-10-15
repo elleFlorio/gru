@@ -7,14 +7,16 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/discovery"
+	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/network"
 	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/storage"
 )
 
-//TODO get these in an automatic way?
+//TODO get these in an automatic way from api
 const path string = "/nodes/"
 const routeStats string = "/gru/v1/stats"
+const routeAnalytics string = "/gru/v1/analytics"
 
 var (
 	ErrInvalidFriendsNumber error = errors.New("Friends number should be > 0")
@@ -24,22 +26,24 @@ var (
 )
 
 func KeepAlive(ttl int) {
-	agentAddress := "http://" + network.Config().IpAddress + ":" + network.Config().Port
-	key := path + node.Config().UUID
-	err := discovery.Service().Set(key, agentAddress, ttl)
+	err := discovery.Set(createAgentKey(), createAgentAddress(), ttl)
 	if err != nil {
-		log.WithField("error", err).Errorln("Keeping alive the agent")
+		log.WithField("error", err).Errorln("Cannot keep the agent alive")
 	}
-	log.WithFields(log.Fields{
-		"key":     key,
-		"address": agentAddress,
-	}).Debugln("Agent is alive")
 }
 
-func UpdateFriendsData(nFriends int, dataType string) error {
+func createAgentAddress() string {
+	return "http://" + network.Config().IpAddress + ":" + network.Config().Port
+}
+
+func createAgentKey() string {
+	return path + node.Config().UUID
+}
+
+func UpdateFriendsData(nFriends int) error {
 	log.WithField("status", "start").Debugln("Updating friends data")
 	defer log.WithField("status", "done").Debugln("Updating friends data")
-	storage.DataStore().DeleteAllData(dataType)
+	storage.DeleteAllData(enum.ANALYTICS)
 
 	peers, err := getAllPeers()
 	if err != nil {
@@ -55,7 +59,7 @@ func UpdateFriendsData(nFriends int, dataType string) error {
 		return err
 	}
 
-	err = getFriendsData(friends, dataType)
+	err = getFriendsData(friends)
 	if err != nil {
 		return err
 	}
@@ -64,7 +68,7 @@ func UpdateFriendsData(nFriends int, dataType string) error {
 }
 
 func getAllPeers() (map[string]string, error) {
-	peers, err := discovery.Service().Get(path)
+	peers, err := discovery.Get(path)
 	if err != nil {
 		return nil, err
 	}
@@ -107,28 +111,24 @@ func chooseRandomFriends(peers map[string]string, n int) (map[string]string, err
 	return friends, nil
 }
 
-func getFriendsData(friends map[string]string, dataType string) error {
-	switch dataType {
-	case "stats":
-		for friend, address := range friends {
-			// This should not be possible, but in a local test (multiple nodes on the same node with
-			//different ports) it happened.
-			myAddress := "http://" + network.Config().IpAddress + ":" + network.Config().Port
-			if address != myAddress {
-				friendRoute := address + routeStats
-				friendData, err := network.DoRequest("GET", friendRoute, nil)
-				if err != nil {
-					log.WithField("address", address).Warnln("Error retrieving friend stats")
-				}
-				err = storage.DataStore().StoreData(friend, friendData, dataType)
-				if err != nil {
-					log.WithField("error", err).Warnln("Error storing friend stats")
-				}
+func getFriendsData(friends map[string]string) error {
+	var err error
+
+	for friend, address := range friends {
+		// This should not be possible, but in a local test (multiple nodes on the same node with
+		//different ports) it happened.
+		if address != createAgentAddress() {
+			friendRoute := address + routeAnalytics
+			friendData, err := network.DoRequest("GET", friendRoute, nil)
+			if err != nil {
+				log.WithField("address", address).Warnln("Error retrieving friend stats")
+			}
+			err = storage.StoreData(friend, friendData, enum.ANALYTICS)
+			if err != nil {
+				log.WithField("error", err).Warnln("Error storing friend stats")
 			}
 		}
-		return nil
-	case "analytics":
-		//TODO
 	}
-	return ErrInvalidDataType
+
+	return err
 }

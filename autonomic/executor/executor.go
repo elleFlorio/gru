@@ -11,8 +11,8 @@ import (
 )
 
 func Run() {
-	log.WithField("status", "start").Debugln("Running Executor")
-	defer log.WithField("status", "done").Debugln("Running Executor")
+	log.WithField("status", "start").Infoln("Running Executor")
+	defer log.WithField("status", "done").Infoln("Running Executor")
 
 	plan, err := retrievePlan()
 	if err != nil {
@@ -56,5 +56,10 @@ func executeActions(actions []enum.Action, config action.GruActionConfig) {
 				"action": act.Type().ToString(),
 			}).Errorln("Action not executed")
 		}
+
+		log.WithFields(log.Fields{
+			"target": config.Service,
+			"action": act.Type().ToString(),
+		}).Infoln("Action executed")
 	}
 }

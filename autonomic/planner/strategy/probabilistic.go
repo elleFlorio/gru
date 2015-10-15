@@ -28,7 +28,8 @@ func (p *probabilisticStrategy) MakeDecision(plans []GruPlan) *GruPlan {
 	thePlan, err := weightedRandomElement(plans)
 	if err != nil {
 		log.WithField("err", err).Debugln("returning no action")
-		return &GruPlan{Actions: []enum.Action{enum.NOACTION}}
+		noAction := createNoActionPlan()
+		return &noAction
 	}
 
 	return thePlan

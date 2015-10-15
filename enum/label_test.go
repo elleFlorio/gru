@@ -20,6 +20,20 @@ func TestFromValue(t *testing.T) {
 	assert.Equal(t, RED, FromValue(value_r))
 }
 
+func TestValueFrom(t *testing.T) {
+	expected_w := 0.0
+	expected_g := 0.2
+	expected_y := 0.4
+	expected_o := 0.6
+	expected_r := 0.8
+
+	assert.Equal(t, expected_w, ValueFrom(WHITE))
+	assert.Equal(t, expected_g, ValueFrom(GREEN))
+	assert.Equal(t, expected_y, ValueFrom(YELLOW))
+	assert.Equal(t, expected_o, ValueFrom(ORANGE))
+	assert.Equal(t, expected_r, ValueFrom(RED))
+}
+
 func TestFromLabelValue(t *testing.T) {
 	l_value_w := -0.9
 	l_value_g := -0.4

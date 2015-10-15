@@ -17,6 +17,8 @@ func (p *etcdDiscovery) Name() string {
 }
 
 func (p *etcdDiscovery) Initialize(uri string) error {
+	log.WithField("uri", uri).Debugln("Trying to connect to etcd")
+
 	cfg := client.Config{
 		Endpoints: []string{uri},
 	}

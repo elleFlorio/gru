@@ -1,6 +1,7 @@
 package action
 
 import (
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 
 	"github.com/elleFlorio/gru/service"
@@ -15,14 +16,19 @@ type GruActionConfig struct {
 }
 
 func CreateHostConfig(sConf service.Config) *dockerclient.HostConfig {
-	memInBytes, _ := utils.RAMInBytes(sConf.Memory)
+	memInBytes, err := utils.RAMInBytes(sConf.Memory)
 	hostConfig := dockerclient.HostConfig{}
 
-	hostConfig.Memory = memInBytes
 	hostConfig.CpuShares = sConf.CpuShares
 	hostConfig.CpusetCpus = string(sConf.CpuSet)
 	hostConfig.Links = sConf.Links
 	hostConfig.PortBindings = createPortBindings(sConf.PortBindings)
+
+	if err != nil {
+		log.Warnln("Creating Host config: Memory limit not specified")
+	} else {
+		hostConfig.Memory = memInBytes
+	}
 
 	return &hostConfig
 }
@@ -44,15 +50,20 @@ func createPortBindings(portBindings map[string][]service.PortBinding) map[strin
 }
 
 func CreateContainerConfig(sConf service.Config) *dockerclient.ContainerConfig {
-	memInBytes, _ := utils.RAMInBytes(sConf.Memory)
+	memInBytes, err := utils.RAMInBytes(sConf.Memory)
 	containerConfig := dockerclient.ContainerConfig{}
 
 	containerConfig.Cmd = sConf.Cmd
 	containerConfig.Volumes = sConf.Volumes
 	containerConfig.Entrypoint = sConf.Entrypoint
-	containerConfig.Memory = memInBytes
 	containerConfig.CpuShares = sConf.CpuShares
 	containerConfig.Cpuset = string(sConf.CpuSet)
+
+	if err != nil {
+		log.Warnln("Creating Container config: Memory limit not specified")
+	} else {
+		containerConfig.Memory = memInBytes
+	}
 
 	return &containerConfig
 }

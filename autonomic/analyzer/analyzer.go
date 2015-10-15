@@ -29,14 +29,13 @@ func init() {
 }
 
 func Run() {
-	log.WithField("status", "start").Debugln("Running analyzer")
-	defer log.WithField("status", "done").Debugln("Running analyzer")
+	log.WithField("status", "start").Infoln("Running analyzer")
+	defer log.WithField("status", "done").Infoln("Running analyzer")
 
 	stats, err := retrieveStats()
 	if err != nil {
 		log.WithField("error", "Cannot compute analytics").Errorln("Running Analyzer.")
 	} else {
-		storage.DeleteData(enum.CLUSTER.ToString(), enum.ANALYTICS)
 		updateNodeResources()
 		analyzeServices(&gruAnalytics, stats)
 		analyzeSystem(&gruAnalytics, stats)
@@ -113,7 +112,7 @@ func computeServiceResources(name string) enum.Label {
 	srvCpu := srv.Configuration.CpuSet
 	srvMem, err := utils.RAMInBytes(srv.Configuration.Memory)
 	if err != nil {
-		log.WithField("error", err).Errorln("Cannot convert service RAM in Bytes.")
+		log.WithField("error", err).Warnln("Cannot convert service RAM in Bytes.")
 		return enum.RED
 	}
 

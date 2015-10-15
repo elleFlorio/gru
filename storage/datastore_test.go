@@ -12,19 +12,19 @@ func TestNew(t *testing.T) {
 	supported := "internal"
 	notSuported := "notSupported"
 
-	test, err := New(supported)
-	assert.NoError(t, err, "Supported storage should produce no error")
-	assert.Equal(t, "internal", test.Name(), "Storage should be 'internal'")
+	_, err := New(supported)
+	assert.NoError(t, err)
+	assert.Equal(t, "internal", Name())
+
+	test := client()
+	assert.Equal(t, "internal", test.Name())
+
+	_, err = New(notSuported)
+	assert.Error(t, err)
+	assert.Equal(t, "internal", Name())
 
 	test = client()
-	assert.Equal(t, "internal", test.Name(), "(supported) Retrieved datastore should be 'internal'")
-
-	test, err = New(notSuported)
-	assert.Error(t, err, "Not supported storage should produce an error")
-	assert.Equal(t, "internal", test.Name(), "If storage is not supported the default one should be 'internal'")
-
-	test = client()
-	assert.Equal(t, "internal", test.Name(), "(not supported) retrieved datastore should be 'internal'")
+	assert.Equal(t, "internal", test.Name())
 }
 
 func TestStoreData(t *testing.T) {
@@ -40,6 +40,8 @@ func TestStoreData(t *testing.T) {
 	assert.NoError(t, err)
 	err = StoreData(key, data, enum.ANALYTICS)
 	assert.NoError(t, err)
+	err = StoreData(key, data, enum.PLANS)
+	assert.NoError(t, err)
 }
 
 func TestGetData(t *testing.T) {
@@ -53,9 +55,12 @@ func TestGetData(t *testing.T) {
 	Initialize()
 	StoreData(key, data, enum.STATS)
 	StoreData(key, data, enum.ANALYTICS)
+	StoreData(key, data, enum.PLANS)
 	value, _ = GetData(key, enum.STATS)
 	assert.Equal(t, data, value)
 	value, _ = GetData(key, enum.ANALYTICS)
+	assert.Equal(t, data, value)
+	value, _ = GetData(key, enum.PLANS)
 	assert.Equal(t, data, value)
 }
 
@@ -68,6 +73,8 @@ func TestGetAllData(t *testing.T) {
 	_, err := GetAllData(enum.STATS)
 	assert.NoError(t, err)
 	_, err = GetAllData(enum.ANALYTICS)
+	assert.NoError(t, err)
+	_, err = GetAllData(enum.PLANS)
 	assert.NoError(t, err)
 }
 
@@ -83,6 +90,7 @@ func TestDeleteData(t *testing.T) {
 	Initialize()
 	StoreData(key, data, enum.STATS)
 	StoreData(key, data, enum.ANALYTICS)
+	StoreData(key, data, enum.PLANS)
 
 	err = DeleteData(key, enum.STATS)
 	assert.NoError(t, err)
@@ -91,6 +99,10 @@ func TestDeleteData(t *testing.T) {
 	err = DeleteData(key, enum.ANALYTICS)
 	assert.NoError(t, err)
 	value, _ = GetData(key, enum.ANALYTICS)
+	assert.Nil(t, value)
+	err = DeleteData(key, enum.PLANS)
+	assert.NoError(t, err)
+	value, _ = GetData(key, enum.PLANS)
 	assert.Nil(t, value)
 }
 
@@ -106,6 +118,7 @@ func TestDeleteAllData(t *testing.T) {
 	Initialize()
 	StoreData(key, data, enum.STATS)
 	StoreData(key, data, enum.ANALYTICS)
+	StoreData(key, data, enum.PLANS)
 
 	err = DeleteAllData(enum.STATS)
 	assert.NoError(t, err)
@@ -115,4 +128,46 @@ func TestDeleteAllData(t *testing.T) {
 	assert.NoError(t, err)
 	value, _ = GetAllData(enum.ANALYTICS)
 	assert.Empty(t, value)
+	err = DeleteAllData(enum.PLANS)
+	assert.NoError(t, err)
+	value, _ = GetAllData(enum.PLANS)
+	assert.Empty(t, value)
+}
+
+func TestGetLocalData(t *testing.T) {
+	data := []byte{1, 2, 3, 4, 5}
+	New("intenal")
+
+	StoreData(enum.LOCAL.ToString(), data, enum.PLANS)
+	test, err := GetLocalData(enum.PLANS)
+	assert.NoError(t, err)
+	assert.Equal(t, data, test)
+}
+
+func TestStoreLocalData(t *testing.T) {
+	New("internal")
+	var err error
+	data := []byte{1, 2, 3, 4, 5}
+
+	err = StoreLocalData(data, enum.PLANS)
+	assert.NoError(t, err)
+}
+
+func TestGetClusterData(t *testing.T) {
+	data := []byte{1, 2, 3, 4, 5}
+	New("intenal")
+
+	StoreData(enum.CLUSTER.ToString(), data, enum.PLANS)
+	test, err := GetClusterData(enum.PLANS)
+	assert.NoError(t, err)
+	assert.Equal(t, data, test)
+}
+
+func TestStoreClusterData(t *testing.T) {
+	New("internal")
+	var err error
+	data := []byte{1, 2, 3, 4, 5}
+
+	err = StoreClusterData(data, enum.PLANS)
+	assert.NoError(t, err)
 }
