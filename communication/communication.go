@@ -73,6 +73,8 @@ func getAllPeers() (map[string]string, error) {
 		return nil, err
 	}
 
+	log.WithField("peers", len(peers)).Debugln("Number of peers")
+
 	return peers, nil
 }
 

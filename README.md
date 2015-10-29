@@ -62,7 +62,7 @@ These are the steps you need to follow to run the current version of Gru in your
 
 	"Autonomic": {
 		"LoopTimeInterval":5,
-		"MaxFrineds":5
+		"MaxFriends":5
 	},
 
 	"Discovery": {

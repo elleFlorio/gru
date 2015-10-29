@@ -70,7 +70,13 @@ func (p *etcdDiscovery) Get(key string) (map[string]string, error) {
 		return nil, err
 	}
 
+	log.WithField("metadata", resp).Debugln("Get etcd")
+
 	for _, entry := range resp.Node.Nodes {
+		log.WithFields(log.Fields{
+			"key":   entry.Key,
+			"value": entry.Value,
+		}).Debugln("Node entries")
 		result[entry.Key] = entry.Value
 	}
 

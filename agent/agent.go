@@ -72,6 +72,8 @@ func initializeDiscovery() {
 			"error":   err,
 			"default": "No discovery service, running in single node mode",
 		}).Warnln("Running gru agent")
+	} else {
+		log.WithField(discovery.Name(), "ok").Infoln("Discovery service initialized")
 	}
 }
 
@@ -83,6 +85,8 @@ func initializeStorage() {
 			"error":   err,
 			"default": storage.Name(),
 		}).Warnln("Running gru agent")
+	} else {
+		log.WithField(storage.Name(), "ok").Infoln("Storage service initialized")
 	}
 }
 
@@ -104,7 +108,7 @@ func signalErrorInAgent(err error) {
 func startAutonomicManager() {
 	autonomic.Initialize(
 		config.Autonomic.LoopTimeInterval,
-		config.Autonomic.MaxFrineds,
+		config.Autonomic.MaxFriends,
 		config.Autonomic.DataToShare)
 	autonomic.RunLoop()
 }

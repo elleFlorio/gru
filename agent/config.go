@@ -30,7 +30,7 @@ type DockerConfig struct {
 
 type AutonomicConfig struct {
 	LoopTimeInterval int    `json:"looptimeinterval"`
-	MaxFrineds       int    `json:"maxfriends"`
+	MaxFriends       int    `json:"maxfriends"`
 	DataToShare      string `json:"datatoshare"`
 }
 
