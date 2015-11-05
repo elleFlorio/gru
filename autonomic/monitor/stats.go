@@ -19,6 +19,7 @@ type ServiceStats struct {
 	Instances service.InstanceStatus `json:"instances"`
 	Events    EventStats             `json:"events"`
 	Cpu       CpuStats               `json:"cpu"`
+	Metrics   MetricStats            `json:metrics`
 }
 
 type EventStats struct {
@@ -31,6 +32,10 @@ type CpuStats struct {
 	Tot float64 `json:"tot"`
 }
 
+type MetricStats struct {
+	ResponseTime []float64 `json:responsetime`
+}
+
 type InstanceStats struct {
 	Cpu float64 `json:"cpu"`
 }
@@ -41,7 +46,12 @@ type SystemStats struct {
 }
 
 type statsHistory struct {
+	service  map[string]metricsHistory //Deprecated?
 	instance map[string]instanceHistory
+}
+
+type metricsHistory struct {
+	responseTime *window.MovingWindow
 }
 
 type instanceHistory struct {

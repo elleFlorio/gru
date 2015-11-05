@@ -6,6 +6,7 @@ const (
 	STATS     Datatype = iota
 	ANALYTICS Datatype = iota
 	PLANS     Datatype = iota
+	METRICS   Datatype = iota
 )
 
 func (d Datatype) Value() float64 {
@@ -17,6 +18,8 @@ func (d Datatype) Value() float64 {
 		v = 1.0
 	case d == PLANS:
 		v = 2.0
+	case d == METRICS:
+		v = 3.0
 	}
 
 	return v
@@ -31,6 +34,8 @@ func (d Datatype) ToString() string {
 		s = "ANALYTICS"
 	case d == PLANS:
 		s = "PLANS"
+	case d == METRICS:
+		s = "METRICS"
 	}
 
 	return s

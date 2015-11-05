@@ -195,7 +195,9 @@ func CreateMockHistory() statsHistory {
 		"instance2_1": instHist2_1,
 	}
 
-	mockHist := statsHistory{instancesHist}
+	serviceHist := make(map[string]metricsHistory)
+
+	mockHist := statsHistory{serviceHist, instancesHist}
 
 	return mockHist
 

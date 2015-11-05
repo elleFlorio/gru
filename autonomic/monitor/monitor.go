@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
-	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 
-	"github.com/elleFlorio/gru/container"
+	"github.com/elleFlorio/gru/autonomic/monitor/metric"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
@@ -33,7 +31,7 @@ func init() {
 		Instance: make(map[string]InstanceStats),
 	}
 
-	history = statsHistory{make(map[string]instanceHistory)}
+	history = statsHistory{make(map[string]metricsHistory), make(map[string]instanceHistory)}
 }
 
 func Run() {
@@ -45,6 +43,8 @@ func Run() {
 	for name, _ := range gruStats.Service {
 		updateRunningInstances(name, &gruStats, W_SIZE)
 		computeServiceCpuPerc(name, &gruStats)
+		updateServiceMetrics(name, &gruStats)
+		//computeServiceResponseTimeAvg(name, &gruStats) Not anymore...
 	}
 	computeSystemCpu(&gruStats)
 	makeSnapshot(&gruStats, &snapshot)
@@ -57,6 +57,7 @@ func Run() {
 	services := service.List()
 	for _, name := range services {
 		resetEventsStats(name, &gruStats)
+		resetMetricStats(name, &gruStats)
 	}
 
 	for srv, value := range snapshot.Service {
@@ -73,6 +74,7 @@ func Run() {
 
 }
 
+//FIXME need to check if all the windows are actually ready
 func updateRunningInstances(name string, stats *GruStats, wsize int) {
 	srvStats := stats.Service[name]
 	pending := srvStats.Instances.Pending
@@ -152,6 +154,49 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 	return sum / float64(len(instCpus)-1)
 }
 
+// TODO maybe I can handle in a better way the error...
+func updateServiceMetrics(name string, stats *GruStats) {
+	srv := stats.Service[name]
+	metrics, err := metric.Manager().GetMetricsOfService(name)
+	if err != nil {
+		log.WithField("error", err).Errorln("Cannot update metrics of service ", name)
+		return
+	}
+	for metric, value := range metrics {
+		switch metric {
+		case "response_time":
+			srv.Metrics.ResponseTime = value
+		default:
+			log.WithField("metric", metric).Errorln("Cannot update undefined metric of service ", name)
+		}
+	}
+	stats.Service[name] = srv
+}
+
+// DEPRECATED?
+// func computeServiceResponseTimeAvg(name string, stats *GruStats) {
+// 	sum := 0.0
+// 	avg := 0.0
+
+// 	rts := history.service[name].responseTime.Slice()
+
+// 	if len(rts) > 0 {
+// 		for _, rt := range rts {
+// 			sum += rt
+// 		}
+// 		avg = sum / float64(len(rts))
+// 	}
+
+// 	srvStats := stats.Service[name]
+// 	srvStats.Metrics.ResponseTime = avg
+// 	stats.Service[name] = srvStats
+
+// 	log.WithFields(log.Fields{
+// 		"Service":      name,
+// 		"ResponseTime": avg,
+// 	}).Debugln("Computed service response time usage")
+// }
+
 func computeSystemCpu(stats *GruStats) {
 	sum := 0.0
 	for _, value := range stats.Service {
@@ -192,13 +237,21 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		start_dst := make([]string, len(events_src.Start), len(events_src.Start))
 		copy(start_dst, events_src.Start)
 		copy(stop_dst, events_src.Stop)
-		// Create new service stats
 		events_dst := EventStats{
 			start_dst,
 			stop_dst,
 		}
+
+		// Copy cpu
 		cpu_dst := CpuStats{stats.Cpu.Avg, stats.Cpu.Tot}
-		srv_dst := ServiceStats{status_dst, events_dst, cpu_dst}
+
+		// Copy metrics
+		metrics_src := srv_src.Metrics
+		respTime_dst := make([]float64, len(metrics_src.ResponseTime), len(metrics_src.ResponseTime))
+		copy(respTime_dst, metrics_src.ResponseTime)
+		metrics_dst := MetricStats{respTime_dst}
+
+		srv_dst := ServiceStats{status_dst, events_dst, cpu_dst, metrics_dst}
 		dst.Service[name] = srv_dst
 	}
 
@@ -264,273 +317,11 @@ func resetEventsStats(srvName string, stats *GruStats) {
 	stats.Service[srvName] = srvStats
 }
 
-func Start(cError chan error, cStop chan struct{}) {
-	log.WithField("status", "start").Debugln("Running monitor")
-	monitorActive = true
-	c_err = cError
-	cStop = cStop
-
-	c_mntrerr := make(chan error)
-	c_evntstart := make(chan string)
-
-	container.Docker().Client.StartMonitorEvents(eventCallback, c_mntrerr, c_evntstart)
-
-	// Get the list of containers (running or not) to monitor
-	containers, err := container.Docker().Client.ListContainers(true, false, "")
-	if err != nil {
-		monitorError(err)
-	}
-
-	// Start the monitor for each configured service
-	for _, c := range containers {
-		info, _ := container.Docker().Client.InspectContainer(c.Id)
-		status := getContainerStatus(info)
-		srv, err := service.GetServiceByImage(c.Image)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"err":   err,
-				"image": c.Image,
-			}).Warningln("Running monitor")
-		} else {
-			// This is needed becasuse on start I don't have data
-			// to analyze the container, so every running container
-			// is in a pending state
-			if status == "running" {
-				status = "pending"
-			}
-			addResource(c.Id, srv.Name, status, &gruStats, &history)
-			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
-		}
-	}
-
-	for monitorActive {
-		select {
-		case err := <-c_mntrerr:
-			monitorError(err)
-		case newId := <-c_evntstart:
-			container.Docker().Client.StartMonitorStats(newId, statCallBack, c_mntrerr)
-		}
-	}
-}
-
-// Events are: create, destroy, die, exec_create, exec_start, export, kill, oom, pause, restart, start, stop, unpause
-func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}) {
-	log.WithFields(log.Fields{
-		"status": "received event",
-		"event":  event.Status,
-		"from":   event.From,
-	}).Debug("Running monitor")
-
-	c_evntstart := args[0].(chan string)
-
-	switch event.Status {
-	case "stop":
-	case "die":
-		removeResource(event.Id, &gruStats, &history)
-	case "create":
-	case "start":
-		// TODO handle error
-		srv, err := service.GetServiceByImage(event.From)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"status": "resource not added",
-				"error":  err,
-			}).Warnln("Running monitor")
-		} else {
-			addResource(event.Id, srv.Name, "pending", &gruStats, &history)
-			c_evntstart <- event.Id
-		}
-
-	default:
-		log.WithFields(log.Fields{
-			"status": "event not handled",
-			"event":  event.Status,
-			"from":   event.From,
-		}).Warnln("Running monitor")
-	}
-
-}
-
-func getContainerStatus(info *dockerclient.ContainerInfo) string {
-	if info.State.Running {
-		return "running"
-	} else if info.State.Paused {
-		return "paused"
-	} else {
-		return "stopped"
-	}
-}
-
-func addResource(id string, srvName string, status string, stats *GruStats, hist *statsHistory) {
-	servStats := stats.Service[srvName]
-	_, err := findIdIndex(id, servStats.Instances.All)
-	if err != nil {
-		servStats.Instances.All = append(servStats.Instances.All, id)
-		stats.System.Instances.All = append(stats.System.Instances.All, id)
-	}
-
-	switch status {
-	case "running":
-		index, err := findIdIndex(id, servStats.Instances.Pending)
-		servStats.Instances.Running = append(servStats.Instances.Running, id)
-		stats.System.Instances.Running = append(stats.System.Instances.Running, id)
-		if err != nil {
-			log.WithField("error", err).Errorln("Cannot find pending instance to promote running")
-		} else {
-			servStats.Instances.Pending = append(
-				servStats.Instances.Pending[:index],
-				servStats.Instances.Pending[index+1:]...)
-
-			sysIndex, _ := findIdIndex(id, stats.System.Instances.Pending)
-			stats.System.Instances.Pending = append(
-				stats.System.Instances.Pending[:sysIndex],
-				stats.System.Instances.Pending[sysIndex+1:]...)
-		}
-	case "pending":
-		servStats.Instances.Pending = append(servStats.Instances.Pending, id)
-		stats.System.Instances.Pending = append(stats.System.Instances.Pending, id)
-
-		index, err := findIdIndex(id, servStats.Instances.Stopped)
-		if err != nil {
-			log.WithField("error", err).Warnln("Cannot find stopped instance to promote pending")
-		} else {
-			servStats.Instances.Stopped = append(
-				servStats.Instances.Stopped[:index],
-				servStats.Instances.Stopped[index+1:]...)
-
-			sysIndex, _ := findIdIndex(id, stats.System.Instances.Stopped)
-			stats.System.Instances.Stopped = append(
-				stats.System.Instances.Stopped[:sysIndex],
-				stats.System.Instances.Stopped[sysIndex+1:]...)
-		}
-
-		servStats.Events.Start = append(servStats.Events.Start, id)
-		cpu := cpuHistory{
-			totalUsage: window.New(W_SIZE, W_MULT),
-			sysUsage:   window.New(W_SIZE, W_MULT),
-		}
-
-		hist.instance[id] = instanceHistory{
-			cpu: cpu,
-		}
-	case "stopped":
-		servStats.Instances.Stopped = append(servStats.Instances.Stopped, id)
-		stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
-	case "paused":
-		servStats.Instances.Paused = append(servStats.Instances.Paused, id)
-		stats.System.Instances.Paused = append(stats.System.Instances.Paused, id)
-	default:
-		log.WithFields(log.Fields{
-			"error":   "Unknown container state: " + status,
-			"service": srvName,
-			"id":      id,
-		}).Warnln("Cannot add resource to monitor")
-	}
-	stats.Service[srvName] = servStats
-
-	log.WithFields(log.Fields{
-		"status":  status,
-		"service": srvName,
-	}).Infoln("Added resource to monitor")
-}
-
-func removeResource(id string, stats *GruStats, hist *statsHistory) {
-	srvName := findServiceByInstanceId(id, stats)
-
-	// Updating service stats
+func resetMetricStats(srvName string, stats *GruStats) {
 	srvStats := stats.Service[srvName]
-	running := srvStats.Instances.Running
-	pending := srvStats.Instances.Pending
 
-	index, err := findIdIndex(id, running)
-	if err != nil {
-		// If it is not runnig it should be pending
-		index, _ = findIdIndex(id, pending)
-		pending = append(pending[:index], pending[index+1:]...)
-		srvStats.Instances.Pending = pending
+	log.WithField("resp_time", srvStats.Metrics.ResponseTime).Debugln("Monitored metrics")
 
-		// Updating system stats
-		sysIndex, _ := findIdIndex(id, stats.System.Instances.Pending)
-		stats.System.Instances.Pending = append(
-			stats.System.Instances.Pending[:sysIndex],
-			stats.System.Instances.Pending[sysIndex+1:]...)
-	} else {
-		running = append(running[:index], running[index+1:]...)
-		srvStats.Instances.Running = running
-
-		// Updating system stats
-		sysIndex, _ := findIdIndex(id, stats.System.Instances.Running)
-		stats.System.Instances.Running = append(
-			stats.System.Instances.Running[:sysIndex],
-			stats.System.Instances.Running[sysIndex+1:]...)
-	}
-
-	srvStats.Instances.Stopped = append(srvStats.Instances.Stopped, id)
-	stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
-
-	// Upating Event stats
-	srvStats.Events.Stop = append(srvStats.Events.Stop, id)
-
+	srvStats.Metrics = MetricStats{}
 	stats.Service[srvName] = srvStats
-
-	// Updating Instances stats
-	delete(stats.Instance, id)
-
-	delete(hist.instance, id)
-
-	log.WithFields(log.Fields{
-		"status":  "removed instance",
-		"service": srvName,
-		"id":      id,
-	}).Infoln("Running monitor")
-}
-
-// TODO create error?
-func findServiceByInstanceId(id string, stats *GruStats) string {
-	for k, v := range stats.Service {
-		for _, instance := range v.Instances.All {
-			if instance == id {
-				return k
-			}
-		}
-	}
-
-	return ""
-}
-
-func findIdIndex(id string, instances []string) (int, error) {
-	for index, v := range instances {
-		if v == id {
-			return index, nil
-		}
-	}
-
-	return -1, ErrNoIndexById
-}
-
-func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	instHist := history.instance[id]
-
-	// Instance stats update
-
-	// Cpu history usage update
-	totCpu := float64(stats.CpuStats.CpuUsage.TotalUsage)
-	sysCpu := float64(stats.CpuStats.SystemUsage)
-	instHist.cpu.totalUsage.PushBack(totCpu)
-	instHist.cpu.sysUsage.PushBack(sysCpu)
-	history.instance[id] = instHist
-}
-
-func monitorError(err error) {
-	log.WithFields(log.Fields{
-		"status": "error",
-		"error:": err,
-	}).Errorln("Running monitor")
-	c_err <- err
-}
-
-func Stop() {
-	monitorActive = false
-	log.WithField("status", "done").Warnln("Running monitor")
-	c_stop <- struct{}{}
 }
