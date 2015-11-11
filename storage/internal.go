@@ -12,7 +12,6 @@ var (
 	mutex_s                  = sync.RWMutex{}
 	mutex_a                  = sync.RWMutex{}
 	mutex_p                  = sync.RWMutex{}
-	mutex_m                  = sync.RWMutex{}
 	ErrInvalidDataType error = errors.New("Invalid data type")
 )
 
@@ -20,7 +19,6 @@ type internal struct {
 	statsData     map[string][]byte
 	analyticsData map[string][]byte
 	plansData     map[string][]byte
-	metricsData   map[string][]byte
 }
 
 func (p *internal) Name() string {
@@ -31,7 +29,6 @@ func (p *internal) Initialize() error {
 	p.statsData = make(map[string][]byte)
 	p.analyticsData = make(map[string][]byte)
 	p.plansData = make(map[string][]byte)
-	p.metricsData = make(map[string][]byte)
 	return nil
 }
 
@@ -49,10 +46,6 @@ func (p *internal) StoreData(key string, data []byte, dataType enum.Datatype) er
 		mutex_p.Lock()
 		p.plansData[key] = data
 		mutex_p.Unlock()
-	case enum.METRICS:
-		mutex_m.Lock()
-		p.metricsData[key] = data
-		mutex_m.Unlock()
 	}
 	runtime.Gosched()
 
@@ -74,10 +67,6 @@ func (p *internal) GetData(key string, dataType enum.Datatype) ([]byte, error) {
 		mutex_p.RLock()
 		data = p.plansData[key]
 		mutex_p.RUnlock()
-	case enum.METRICS:
-		mutex_m.RLock()
-		data = p.metricsData[key]
-		mutex_m.RUnlock()
 	}
 	runtime.Gosched()
 
@@ -99,10 +88,6 @@ func (p *internal) GetAllData(dataType enum.Datatype) (map[string][]byte, error)
 		mutex_p.RLock()
 		data = p.plansData
 		mutex_p.RUnlock()
-	case enum.METRICS:
-		mutex_m.RLock()
-		data = p.metricsData
-		mutex_m.RUnlock()
 	}
 	runtime.Gosched()
 
@@ -123,10 +108,6 @@ func (p *internal) DeleteData(key string, dataType enum.Datatype) error {
 		mutex_p.Lock()
 		delete(p.plansData, key)
 		mutex_p.Unlock()
-	case enum.METRICS:
-		mutex_m.Lock()
-		delete(p.metricsData, key)
-		mutex_m.Unlock()
 	}
 
 	return nil
@@ -146,10 +127,6 @@ func (p *internal) DeleteAllData(dataType enum.Datatype) error {
 		mutex_p.Lock()
 		p.plansData = make(map[string][]byte)
 		mutex_p.Unlock()
-	case enum.METRICS:
-		mutex_m.Lock()
-		p.metricsData = make(map[string][]byte)
-		mutex_m.Unlock()
 	}
 	runtime.Gosched()
 
