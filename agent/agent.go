@@ -18,8 +18,8 @@ import (
 var config GruAgentConfig
 
 func LoadGruAgentConfig(filename string) error {
-	log.WithField("status", "start").Infoln("Agent configuration loading")
-	defer log.WithField("status", "done").Infoln("Agent configuration loading")
+	log.WithField("status", "start").Infoln("Loading agent configuration")
+	defer log.WithField("status", "ok").Infoln("Loaded agent configuration")
 
 	tmp, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -35,11 +35,11 @@ func LoadGruAgentConfig(filename string) error {
 }
 
 func Run() {
-	initializeServices()
-	initializeNode()
 	initializeDiscovery()
 	initializeStorage()
 	initializeContainerEngine()
+	initializeServices()
+	initializeNode()
 
 	startAutonomicManager()
 }
