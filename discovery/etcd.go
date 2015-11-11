@@ -47,11 +47,11 @@ func (p *etcdDiscovery) Initialize(uri string) error {
 func (p *etcdDiscovery) Register(myUUID string, myAddress string, ttl int) error {
 	path := "/nodes/" + myUUID
 
-	_, err := p.kAPI.CreateInOrder(
+	_, err := p.kAPI.Set(
 		context.Background(),
 		path,
 		myAddress,
-		&client.CreateInOrderOptions{TTL: time.Duration(ttl) * time.Second},
+		&client.SetOptions{TTL: time.Duration(ttl) * time.Second},
 	)
 	if err != nil {
 		log.WithField("error", err).Errorln("Registering to discovery service")
