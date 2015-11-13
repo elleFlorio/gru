@@ -28,25 +28,15 @@ func TestSetPlannerStrategy(t *testing.T) {
 	assert.Equal(t, "dummy", currentStrategy.Name(), "(notsupported) Current strategy should be dummy")
 }
 
-func TestRetrieveAnalytics(t *testing.T) {
-	defer storage.DeleteAllData(enum.ANALYTICS)
-	var err error
-
-	_, err = retrieveAnalytics()
-	assert.Error(t, err)
-
-	analyzer.StoreMockAnalytics()
-	_, err = retrieveAnalytics()
-	assert.NoError(t, err)
-}
-
 func TestBuildPlans(t *testing.T) {
 	srvcs := service.CreateMockServices()
 	service.UpdateServices(srvcs)
-	analytics := analyzer.CreateMockAnalytics()
+	analytics := analyzer.GruAnalytics{}
 	plans := buildPlans(analytics)
-	nPlans := len(srvcs) * len(policy.List())
-
+	assert.Len(t, plans, 1)
+	analytics = analyzer.CreateMockAnalytics()
+	plans = buildPlans(analytics)
+	nPlans := len(srvcs)*len(policy.List()) + 1 // +1 for the noAction plan
 	assert.Len(t, plans, nPlans)
 }
 
@@ -55,6 +45,37 @@ func TestSavePlan(t *testing.T) {
 	plan := strategy.CreateRandomPlans(1)[0]
 
 	err := savePlan(&plan)
+	assert.NoError(t, err)
+}
+
+func TestConvertPlanToData(t *testing.T) {
+	plan := strategy.CreateMockPlan(enum.WHITE, service.Service{}, []enum.Action{enum.START})
+
+	_, err := convertPlanToData(plan)
+	assert.NoError(t, err)
+}
+
+func TestConvertDataToPlan(t *testing.T) {
+	plan := strategy.CreateMockPlan(enum.WHITE, service.Service{}, []enum.Action{enum.START})
+	data_ok, err := convertPlanToData(plan)
+	data_bad := []byte{}
+
+	_, err = convertDataToPlan(data_ok)
+	assert.NoError(t, err)
+
+	_, err = convertDataToPlan(data_bad)
+	assert.Error(t, err)
+}
+
+func TestGetPlannerData(t *testing.T) {
+	defer storage.DeleteAllData(enum.PLANS)
+	var err error
+
+	_, err = GetPlannerData()
+	assert.Error(t, err)
+
+	strategy.StoreMockPlan(enum.ORANGE, service.Service{}, []enum.Action{})
+	_, err = GetPlannerData()
 	assert.NoError(t, err)
 }
 

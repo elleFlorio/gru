@@ -5,6 +5,7 @@ import (
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
+	"github.com/elleFlorio/gru/autonomic/monitor/metric"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
@@ -12,6 +13,7 @@ import (
 func init() {
 	//Initialize storage
 	storage.New("internal")
+	metric.Manager().Start()
 }
 
 func TestUpdateRunningInstances(t *testing.T) {
@@ -196,6 +198,33 @@ func TestFindIdIndex(t *testing.T) {
 
 	index, _ := findIdIndex("instance1_3", instances)
 	assert.Equal(t, 2, index, "index of 'instance3' should be 2")
+}
+
+func TestConvertStatsToData(t *testing.T) {
+	stats_ok := CreateMockStats()
+
+	_, err := convertStatsToData(stats_ok)
+	assert.NoError(t, err, "(ok) stats convertion should produce no error")
+}
+
+func TestConvertDataToStats(t *testing.T) {
+	data_ok, err := convertStatsToData(CreateMockStats())
+	data_bad := []byte{}
+
+	_, err = convertDataToStats(data_ok)
+	assert.NoError(t, err, "(ok) data convertion should produce no error")
+
+	_, err = convertDataToStats(data_bad)
+	assert.Error(t, err, "(bad) data convertion should produce an error")
+}
+
+func TestGetMonitorData(t *testing.T) {
+	_, err := GetMonitorData()
+	assert.Error(t, err)
+
+	StoreMockStats()
+	_, err = GetMonitorData()
+	assert.NoError(t, err)
 }
 
 func TestRun(t *testing.T) {

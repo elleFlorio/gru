@@ -7,7 +7,7 @@ import (
 
 func getAnalytics() GruAnalytics {
 	data, _ := storage.GetClusterData(enum.ANALYTICS)
-	analytics, _ := ConvertDataToAnalytics(data)
+	analytics, _ := convertDataToAnalytics(data)
 	return analytics
 }
 

@@ -60,6 +60,7 @@ func initializeNode() {
 	if err != nil {
 		signalErrorInAgent(err)
 	}
+	node.ComputeTotalResources()
 }
 
 func initializeDiscovery() {

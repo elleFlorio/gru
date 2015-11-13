@@ -50,7 +50,7 @@ func CreateMockFiles() string {
             },
             "Configuration":{
             	"CpuShares":512,
-            	"CpuSet":1
+            	"CpusetCpus":1
             }
 
         }`

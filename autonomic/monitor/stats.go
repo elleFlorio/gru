@@ -1,9 +1,6 @@
 package monitor
 
 import (
-	"encoding/json"
-
-	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
 
 	"github.com/elleFlorio/gru/service"
@@ -19,6 +16,7 @@ type ServiceStats struct {
 	Instances service.InstanceStatus `json:"instances"`
 	Events    EventStats             `json:"events"`
 	Cpu       CpuStats               `json:"cpu"`
+	Memory    MemoryStats            `json:memory`
 	Metrics   MetricStats            `json:metrics`
 }
 
@@ -32,12 +30,18 @@ type CpuStats struct {
 	Tot float64 `json:"tot"`
 }
 
+type MemoryStats struct {
+	Avg float64 `json:"avg"`
+	Tot float64 `json:"tot"`
+}
+
 type MetricStats struct {
 	ResponseTime []float64 `json:responsetime`
 }
 
 type InstanceStats struct {
-	Cpu float64 `json:"cpu"`
+	Cpu    float64 `json:"cpu"`
+	Memory float64 `json:memory`
 }
 
 type SystemStats struct {
@@ -46,39 +50,15 @@ type SystemStats struct {
 }
 
 type statsHistory struct {
-	service  map[string]metricsHistory //Deprecated?
 	instance map[string]instanceHistory
-}
-
-type metricsHistory struct {
-	responseTime *window.MovingWindow
 }
 
 type instanceHistory struct {
 	cpu cpuHistory
+	mem *window.MovingWindow
 }
 
 type cpuHistory struct {
 	totalUsage *window.MovingWindow
 	sysUsage   *window.MovingWindow
-}
-
-func convertStatsToData(stats GruStats) ([]byte, error) {
-	data, err := json.Marshal(stats)
-	if err != nil {
-		log.WithField("error", err).Errorln("Error marshaling stats data")
-		return nil, err
-	}
-
-	return data, nil
-}
-
-func ConvertDataToStats(data []byte) (GruStats, error) {
-	stats := GruStats{}
-	err := json.Unmarshal(data, &stats)
-	if err != nil {
-		log.WithField("error", err).Errorln("Error unmarshaling stats data")
-	}
-
-	return stats, err
 }

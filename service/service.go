@@ -9,6 +9,8 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
+const c_INFINITE = 1000000000
+
 var (
 	services         []Service
 	ErrNoSuchService = errors.New("Service does not exists")
@@ -33,6 +35,7 @@ func LoadServices(path string) error {
 				"error": err,
 			}).Errorln("Error unmarshaling service file")
 		} else {
+			checkService(&service)
 			services = append(services, service)
 		}
 	}
@@ -40,6 +43,34 @@ func LoadServices(path string) error {
 	log.Infoln("Services loading complete. Loaded files: ", len(services))
 
 	return nil
+}
+
+func checkService(service *Service) {
+	name := service.Name
+	checkConstraints(name, &service.Constraints)
+	checkConfiguration(name, &service.Configuration)
+}
+
+func checkConstraints(name string, cnstrnts *Constraints) {
+	if cnstrnts.MaxRespTime == 0 {
+		log.WithField("service", name).Warnln("Max Response Time is 0. Setting it to 'infinite'")
+		cnstrnts.MaxRespTime = c_INFINITE
+	}
+
+	if cnstrnts.MaxActive == 0 {
+		log.WithField("service", name).Warnln("Maximum number of instances is 0. Setting it to 'infinite'")
+		cnstrnts.MaxActive = c_INFINITE
+	}
+}
+
+func checkConfiguration(name string, conf *Config) {
+	if conf.Memory == "" {
+		log.WithField("service", name).Warnln("Memory limit not set. Service will use all the memory available")
+	}
+
+	if conf.CpusetCpus == "" {
+		log.WithField("service", name).Warnln("Cores not assigned. Service will use all the cores")
+	}
 }
 
 func List() []string {
@@ -77,15 +108,15 @@ func GetServiceByImage(sImg string) (*Service, error) {
 }
 
 func getServiceBy(field string, value string) (*Service, error) {
-	for _, service := range services {
+	for i := 0; i < len(services); i++ {
 		switch field {
 		case "Name":
-			if service.Name == value {
-				return &service, nil
+			if services[i].Name == value {
+				return &services[i], nil
 			}
 		case "Image":
-			if service.Image == value {
-				return &service, nil
+			if services[i].Image == value {
+				return &services[i], nil
 			}
 		}
 	}

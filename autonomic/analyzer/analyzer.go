@@ -1,7 +1,9 @@
 package analyzer
 
 import (
+	"encoding/json"
 	"errors"
+	"strings"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -13,8 +15,6 @@ import (
 	"github.com/elleFlorio/gru/utils"
 )
 
-const dataType string = "analytics"
-const statsDataType string = "stats"
 const overcommitratio float64 = 0.25
 
 var (
@@ -32,7 +32,7 @@ func Run() {
 	log.WithField("status", "start").Infoln("Running analyzer")
 	defer log.WithField("status", "done").Infoln("Running analyzer")
 
-	stats, err := retrieveStats()
+	stats, err := monitor.GetMonitorData()
 	if err != nil {
 		log.WithField("error", "Cannot compute analytics").Errorln("Running Analyzer.")
 	} else {
@@ -45,19 +45,9 @@ func Run() {
 		if err != nil {
 			log.WithField("error", "Cluster analytics data not saved ").Errorln("Running Analyzer")
 		}
-	}
-}
 
-func retrieveStats() (monitor.GruStats, error) {
-	stats := monitor.GruStats{}
-	dataStats, err := storage.GetLocalData(enum.STATS)
-	if err != nil {
-		log.WithField("error", err).Errorln("Cannot retrieve stats data.")
-	} else {
-		stats, err = monitor.ConvertDataToStats(dataStats)
+		displayAnalyticsOfServices(gruAnalytics)
 	}
-
-	return stats, err
 }
 
 func updateNodeResources() {
@@ -73,15 +63,14 @@ func updateNodeResources() {
 
 func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
 	for name, value := range stats.Service {
-		//TODO some labels are not yet ready
-		temp := 0.0
-		loadLabel := enum.FromValue(temp)
+
+		loadLabel := analyzeServiceLoad(name, value.Metrics.ResponseTime)
 		cpuLabel := enum.FromValue(value.Cpu.Tot)
-		memLabel := enum.FromValue(temp)
+		memLabel := enum.FromValue(value.Memory.Tot)
 		srvResources := computeServiceResources(name)
 		instances := value.Instances
 
-		health := (loadLabel + cpuLabel + memLabel + srvResources) / 4 //I don't like this...
+		health := enum.FromLabelValue((loadLabel.Value() + cpuLabel.Value() + memLabel.Value() + srvResources.Value()) / 4) //I don't like this...
 
 		srvRes := ResourcesAnalytics{
 			cpuLabel,
@@ -100,25 +89,79 @@ func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
 	}
 }
 
+func analyzeServiceLoad(name string, responseTimes []float64) enum.Label {
+	srv, _ := service.GetServiceByName(name)
+	maxRt := srv.Constraints.MaxRespTime
+	avgRt := computeAvgResponseTime(responseTimes)
+	load := computeLoad(maxRt, avgRt)
+
+	log.WithFields(log.Fields{
+		"avgRt":   avgRt,
+		"service": name,
+	}).Debugln("Computerd avg response time of serice")
+
+	return load
+}
+
+func computeAvgResponseTime(responseTimes []float64) float64 {
+	sum := 0.0
+	avg := 0.0
+
+	for _, rt := range responseTimes {
+		sum += rt
+	}
+
+	if len(responseTimes) > 0 {
+		avg = sum / float64(len(responseTimes))
+	}
+
+	return avg
+}
+
+func computeLoad(maxRt float64, avgRt float64) enum.Label {
+	// I want the maximum response time
+	// to correspond to the 60% of load
+	// (limit of the orange label)
+	upperBound := maxRt / 0.6
+	if avgRt > upperBound {
+		avgRt = upperBound
+	}
+
+	loadValue := avgRt / upperBound
+	loadLabel := enum.FromValue(loadValue)
+
+	return loadLabel
+}
+
 func computeServiceResources(name string) enum.Label {
+	var err error
+
 	nodeMem := node.Config().Resources.TotalMemory
 	nodeCpu := node.Config().Resources.TotalCpus
 	nodeUsedMem := node.Config().Resources.UsedMemory
 	nodeUsedCpu := node.Config().Resources.UsedCpu
 
 	srv, _ := service.GetServiceByName(name)
-	//I use CpuSetValue despite Swarm
-	//srvCpu := srv.Configuration.CpuShares
-	srvCpu := srv.Configuration.CpuSet
-	srvMem, err := utils.RAMInBytes(srv.Configuration.Memory)
-	if err != nil {
-		log.WithField("error", err).Warnln("Cannot convert service RAM in Bytes.")
-		return enum.RED
+	srvCpu := getNumberOfCpuFromString(srv.Configuration.CpusetCpus)
+	var srvMem int64
+	if srv.Configuration.Memory != "" {
+		srvMem, err = utils.RAMInBytes(srv.Configuration.Memory)
+		if err != nil {
+			log.WithField("error", err).Warnln("Cannot convert service RAM in Bytes.")
+			return enum.RED
+		}
+	} else {
+		srvMem = 0
 	}
 
+	// TODO test the correct policy about this
+	// this value allow to decide if a container that doesn't specify a cpu or memory limit
+	// is considered to use all/no cpu and all/no ram - i.e.
+	// set to 0 = container uses virtually no resources
+	// set to 1 = container uses virtually all the resources
 	var (
-		cpuScore float64 = 1
-		memScore float64 = 1
+		cpuScore float64 = 0
+		memScore float64 = 0
 		weight   float64 = 1
 	)
 
@@ -143,6 +186,14 @@ func computeServiceResources(name string) enum.Label {
 
 	return enum.FromValue(weight)
 
+}
+
+func getNumberOfCpuFromString(cpuset string) int64 {
+	if cpuset == "" {
+		return 0
+	}
+
+	return int64(len(strings.Split(cpuset, ",")))
 }
 
 func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
@@ -214,7 +265,7 @@ func getPeersAnalytics() []GruAnalytics {
 	peers := make([]GruAnalytics, 0)
 	dataAn, _ := storage.GetAllData(enum.ANALYTICS)
 	for _, data := range dataAn {
-		a, _ := ConvertDataToAnalytics(data)
+		a, _ := convertDataToAnalytics(data)
 		peers = append(peers, a)
 	}
 
@@ -337,4 +388,49 @@ func saveAnalytics(analytics GruAnalytics) error {
 	}
 
 	return nil
+}
+
+func convertAnalyticsToData(analytics GruAnalytics) ([]byte, error) {
+	data, err := json.Marshal(analytics)
+	if err != nil {
+		log.WithField("error", err).Errorln("Error marshaling analytics data")
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func displayAnalyticsOfServices(analytics GruAnalytics) {
+	for srv, value := range analytics.Service {
+		log.WithFields(log.Fields{
+			"service":   srv,
+			"cpu":       value.Resources.Cpu.ToString(),
+			"memory":    value.Resources.Memory.ToString(),
+			"resources": value.Resources.Available.ToString(),
+			"load":      value.Load.ToString(),
+			"health":    value.Health.ToString(),
+		}).Infoln("Computed analytics")
+	}
+}
+
+func GetAnalyzerData() (GruAnalytics, error) {
+	analytics := GruAnalytics{}
+	dataAnalyics, err := storage.GetData(enum.CLUSTER.ToString(), enum.ANALYTICS)
+	if err != nil {
+		log.WithField("error", err).Errorln("Cannot retrieve analytics data.")
+	} else {
+		analytics, err = convertDataToAnalytics(dataAnalyics)
+	}
+
+	return analytics, err
+}
+
+func convertDataToAnalytics(data []byte) (GruAnalytics, error) {
+	analytics := GruAnalytics{}
+	err := json.Unmarshal(data, &analytics)
+	if err != nil {
+		log.WithField("error", err).Errorln("Error unmarshaling analytics data")
+	}
+
+	return analytics, err
 }

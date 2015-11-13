@@ -11,7 +11,7 @@ import (
 func createServConfig() service.Config {
 	cfg := service.Config{}
 	cfg.Cmd = []string{"a", "b"}
-	cfg.CpuSet = 4
+	cfg.CpusetCpus = "0"
 	cfg.CpuShares = 512
 	cfg.Entrypoint = []string{"d", "e"}
 	cfg.Links = []string{"pippo"}

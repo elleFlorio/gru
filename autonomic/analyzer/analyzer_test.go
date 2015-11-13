@@ -25,30 +25,27 @@ func init() {
 	storage.New("internal")
 }
 
-func TestRetrieveStats(t *testing.T) {
-	_, err := retrieveStats()
-	assert.Error(t, err)
-
-	monitor.StoreMockStats()
-	_, err = retrieveStats()
-	assert.NoError(t, err)
-}
-
 //TODO this is not so straithforward
 func TestComputeServiceResources(t *testing.T) {
+	cpu8 := "0,1,2,3,4,5,6,7"
+	cpu6 := "0,1,2,3,4,5"
+	cpu4 := "0,1,2,3"
+	cpu2 := "0,1"
+	cpu1 := "0"
+
 	n_full := createNode(6, "8G", 6, "8G")
 	n_half_full := createNode(6, "8G", 4, "4G")
 	n_half_empty := createNode(6, "8G", 2, "2G")
 	n_empty := createNode(6, "8G", 0, "0G")
 
 	name := "test"
-	s_over := createService(name, 8, "16G")
-	s_bigger := createService(name, 6, "8G")
-	s_big := createService(name, 4, "4G")
-	s_medium := createService(name, 2, "4G")
-	s_low := createService(name, 2, "2G")
-	s_lower := createService(name, 1, "1G")
-	s_error := createService(name, 1, "error")
+	s_over := createService(name, cpu8, "16G")
+	s_bigger := createService(name, cpu6, "8G")
+	s_big := createService(name, cpu4, "4G")
+	s_medium := createService(name, cpu2, "4G")
+	s_low := createService(name, cpu2, "2G")
+	s_lower := createService(name, cpu1, "1G")
+	s_error := createService(name, cpu1, "error")
 
 	//error
 	node.UpdateNodeConfig(n_empty)
@@ -114,10 +111,10 @@ func TestComputeServiceResources(t *testing.T) {
 }
 
 // CpuSet or CpuShares?
-func createService(name string, cpu int64, mem string) service.Service {
+func createService(name string, cpu string, mem string) service.Service {
 	srvConfig := service.Config{
-		CpuSet: cpu,
-		Memory: mem,
+		CpusetCpus: cpu,
+		Memory:     mem,
 	}
 
 	srv := service.Service{
@@ -144,8 +141,8 @@ func TestAnalyzeServices(t *testing.T) {
 	}
 
 	services := []service.Service{
-		createService("service1", 4, "4G"),
-		createService("service2", 1, "2G"),
+		createService("service1", "0,1,2,3", "4G"),
+		createService("service2", "0", "2G"),
 	}
 	service.UpdateServices(services)
 
@@ -480,8 +477,21 @@ func TestAnalyzeCluster(t *testing.T) {
 }
 
 func TestSaveAnalytics(t *testing.T) {
+	defer storage.DeleteAllData(enum.ANALYTICS)
 	var err error
 	analytics := CreateMockAnalytics()
 	err = saveAnalytics(analytics)
+	assert.NoError(t, err)
+}
+
+func TestGetAnalyzerData(t *testing.T) {
+	defer storage.DeleteAllData(enum.ANALYTICS)
+	var err error
+
+	_, err = GetAnalyzerData()
+	assert.Error(t, err)
+
+	StoreMockAnalytics()
+	_, err = GetAnalyzerData()
 	assert.NoError(t, err)
 }

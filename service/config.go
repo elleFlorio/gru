@@ -17,12 +17,13 @@ type InstanceStatus struct {
 	Paused  []string `json:"paused"`
 }
 
-// This can maybe be eliminated
+// TODO this needs a review
 type Constraints struct {
-	CpuMax    float64 `json:"cpumax"`
-	CpuMin    float64 `json:"cpumin"`
-	MinActive int     `json:"minactive"`
-	MaxActive int     `json:"maxactive"`
+	CpuMax      float64 `json:"cpumax"`
+	CpuMin      float64 `json:"cpumin"`
+	MinActive   int     `json:"minactive"`
+	MaxActive   int     `json:"maxactive"`
+	MaxRespTime float64 `json:"maxresptime"`
 }
 
 type Config struct {
@@ -31,7 +32,7 @@ type Config struct {
 	Entrypoint   []string                 `json:"entrypoint"`
 	Memory       string                   `json:"memory"`
 	CpuShares    int64                    `json:"cpushares"`
-	CpuSet       int64                    `json:"cpuset"`
+	CpusetCpus   string                   `json:"cpuset"`
 	PortBindings map[string][]PortBinding `json:"portbindings"`
 	Links        []string                 `json:"links"`
 }

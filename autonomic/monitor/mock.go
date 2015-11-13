@@ -69,16 +69,21 @@ func CreateMockStats() GruStats {
 
 	cpuSys := 0.8
 	cpu1_1 := 0.4
+	mem1_1 := 0.4
 	cpu1_2 := 0.2
+	mem1_2 := 0.2
 	cpu1_3 := 0.0
+	mem1_3 := 0.0
 	cpu1_4 := 0.0
+	mem1_4 := 0.0
 	cpu2_1 := 0.2
+	mem2_1 := 0.2
 
-	instStat1_1 := InstanceStats{cpu1_1}
-	instStat1_2 := InstanceStats{cpu1_2}
-	instStat1_3 := InstanceStats{cpu1_3}
-	instStat1_4 := InstanceStats{cpu1_4}
-	instStat2_1 := InstanceStats{cpu2_1}
+	instStat1_1 := InstanceStats{cpu1_1, mem1_1}
+	instStat1_2 := InstanceStats{cpu1_2, mem1_2}
+	instStat1_3 := InstanceStats{cpu1_3, mem1_3}
+	instStat1_4 := InstanceStats{cpu1_4, mem1_4}
+	instStat2_1 := InstanceStats{cpu2_1, mem2_1}
 
 	instances := map[string]InstanceStats{
 		"instance1_1": instStat1_1,
@@ -132,6 +137,13 @@ func CreateMockHistory() statsHistory {
 	cpuTot1_1.PushBack(float64(40000))
 	cpuTot1_1.PushBack(float64(50000))
 	cpuTot1_1.PushBack(float64(60000))
+	mem1_1 := window.New(W_SIZE, W_MULT)
+	mem1_1.PushBack(100000)
+	mem1_1.PushBack(200000)
+	mem1_1.PushBack(300000)
+	mem1_1.PushBack(400000)
+	mem1_1.PushBack(500000)
+	mem1_1.PushBack(600000)
 
 	cpuTot1_2 := window.New(W_SIZE, W_MULT)
 	cpuTot1_2.PushBack(float64(60000))
@@ -140,6 +152,13 @@ func CreateMockHistory() statsHistory {
 	cpuTot1_2.PushBack(float64(240000))
 	cpuTot1_2.PushBack(float64(300000))
 	cpuTot1_2.PushBack(float64(360000))
+	mem1_2 := window.New(W_SIZE, W_MULT)
+	mem1_2.PushBack(150000)
+	mem1_2.PushBack(250000)
+	mem1_2.PushBack(350000)
+	mem1_2.PushBack(450000)
+	mem1_2.PushBack(550000)
+	mem1_2.PushBack(650000)
 
 	cpuTot1_3 := window.New(W_SIZE, W_MULT)
 	cpuTot1_3.PushBack(float64(50000))
@@ -148,9 +167,18 @@ func CreateMockHistory() statsHistory {
 	cpuTot1_3.PushBack(float64(75000))
 	cpuTot1_3.PushBack(float64(80000))
 	cpuTot1_3.PushBack(float64(85000))
+	mem1_3 := window.New(W_SIZE, W_MULT)
+	mem1_3.PushBack(150000)
+	mem1_3.PushBack(250000)
+	mem1_3.PushBack(850000)
+	mem1_3.PushBack(1000000)
+	mem1_3.PushBack(750000)
+	mem1_3.PushBack(1200000)
 
 	cpuTot1_4 := window.New(W_SIZE, W_MULT)
 	cpuTot1_4.PushBack(float64(70000))
+	mem1_4 := window.New(W_SIZE, W_MULT)
+	mem1_4.PushBack(400000)
 
 	cpuTot2_1 := window.New(W_SIZE, W_MULT)
 	cpuTot2_1.PushBack(float64(40000))
@@ -159,6 +187,13 @@ func CreateMockHistory() statsHistory {
 	cpuTot2_1.PushBack(float64(160000))
 	cpuTot2_1.PushBack(float64(200000))
 	cpuTot2_1.PushBack(float64(240000))
+	mem2_1 := window.New(W_SIZE, W_MULT)
+	mem2_1.PushBack(1000000)
+	mem2_1.PushBack(1250000)
+	mem2_1.PushBack(1500000)
+	mem2_1.PushBack(1750000)
+	mem2_1.PushBack(2000000)
+	mem2_1.PushBack(2250000)
 
 	cpuHist1_1 := cpuHistory{
 		cpuTot1_1,
@@ -181,11 +216,11 @@ func CreateMockHistory() statsHistory {
 		cpuSysAll,
 	}
 
-	instHist1_1 := instanceHistory{cpuHist1_1}
-	instHist1_2 := instanceHistory{cpuHist1_2}
-	instHist1_3 := instanceHistory{cpuHist1_3}
-	instHist1_4 := instanceHistory{cpuHist1_4}
-	instHist2_1 := instanceHistory{cpuHist2_1}
+	instHist1_1 := instanceHistory{cpuHist1_1, mem1_1}
+	instHist1_2 := instanceHistory{cpuHist1_2, mem1_2}
+	instHist1_3 := instanceHistory{cpuHist1_3, mem1_3}
+	instHist1_4 := instanceHistory{cpuHist1_4, mem1_4}
+	instHist2_1 := instanceHistory{cpuHist2_1, mem2_1}
 
 	instancesHist := map[string]instanceHistory{
 		"instance1_1": instHist1_1,
@@ -195,9 +230,7 @@ func CreateMockHistory() statsHistory {
 		"instance2_1": instHist2_1,
 	}
 
-	serviceHist := make(map[string]metricsHistory)
-
-	mockHist := statsHistory{serviceHist, instancesHist}
+	mockHist := statsHistory{instancesHist}
 
 	return mockHist
 

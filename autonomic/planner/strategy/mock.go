@@ -1,6 +1,7 @@
 package strategy
 
 import (
+	"encoding/json"
 	"math/rand"
 
 	"github.com/elleFlorio/gru/enum"
@@ -16,8 +17,17 @@ func CreateMockPlan(l enum.Label, s service.Service, a []enum.Action) GruPlan {
 
 func StoreMockPlan(l enum.Label, s service.Service, a []enum.Action) {
 	plan := CreateMockPlan(l, s, a)
-	data, _ := ConvertPlanToData(plan)
+	data, _ := convertPlanToData(plan)
 	storage.StoreLocalData(data, enum.PLANS)
+}
+
+func convertPlanToData(plan GruPlan) ([]byte, error) {
+	data, err := json.Marshal(plan)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func CreateRandomPlans(n int) []GruPlan {

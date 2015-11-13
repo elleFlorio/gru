@@ -10,8 +10,6 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-var optionsLog = dockerclient.LogOptions{Follow: true, Stdout: true, Stderr: true, Tail: 1}
-
 func Start(cError chan error, cStop chan struct{}) {
 	log.WithField("status", "start").Debugln("Autonomic Monitor")
 	metric.Manager().Start()
@@ -19,7 +17,6 @@ func Start(cError chan error, cStop chan struct{}) {
 	monitorActive = true
 	c_err = cError
 	cStop = cStop
-
 	c_mntrerr := make(chan error)
 	c_evntstart := make(chan string)
 
@@ -50,6 +47,7 @@ func Start(cError chan error, cStop chan struct{}) {
 			}
 			addResource(c.Id, srv.Name, status, &gruStats, &history)
 			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
+			startMonitorLog(c.Id)
 		}
 	}
 
@@ -74,9 +72,6 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 	c_evntstart := args[0].(chan string)
 
 	switch event.Status {
-	case "stop":
-	case "die":
-		removeResource(event.Id, &gruStats, &history)
 	case "create":
 	case "start":
 		// TODO handle error
@@ -88,9 +83,13 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 			}).Warnln("Running monitor")
 		} else {
 			addResource(event.Id, srv.Name, "pending", &gruStats, &history)
+			startMonitorLog(event.Id)
 			c_evntstart <- event.Id
 		}
-
+	case "stop":
+	case "die":
+	case "kill":
+		removeResource(event.Id, &gruStats, &history)
 	default:
 		log.WithFields(log.Fields{
 			"status": "event not handled",
@@ -99,16 +98,6 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		}).Warnln("Running monitor")
 	}
 
-}
-
-func getContainerStatus(info *dockerclient.ContainerInfo) string {
-	if info.State.Running {
-		return "running"
-	} else if info.State.Paused {
-		return "paused"
-	} else {
-		return "stopped"
-	}
 }
 
 func addResource(id string, srvName string, status string, stats *GruStats, hist *statsHistory) {
@@ -142,7 +131,7 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 
 		index, err := findIdIndex(id, servStats.Instances.Stopped)
 		if err != nil {
-			log.WithField("error", err).Warnln("Cannot find stopped instance to promote pending")
+			log.WithField("error", err).Debugln("Cannot find stopped instance to promote pending")
 		} else {
 			servStats.Instances.Stopped = append(
 				servStats.Instances.Stopped[:index],
@@ -160,29 +149,8 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 			totalUsage: window.New(W_SIZE, W_MULT),
 			sysUsage:   window.New(W_SIZE, W_MULT),
 		}
-
-		// ###########################################################
-		// NOT USED BY NOW. I keep it for now because I'm not sure that
-		// what I'm doing makes sense...
-
-		// This is related to the service, not the single isntance,
-		// so I have to check if it's already initialized.
-		// Maybe I can find a better way to do this...
-		/*if _, ok := hist.service[srvName]; !ok {
-			respTime := window.New(W_SIZE, W_MULT)
-			hist.service[srvName] = metricsHistory{respTime}
-		}*/
-		// ###########################################################
-
-		hist.instance[id] = instanceHistory{cpu}
-
-		contLog, err := container.Docker().Client.ContainerLogs(id, &optionsLog)
-		if err != nil {
-			log.WithField("error", err).Errorln("Cannot start log monitoring on container ", id)
-		} else {
-			metric.Manager().StartCollector(contLog)
-		}
-
+		mem := window.New(W_SIZE, W_MULT)
+		hist.instance[id] = instanceHistory{cpu, mem}
 	case "stopped":
 		servStats.Instances.Stopped = append(servStats.Instances.Stopped, id)
 		stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
@@ -202,6 +170,16 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 		"status":  status,
 		"service": srvName,
 	}).Infoln("Added resource to monitor")
+}
+
+func findIdIndex(id string, instances []string) (int, error) {
+	for index, v := range instances {
+		if v == id {
+			return index, nil
+		}
+	}
+
+	return -1, ErrNoIndexById
 }
 
 func removeResource(id string, stats *GruStats, hist *statsHistory) {
@@ -262,6 +240,16 @@ func removeResource(id string, stats *GruStats, hist *statsHistory) {
 	}).Infoln("Running monitor")
 }
 
+func startMonitorLog(id string) {
+	var optionsLog = dockerclient.LogOptions{Follow: true, Stdout: true, Stderr: true, Tail: 1}
+	contLog, err := container.Docker().Client.ContainerLogs(id, &optionsLog)
+	if err != nil {
+		log.WithField("error", err).Errorln("Cannot start log monitoring on container ", id)
+	} else {
+		metric.Manager().StartCollector(contLog)
+	}
+}
+
 // TODO create error?
 func findServiceByInstanceId(id string, stats *GruStats) string {
 	for k, v := range stats.Service {
@@ -275,27 +263,35 @@ func findServiceByInstanceId(id string, stats *GruStats) string {
 	return ""
 }
 
-func findIdIndex(id string, instances []string) (int, error) {
-	for index, v := range instances {
-		if v == id {
-			return index, nil
-		}
+func getContainerStatus(info *dockerclient.ContainerInfo) string {
+	if info.State.Running {
+		return "running"
+	} else if info.State.Paused {
+		return "paused"
+	} else {
+		return "stopped"
 	}
-
-	return -1, ErrNoIndexById
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	instHist := history.instance[id]
+	if instHist, ok := history.instance[id]; ok {
+		// Instance stats update
 
-	// Instance stats update
+		// Cpu history usage update
+		totCpu := float64(stats.CpuStats.CpuUsage.TotalUsage)
+		sysCpu := float64(stats.CpuStats.SystemUsage)
+		instHist.cpu.totalUsage.PushBack(totCpu)
+		instHist.cpu.sysUsage.PushBack(sysCpu)
 
-	// Cpu history usage update
-	totCpu := float64(stats.CpuStats.CpuUsage.TotalUsage)
-	sysCpu := float64(stats.CpuStats.SystemUsage)
-	instHist.cpu.totalUsage.PushBack(totCpu)
-	instHist.cpu.sysUsage.PushBack(sysCpu)
-	history.instance[id] = instHist
+		// Memory usage update
+		mem := float64(stats.MemoryStats.Usage)
+		instHist.mem.PushBack(mem)
+
+		history.instance[id] = instHist
+	} else {
+		log.WithField("id", id).Debugln("Cannot find history of instance")
+	}
+
 }
 
 func monitorError(err error) {

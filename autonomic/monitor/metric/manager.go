@@ -1,18 +1,11 @@
 package metric
 
 import (
-	"bufio"
-	"encoding/json"
 	"errors"
 	"io"
 	"regexp"
-	"strconv"
-	"strings"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-
-	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/storage"
 )
 
 type logEntry struct {
@@ -28,8 +21,10 @@ type metricsMap map[string][]float64
 
 type MetricManager struct {
 	ServiceMetrics servicesMap
-	ch_manager     chan struct{}
+	ch_notify      chan struct{}
+	ch_get         chan servicesMap
 	ch_data        chan logEntry
+	ch_stop        chan struct{}
 }
 
 const sep string = ":"
@@ -44,7 +39,9 @@ func newManager() *MetricManager {
 	concreteManager := MetricManager{
 		make(map[string]metricsMap),
 		make(chan struct{}),
+		make(chan servicesMap),
 		make(chan logEntry),
+		make(chan struct{}),
 	}
 
 	manager = &concreteManager
@@ -64,20 +61,17 @@ func (m *MetricManager) Start() {
 }
 
 func (m *MetricManager) startMetricManager() {
-	var err error
 	var e logEntry
 
 	for {
 		select {
 		case e = <-m.ch_data:
 			m.addValue(e)
-		case <-m.ch_manager:
-			err = m.saveMetrics()
-			if err != nil {
-				log.WithField("error", err).Errorln("Cannot save metrics data")
-			}
-
+		case <-m.ch_notify:
+			m.ch_get <- m.ServiceMetrics
 			m.cleanMetrics()
+		case <-m.ch_stop:
+			return
 		default:
 		}
 	}
@@ -98,35 +92,6 @@ func (m *MetricManager) addValue(entry logEntry) {
 	metric = append(metric, entry.value)
 	srv[entry.metric] = metric
 	m.ServiceMetrics[entry.service] = srv
-
-	log.WithField("value", entry.value).Debugln("Added value to metric ", entry.metric)
-}
-
-func (m *MetricManager) saveMetrics() error {
-	for srv, value := range m.ServiceMetrics {
-		data, err := convertMetricsToData(value)
-		if err != nil {
-			return err
-		} else {
-			storeMetrics(srv, data)
-		}
-	}
-
-	return nil
-}
-
-func convertMetricsToData(metrics metricsMap) ([]byte, error) {
-	data, err := json.Marshal(metrics)
-	if err != nil {
-		log.Debugln("Error marshaling metrics data")
-		return nil, err
-	}
-
-	return data, nil
-}
-
-func storeMetrics(name string, data []byte) {
-	storage.StoreData(name, data, enum.METRICS)
 }
 
 func (m *MetricManager) cleanMetrics() {
@@ -136,83 +101,17 @@ func (m *MetricManager) cleanMetrics() {
 	}
 }
 
-func (m *MetricManager) GetMetricsOfService(name string) (metricsMap, error) {
-	var err error
-
-	m.ch_manager <- struct{}{}
-	data, err := storage.GetData(name, enum.METRICS)
-	if err != nil {
-		log.WithField("error", err).Errorln("Cannot get metrics of service ", name)
-		return nil, err
-	}
-
-	metrics, err := convertDataToMetrics(data)
-	if err != nil {
-		log.WithField("error", err).Errorln("Cannot get metrics of service", name)
-		return nil, err
-	}
-
-	return metrics, nil
-}
-
-func convertDataToMetrics(data []byte) (metricsMap, error) {
-	var metrics metricsMap
-	err := json.Unmarshal(data, &metrics)
-	if err != nil {
-		log.WithField("error", err).Errorln("Error unmarshaling metrics data")
-		return nil, err
-	}
-
-	return metrics, nil
-
-}
-
 func (m *MetricManager) StartCollector(contLog io.ReadCloser) {
 	log.Debugln("starting collector")
-	go collector(contLog, m.ch_data)
+	go collector(contLog, m.ch_data, m.ch_stop)
 }
 
-func collector(contLog io.ReadCloser, ch_data chan logEntry) {
-	var err error
-	var line []byte
-	var data logEntry
-
-	scanner := bufio.NewScanner(contLog)
-	for scanner.Scan() {
-		line = scanner.Bytes()
-		if regex.Match(line) {
-			log.WithField("line", string(line)).Debugln("found a match")
-			data, err = getDataFromLogLine(string(line))
-			if err != nil {
-				log.WithField("error", err).Errorln("Error parsing container logs")
-			} else {
-				log.WithField("entry", data).Debugln("Sending data to manager")
-				ch_data <- data
-			}
-		}
-	}
-
-	if err = scanner.Err(); err != nil {
-		log.WithField("error", err).Errorln("Error in scanner.")
-	}
+func (m *MetricManager) GetMetrics() servicesMap {
+	m.ch_notify <- struct{}{}
+	metrics := <-m.ch_get
+	return metrics
 }
 
-func getDataFromLogLine(line string) (logEntry, error) {
-	relevant := line[strings.LastIndex(line, "gru"):]
-	data := strings.Split(relevant, sep)
-	if len(data) < 5 {
-		return logEntry{}, ErrWrongLogLine
-	}
-
-	service := data[1]
-	metric := data[2]
-	unit := data[4]
-	value, err := strconv.ParseFloat(data[3], 64)
-	if err != nil {
-		return logEntry{}, err
-	}
-
-	entry := logEntry{service, metric, value, unit}
-
-	return entry, nil
+func (m *MetricManager) Stop() {
+	m.ch_stop <- struct{}{}
 }

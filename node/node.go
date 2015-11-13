@@ -32,12 +32,10 @@ func LoadNodeConfig(filename string) error {
 		return err
 	}
 
-	computeTotalResources()
-
 	return nil
 }
 
-func computeTotalResources() {
+func ComputeTotalResources() {
 	info, err := container.Docker().Client.Info()
 	if err != nil {
 		log.WithField("error", err).Errorln("Error reading total resources")

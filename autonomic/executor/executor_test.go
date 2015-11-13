@@ -15,18 +15,6 @@ func init() {
 	storage.New("internal")
 }
 
-func TestRetrievePlan(t *testing.T) {
-	defer storage.DeleteAllData(enum.PLANS)
-	var err error
-
-	_, err = retrievePlan()
-	assert.Error(t, err)
-
-	strategy.StoreMockPlan(enum.ORANGE, service.Service{}, []enum.Action{})
-	_, err = retrievePlan()
-	assert.NoError(t, err)
-}
-
 func TestRun(t *testing.T) {
 	defer storage.DeleteAllData(enum.PLANS)
 	srv := service.Service{
@@ -45,7 +33,7 @@ func TestRun(t *testing.T) {
 func createServConfig() service.Config {
 	cfg := service.Config{}
 	cfg.Cmd = []string{"a", "b"}
-	cfg.CpuSet = 4
+	cfg.CpusetCpus = "0,1,2,3"
 	cfg.CpuShares = 512
 	cfg.Entrypoint = []string{"d", "e"}
 	cfg.Links = []string{"pippo"}

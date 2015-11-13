@@ -20,7 +20,7 @@ func CreateHostConfig(sConf service.Config) *dockerclient.HostConfig {
 	hostConfig := dockerclient.HostConfig{}
 
 	hostConfig.CpuShares = sConf.CpuShares
-	hostConfig.CpusetCpus = string(sConf.CpuSet)
+	hostConfig.CpusetCpus = sConf.CpusetCpus
 	hostConfig.Links = sConf.Links
 	hostConfig.PortBindings = createPortBindings(sConf.PortBindings)
 
@@ -50,20 +50,30 @@ func createPortBindings(portBindings map[string][]service.PortBinding) map[strin
 }
 
 func CreateContainerConfig(sConf service.Config) *dockerclient.ContainerConfig {
-	memInBytes, err := utils.RAMInBytes(sConf.Memory)
 	containerConfig := dockerclient.ContainerConfig{}
-
+	containerConfig.Memory = getMemInBytes(sConf.Memory)
 	containerConfig.Cmd = sConf.Cmd
 	containerConfig.Volumes = sConf.Volumes
 	containerConfig.Entrypoint = sConf.Entrypoint
 	containerConfig.CpuShares = sConf.CpuShares
-	containerConfig.Cpuset = string(sConf.CpuSet)
-
-	if err != nil {
-		log.Warnln("Creating Container config: Memory limit not specified")
-	} else {
-		containerConfig.Memory = memInBytes
-	}
+	containerConfig.Cpuset = sConf.CpusetCpus
 
 	return &containerConfig
+}
+
+func getMemInBytes(memory string) int64 {
+	var err error
+	var memInBytes int64
+
+	if memory != "" {
+		memInBytes, err = utils.RAMInBytes(memory)
+		if err != nil {
+			log.WithField("error", err).Warnln("Error creating container configuration.")
+			return 0
+		}
+	} else {
+		memInBytes = 0
+	}
+
+	return memInBytes
 }

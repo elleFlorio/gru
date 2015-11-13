@@ -36,6 +36,7 @@ func TestMakeDecision(t *testing.T) {
 
 	s := service.Service{}
 	a := []enum.Action{enum.START}
+
 	plans := []GruPlan{
 		CreateMockPlan(enum.WHITE, s, a),
 		CreateMockPlan(enum.GREEN, s, a),
@@ -43,17 +44,18 @@ func TestMakeDecision(t *testing.T) {
 		CreateMockPlan(enum.ORANGE, s, a),
 		CreateMockPlan(enum.RED, s, a),
 	}
-	plans_empty := []GruPlan{}
-
 	New("dummy")
-	plan = MakeDecision(plans_empty)
-	assert.Contains(t, plan.Actions, enum.NOACTION)
 	plan = MakeDecision(plans)
 	assert.Equal(t, plan.Label, enum.RED)
 
+	plans = []GruPlan{
+		CreateMockPlan(enum.WHITE, s, a),
+		CreateMockPlan(enum.WHITE, s, a),
+		CreateMockPlan(enum.WHITE, s, a),
+		CreateMockPlan(enum.GREEN, s, []enum.Action{enum.NOACTION}),
+	}
 	New("probabilistic")
-	plan = MakeDecision(plans_empty)
-	assert.Contains(t, plan.Actions, enum.NOACTION)
 	plan = MakeDecision(plans)
-	assert.NotContains(t, plan.Actions, enum.NOACTION)
+	assert.Equal(t, plan.Label, enum.GREEN)
+
 }

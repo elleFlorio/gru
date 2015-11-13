@@ -3,13 +3,18 @@ package strategy
 import (
 	"errors"
 	"math/rand"
-
-	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"time"
 
 	"github.com/elleFlorio/gru/enum"
 )
 
+func init() {
+	source := rand.NewSource(time.Now().UnixNano())
+	gen = rand.New(source)
+}
+
 var (
+	gen                      *rand.Rand
 	ErrorTotalWeightIsZero   error = errors.New("Total weight of plans is zero")
 	ErrorThresholdNotReached error = errors.New("Threshold not reached")
 )
@@ -25,17 +30,11 @@ func (p *probabilisticStrategy) Initialize() error {
 }
 
 func (p *probabilisticStrategy) MakeDecision(plans []GruPlan) *GruPlan {
-	thePlan, err := weightedRandomElement(plans)
-	if err != nil {
-		log.WithField("err", err).Debugln("returning no action")
-		noAction := createNoActionPlan()
-		return &noAction
-	}
-
-	return thePlan
+	return weightedRandomElement(plans)
 }
 
-func weightedRandomElement(plans []GruPlan) (*GruPlan, error) {
+func weightedRandomElement(plans []GruPlan) *GruPlan {
+	var thePlan GruPlan
 	totalWeight := 0.0
 	threshold := randUniform(0, 1)
 	normalizedCumulative := 0.0
@@ -44,30 +43,27 @@ func weightedRandomElement(plans []GruPlan) (*GruPlan, error) {
 		totalWeight += enum.ValueFrom(plan.Label)
 	}
 
-	if totalWeight == 0.0 {
-		return nil, ErrorTotalWeightIsZero
-	}
-
 	shuffle(plans)
 
 	for _, plan := range plans {
 		normalizedCumulative += enum.ValueFrom(plan.Label) / totalWeight
 		if normalizedCumulative > threshold {
-			return &plan, nil
+			thePlan = plan
+			break
 		}
 	}
 
-	return nil, ErrorThresholdNotReached
+	return &thePlan
 
 }
 
 func randUniform(min, max float64) float64 {
-	return rand.Float64()*(max-min) + min
+	return gen.Float64()*(max-min) + min
 }
 
 func shuffle(plans []GruPlan) {
 	for i := range plans {
-		j := rand.Intn(i + 1)
+		j := gen.Intn(i + 1)
 		plans[i], plans[j] = plans[j], plans[i]
 	}
 }
