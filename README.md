@@ -80,8 +80,7 @@ These are the steps you need to follow to run the current version of Gru in your
 {
 	"Name":"node_name",
 	"Constraints":{
-		"CpuMax":0.0,
-		"CpuMin":0.0,
+		BaseServices:[]
 	}
 }
 ```
@@ -93,8 +92,7 @@ These are the steps you need to follow to run the current version of Gru in your
 	"Type":"service_type",
 	"Image":"service_image",
 	"Constraints":{
-		"MinActive":0,
-		"MaxActive":0
+		"MaxRespTime":0
 	},
 	"Configuration":{
 		"Cmd":[],
@@ -102,7 +100,7 @@ These are the steps you need to follow to run the current version of Gru in your
 		"Entrypoint":[],
 		"Memory":"0Gb",
 		"CpuShares": 0,
-		"CpuSet": 0,
+		"CpusetCpus": "",
 		"PortBindings": {},
 		"Links":[]
 	}
