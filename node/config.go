@@ -9,9 +9,9 @@ type Node struct {
 
 // Is this still necessary?
 type Constraints struct {
-	CpuMin       float64 `json:"cpumin"`
-	CpuMax       float64 `json:"cpumax"`
-	MaxInstances int     `json:"maxinstances"` //TODO this will ne removed
+	CpuMin       float64  `json:"cpumin"`
+	CpuMax       float64  `json:"cpumax"`
+	BaseServices []string `json:"baseservices"`
 }
 
 type Resources struct {

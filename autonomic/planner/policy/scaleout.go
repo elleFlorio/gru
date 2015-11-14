@@ -18,8 +18,7 @@ func (p *ScaleOut) Label(name string, analytics analyzer.GruAnalytics) enum.Labe
 	inst_run := len(srv.Instances.Running)
 	inst_pen := len(srv.Instances.Pending)
 
-	if srv.Constraints.MaxActive > 0 &&
-		(inst_pen+inst_run) >= srv.Constraints.MaxActive {
+	if (inst_pen + inst_run) > 0 {
 		return enum.WHITE
 	}
 

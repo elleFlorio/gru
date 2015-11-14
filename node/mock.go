@@ -6,9 +6,8 @@ import (
 
 func CreateMockNode() Node {
 	mockConstraints := Constraints{
-		CpuMin:       0.2,
-		CpuMax:       0.8,
-		MaxInstances: 10, //TODO this will be removed
+		CpuMin: 0.2,
+		CpuMax: 0.8,
 	}
 
 	mockResources := Resources{
