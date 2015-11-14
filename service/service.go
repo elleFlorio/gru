@@ -56,11 +56,6 @@ func checkConstraints(name string, cnstrnts *Constraints) {
 		log.WithField("service", name).Warnln("Max Response Time is 0. Setting it to 'infinite'")
 		cnstrnts.MaxRespTime = c_INFINITE
 	}
-
-	if cnstrnts.MaxActive == 0 {
-		log.WithField("service", name).Warnln("Maximum number of instances is 0. Setting it to 'infinite'")
-		cnstrnts.MaxActive = c_INFINITE
-	}
 }
 
 func checkConfiguration(name string, conf *Config) {

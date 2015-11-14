@@ -19,10 +19,6 @@ type InstanceStatus struct {
 
 // TODO this needs a review
 type Constraints struct {
-	CpuMax      float64 `json:"cpumax"`
-	CpuMin      float64 `json:"cpumin"`
-	MinActive   int     `json:"minactive"`
-	MaxActive   int     `json:"maxactive"`
 	MaxRespTime float64 `json:"maxresptime"`
 }
 

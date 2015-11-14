@@ -15,10 +15,6 @@ func CreateMockFiles() string {
             "Name":"service1",
             "Type":"webserver",
             "Image":"test/tomcat",
-            "Constraints":{
-                "CpuMax":0.3,
-                "CpuMin":0.3
-            },
             "Configuration":{
             	"Cmd":[
 				"say",
@@ -32,10 +28,6 @@ func CreateMockFiles() string {
             "Name":"service2",
             "Type":"webserver",
             "Image":"test/jetty",
-            "Constraints":{
-                "MinActive":1,
-                "MaxActive":3
-            },
             "Configuration":{
             	"Memory": "1G"
             }
@@ -46,7 +38,7 @@ func CreateMockFiles() string {
             "Type":"database",
             "Image":"test/mysql",
             "Constraints":{
-                "MinActive":1
+                "MaxRespTime":1000
             },
             "Configuration":{
             	"CpuShares":512,
@@ -87,24 +79,12 @@ func CreateMockServices() []Service {
 		Name:  "service1",
 		Type:  "webserver",
 		Image: "test/tomcat",
-		Constraints: Constraints{
-			CpuMin:    0.4,
-			CpuMax:    0.6,
-			MinActive: 1,
-			MaxActive: 3,
-		},
 	}
 
 	service2 := Service{
 		Name:  "service2",
 		Type:  "webserver",
 		Image: "test/jetty",
-		Constraints: Constraints{
-			CpuMin:    0.4,
-			CpuMax:    0.7,
-			MinActive: 1,
-			MaxActive: 2,
-		},
 	}
 
 	service3 := Service{
@@ -112,7 +92,7 @@ func CreateMockServices() []Service {
 		Type:  "database",
 		Image: "test/mysql",
 		Constraints: Constraints{
-			MinActive: 2,
+			MaxRespTime: 1000,
 		},
 	}
 
