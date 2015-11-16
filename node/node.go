@@ -3,10 +3,12 @@ package node
 import (
 	"encoding/json"
 	"io/ioutil"
+	"strings"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/container"
+	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/utils"
 )
 
@@ -54,12 +56,14 @@ func UsedCpus() (int64, error) {
 	}
 
 	for _, c := range containers {
-		cData, err := container.Docker().Client.InspectContainer(c.Id)
-		if err != nil {
-			return 0, err
+		if _, err := service.GetServiceByImage(c.Image); err == nil {
+			cData, err := container.Docker().Client.InspectContainer(c.Id)
+			if err != nil {
+				return 0, err
+			}
+			cpuset := strings.Split(cData.HostConfig.CpusetCpus, ",")
+			cpus += int64(len(cpuset))
 		}
-
-		cpus += cData.Config.CpuShares
 	}
 
 	config.Resources.UsedCpu = cpus

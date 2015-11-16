@@ -59,6 +59,13 @@ func updateNodeResources() {
 	if err != nil {
 		log.WithField("error", err).Errorln("Computing node used memory")
 	}
+
+	log.WithFields(log.Fields{
+		"totalcpu": node.Config().Resources.TotalCpus,
+		"usedcpu":  node.Config().Resources.UsedCpu,
+		"totalmem": node.Config().Resources.TotalMemory,
+		"usedmem":  node.Config().Resources.UsedMemory,
+	}).Debugln("Updated node resources")
 }
 
 func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
@@ -143,6 +150,11 @@ func computeServiceResources(name string) enum.Label {
 
 	srv, _ := service.GetServiceByName(name)
 	srvCpu := getNumberOfCpuFromString(srv.Configuration.CpusetCpus)
+	log.WithFields(log.Fields{
+		"service": name,
+		"cpus":    srvCpu,
+	}).Debugln("Service cpu resources")
+
 	var srvMem int64
 	if srv.Configuration.Memory != "" {
 		srvMem, err = utils.RAMInBytes(srv.Configuration.Memory)
