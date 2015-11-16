@@ -28,7 +28,7 @@ type Config struct {
 	Entrypoint   []string                 `json:"entrypoint"`
 	Memory       string                   `json:"memory"`
 	CpuShares    int64                    `json:"cpushares"`
-	CpusetCpus   string                   `json:"cpuset"`
+	CpusetCpus   string                   `json:"cpusetcpus"`
 	PortBindings map[string][]PortBinding `json:"portbindings"`
 	Links        []string                 `json:"links"`
 }
