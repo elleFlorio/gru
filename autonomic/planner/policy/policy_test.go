@@ -45,19 +45,19 @@ func TestList(t *testing.T) {
 	}
 }
 
-func TestLabel(t *testing.T) {
+func TestWeight(t *testing.T) {
 	service.UpdateServices(createServices())
 	analytics := createAnalytics()
 	node.UpdateNodeConfig(createNode())
 
-	assert.Equal(t, enum.GREEN, plc["scalein"].Label("service1", analytics))
-	assert.Equal(t, enum.YELLOW, plc["scalein"].Label("service2", analytics))
-	assert.Equal(t, enum.WHITE, plc["scalein"].Label("service3", analytics))
+	assert.Equal(t, 0.25, plc["scalein"].Weight("service1", analytics))
+	assert.Equal(t, 0.65, plc["scalein"].Weight("service2", analytics))
+	assert.Equal(t, 0.0, plc["scalein"].Weight("service3", analytics))
 
-	assert.Equal(t, enum.WHITE, plc["scaleout"].Label("service1", analytics))
-	assert.Equal(t, enum.WHITE, plc["scaleout"].Label("service2", analytics))
-	assert.Equal(t, enum.GREEN, plc["scaleout"].Label("service3", analytics))
-	assert.Equal(t, enum.WHITE, plc["scaleout"].Label("service4", analytics))
+	assert.Equal(t, 0.0, plc["scaleout"].Weight("service1", analytics))
+	assert.Equal(t, 0.0, plc["scaleout"].Weight("service2", analytics))
+	assert.Equal(t, 0.2, plc["scaleout"].Weight("service3", analytics))
+	assert.Equal(t, 0.0, plc["scaleout"].Weight("service4", analytics))
 }
 
 func createServices() []service.Service {
@@ -85,19 +85,22 @@ func createAnalytics() analyzer.GruAnalytics {
 	analytics := analyzer.GruAnalytics{}
 
 	srv1A := analyzer.ServiceAnalytics{}
-	srv1A.Load = enum.RED
-	srv1A.Resources.Cpu = enum.YELLOW
+	srv1A.Load = 1.0
+	srv1A.Resources.Cpu = 0.5
+	srv1A.Resources.Available = 1.0
 
 	srv2A := analyzer.ServiceAnalytics{}
-	srv2A.Load = enum.YELLOW
-	srv2A.Resources.Cpu = enum.GREEN
+	srv2A.Load = 0.5
+	srv2A.Resources.Cpu = 0.2
+	srv2A.Resources.Available = 1.0
 
 	srv3A := analyzer.ServiceAnalytics{}
-	srv3A.Load = enum.GREEN
-	srv3A.Resources.Cpu = enum.GREEN
+	srv3A.Load = 0.2
+	srv3A.Resources.Cpu = 0.2
+	srv3A.Resources.Available = 1.0
 
 	srv4A := analyzer.ServiceAnalytics{}
-	srv4A.Resources.Available = enum.RED
+	srv4A.Resources.Available = 0.0
 
 	analytics.Service = map[string]analyzer.ServiceAnalytics{
 		"service1": srv1A,

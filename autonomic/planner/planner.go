@@ -48,35 +48,52 @@ func Run() {
 
 func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
 	plans := []strategy.GruPlan{}
-	plans = append(plans, createNoActionPlan())
 
 	if len(analytics.Service) == 0 {
 		log.Warnln("No service for building plans.")
+		noServicePlan := strategy.GruPlan{
+			1.0,
+			&service.Service{Name: "noService"},
+			[]enum.Action{enum.NOACTION},
+		}
+		plans = append(plans, noServicePlan)
 		return plans
 	}
 
 	policies := policy.GetPolicies()
+	weight_max := 0.0
 	for _, name := range service.List() {
 		for _, plc := range policies {
-			label := plc.Label(name, analytics)
+			weight := plc.Weight(name, analytics)
 			target, _ := service.GetServiceByName(name)
 			actions := plc.Actions()
-			plan := strategy.GruPlan{label, target, actions}
+			plan := strategy.GruPlan{weight, target, actions}
 			log.WithFields(log.Fields{
 				"policy":  plc.Name(),
-				"label":   label.ToString(),
+				"weight":  weight,
 				"service": name,
 			}).Debugln("Computed policy")
 			plans = append(plans, plan)
+
+			if weight >= weight_max {
+				weight_max = weight
+			}
 		}
 	}
+	weight_na := 1 - weight_max
+	plan_na := strategy.GruPlan{
+		weight_na,
+		&service.Service{Name: "NoService"},
+		[]enum.Action{enum.NOACTION},
+	}
+	log.WithFields(log.Fields{
+		"policy":  "NoAction",
+		"weight":  weight_na,
+		"service": "NoService",
+	}).Debugln("Computed policy")
+	plans = append(plans, plan_na)
 
 	return plans
-}
-
-func createNoActionPlan() strategy.GruPlan {
-	srv := service.Service{Name: "NoAction"}
-	return strategy.GruPlan{enum.GREEN, &srv, []enum.Action{enum.NOACTION}}
 }
 
 func savePlan(plan *strategy.GruPlan) error {

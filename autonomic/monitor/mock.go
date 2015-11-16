@@ -45,10 +45,19 @@ func CreateMockStats() GruStats {
 		Avg: 2.5,
 		Tot: 0.7,
 	}
+	mem1 := MemoryStats{
+		Avg: (1 * 1024 * 1024 * 1024),
+		Tot: (2 * 1024 * 1024 * 1024),
+	}
+	metric1 := MetricStats{
+		[]float64{1000},
+	}
 	service1 := ServiceStats{
 		Instances: instances1,
 		Events:    events1,
 		Cpu:       cpu1,
+		Memory:    mem1,
+		Metrics:   metric1,
 	}
 
 	all2 := []string{"instance2_1"}
@@ -61,7 +70,19 @@ func CreateMockStats() GruStats {
 		Avg: 0.2,
 		Tot: 0.2,
 	}
-	service2 := ServiceStats{Instances: instances2, Cpu: cpu2}
+	mem2 := MemoryStats{
+		Avg: (1 * 1024 * 1024 * 1024),
+		Tot: (1 * 1024 * 1024 * 1024),
+	}
+	metric2 := MetricStats{
+		[]float64{2000},
+	}
+	service2 := ServiceStats{
+		Instances: instances2,
+		Cpu:       cpu2,
+		Memory:    mem2,
+		Metrics:   metric2,
+	}
 	services := map[string]ServiceStats{
 		"service1": service1,
 		"service2": service2,

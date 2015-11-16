@@ -4,8 +4,6 @@ import (
 	"errors"
 	"math/rand"
 	"time"
-
-	"github.com/elleFlorio/gru/enum"
 )
 
 func init() {
@@ -40,13 +38,13 @@ func weightedRandomElement(plans []GruPlan) *GruPlan {
 	normalizedCumulative := 0.0
 
 	for _, plan := range plans {
-		totalWeight += enum.ValueFrom(plan.Label)
+		totalWeight += plan.Weight
 	}
 
 	shuffle(plans)
 
 	for _, plan := range plans {
-		normalizedCumulative += enum.ValueFrom(plan.Label) / totalWeight
+		normalizedCumulative += plan.Weight / totalWeight
 		if normalizedCumulative > threshold {
 			thePlan = plan
 			break

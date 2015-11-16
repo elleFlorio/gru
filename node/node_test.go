@@ -18,7 +18,6 @@ func TestLoadNodeConfig(t *testing.T) {
 		assert.Equal(t, "mockNode", config.Name, "Expected different node name")
 		assert.Equal(t, 0.8, config.Constraints.CpuMax, "Node cpu max should be 0.8")
 		assert.Equal(t, 0.2, config.Constraints.CpuMin, "Node cpu min should be 0.2")
-		assert.Equal(t, 10, config.Constraints.MaxInstances, "Node max instances should be 10")
 	}
 
 	UpdateNodeConfig(Node{})

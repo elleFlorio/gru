@@ -1,9 +1,5 @@
 package strategy
 
-import (
-	"github.com/elleFlorio/gru/enum"
-)
-
 type dummyStrategy struct{}
 
 func (p *dummyStrategy) Name() string {
@@ -16,11 +12,11 @@ func (p *dummyStrategy) Initialize() error {
 
 func (p *dummyStrategy) MakeDecision(plans []GruPlan) *GruPlan {
 	var thePlan GruPlan
-	maxWeight := enum.ValueFrom(enum.WHITE)
+	maxWeight := 0.0
 	for _, plan := range plans {
-		if enum.ValueFrom(plan.Label) > maxWeight {
+		if plan.Weight > maxWeight {
 			thePlan = plan
-			maxWeight = enum.ValueFrom(plan.Label)
+			maxWeight = plan.Weight
 		}
 	}
 	return &thePlan

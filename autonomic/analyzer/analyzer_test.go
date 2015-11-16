@@ -15,6 +15,7 @@ import (
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const c_EPSILON = 0.09
 
 func init() {
 	gruAnalytics = GruAnalytics{
@@ -50,64 +51,64 @@ func TestComputeServiceResources(t *testing.T) {
 	//error
 	node.UpdateNodeConfig(n_empty)
 	service.UpdateServices([]service.Service{s_error})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 
 	// Node is full, all labels should be red
 	node.UpdateNodeConfig(n_full)
 	service.UpdateServices([]service.Service{s_over})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_bigger})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_big})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_medium})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_low})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_lower})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 
 	node.UpdateNodeConfig(n_half_full)
 	service.UpdateServices([]service.Service{s_over})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_bigger})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_big})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_medium})
-	assert.Equal(t, enum.ORANGE, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_low})
-	assert.Equal(t, enum.ORANGE, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_lower})
-	assert.Equal(t, enum.YELLOW, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 
 	node.UpdateNodeConfig(n_half_empty)
 	service.UpdateServices([]service.Service{s_over})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_bigger})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_big})
-	assert.Equal(t, enum.ORANGE, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_medium})
-	assert.Equal(t, enum.YELLOW, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_low})
-	assert.Equal(t, enum.YELLOW, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_lower})
-	assert.Equal(t, enum.GREEN, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 
 	node.UpdateNodeConfig(n_empty)
 	service.UpdateServices([]service.Service{s_over})
-	assert.Equal(t, enum.RED, computeServiceResources(name))
+	assert.Equal(t, 0.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_bigger})
-	assert.Equal(t, enum.ORANGE, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_big})
-	assert.Equal(t, enum.YELLOW, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_medium})
-	assert.Equal(t, enum.GREEN, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_low})
-	assert.Equal(t, enum.GREEN, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 	service.UpdateServices([]service.Service{s_lower})
-	assert.Equal(t, enum.WHITE, computeServiceResources(name))
+	assert.Equal(t, 1.0, resourcesAvailable(name))
 }
 
 // CpuSet or CpuShares?
@@ -166,42 +167,42 @@ func TestComputeSystemResources(t *testing.T) {
 	n_empty := createNode(6, "8G", 0, "0G")
 
 	node.UpdateNodeConfig(n_full)
-	assert.Equal(t, enum.RED, computeSystemResources())
+	assert.Equal(t, 0.0, systemResourcesAvailable())
 	node.UpdateNodeConfig(n_half_full)
-	assert.Equal(t, enum.ORANGE, computeSystemResources())
+	assert.InEpsilon(t, 0.3, systemResourcesAvailable(), c_EPSILON)
 	node.UpdateNodeConfig(n_half)
-	assert.Equal(t, enum.YELLOW, computeSystemResources())
+	assert.InEpsilon(t, 0.5, systemResourcesAvailable(), c_EPSILON)
 	node.UpdateNodeConfig(n_half_empty)
-	assert.Equal(t, enum.GREEN, computeSystemResources())
+	assert.InEpsilon(t, 0.7, systemResourcesAvailable(), c_EPSILON)
 	node.UpdateNodeConfig(n_empty)
-	assert.Equal(t, enum.WHITE, computeSystemResources())
+	assert.InEpsilon(t, 1.0, systemResourcesAvailable(), c_EPSILON)
 }
 
 func TestAnalyzeSystem(t *testing.T) {
 	stats := monitor.CreateMockStats()
 	analyzeSystem(&gruAnalytics, stats)
 
-	assert.Equal(t, enum.WHITE, gruAnalytics.System.Health)
+	assert.InEpsilon(t, 1.0, gruAnalytics.System.Health, c_EPSILON)
 }
 
 func TestComputeNodeHealth(t *testing.T) {
-	servicesH := []enum.Label{
-		enum.RED,
-		enum.RED,
-		enum.YELLOW,
-		enum.ORANGE,
-		enum.GREEN,
+	servicesH := []float64{
+		1.0,
+		1.0,
+		0.6,
+		0.8,
+		0.4,
 	}
 
-	systemH := enum.ORANGE
+	systemH := 0.8
 
 	analytics := createHealth(servicesH, systemH)
 	computeNodeHealth(&analytics)
 
-	assert.Equal(t, enum.YELLOW, analytics.Health)
+	assert.Equal(t, 0.78, analytics.Health)
 }
 
-func createHealth(servicesH []enum.Label, systemH enum.Label) GruAnalytics {
+func createHealth(servicesH []float64, systemH float64) GruAnalytics {
 	name := 'a'
 	analytics := GruAnalytics{
 		Service: make(map[string]ServiceAnalytics),
@@ -245,40 +246,40 @@ func TestComputeServicesAvg(t *testing.T) {
 
 	computeServicesAvg(peers, &analytics)
 	//SERVICE 1
-	assert.Equal(t, enum.YELLOW, analytics.Service["s1"].Load)
-	assert.Equal(t, enum.GREEN, analytics.Service["s1"].Resources.Cpu)
-	assert.Equal(t, enum.GREEN, analytics.Service["s1"].Resources.Memory)
-	assert.Equal(t, enum.GREEN, analytics.Service["s1"].Health)
+	assert.InEpsilon(t, 0.6, analytics.Service["s1"].Load, c_EPSILON)
+	assert.InEpsilon(t, 0.45, analytics.Service["s1"].Resources.Cpu, c_EPSILON)
+	assert.InEpsilon(t, 0.45, analytics.Service["s1"].Resources.Memory, c_EPSILON)
+	assert.InEpsilon(t, 0.45, analytics.Service["s1"].Health, c_EPSILON)
 	assert.Len(t, analytics.Service["s1"].Instances.All, 12)
 	assert.Len(t, analytics.Service["s1"].Instances.Running, 5)
 	assert.Len(t, analytics.Service["s1"].Instances.Pending, 2)
 	assert.Len(t, analytics.Service["s1"].Instances.Stopped, 4)
 	assert.Len(t, analytics.Service["s1"].Instances.Paused, 1)
 	//SERVICE 2
-	assert.Equal(t, enum.GREEN, analytics.Service["s2"].Load)
-	assert.Equal(t, enum.YELLOW, analytics.Service["s2"].Resources.Cpu)
-	assert.Equal(t, enum.WHITE, analytics.Service["s2"].Resources.Memory)
-	assert.Equal(t, enum.YELLOW, analytics.Service["s2"].Health)
+	assert.Equal(t, 0.4, analytics.Service["s2"].Load)
+	assert.Equal(t, 0.6, analytics.Service["s2"].Resources.Cpu)
+	assert.Equal(t, 0.2, analytics.Service["s2"].Resources.Memory)
+	assert.Equal(t, 0.6, analytics.Service["s2"].Health)
 	assert.Len(t, analytics.Service["s2"].Instances.All, 3)
 	assert.Len(t, analytics.Service["s2"].Instances.Running, 1)
 	assert.Len(t, analytics.Service["s2"].Instances.Pending, 1)
 	assert.Len(t, analytics.Service["s2"].Instances.Stopped, 0)
 	assert.Len(t, analytics.Service["s2"].Instances.Paused, 1)
 	//SERVICE 3
-	assert.Equal(t, enum.YELLOW, analytics.Service["s3"].Load)
-	assert.Equal(t, enum.YELLOW, analytics.Service["s3"].Resources.Cpu)
-	assert.Equal(t, enum.YELLOW, analytics.Service["s3"].Resources.Memory)
-	assert.Equal(t, enum.YELLOW, analytics.Service["s3"].Health)
+	assert.Equal(t, 0.6, analytics.Service["s3"].Load)
+	assert.Equal(t, 0.6, analytics.Service["s3"].Resources.Cpu)
+	assert.Equal(t, 0.6, analytics.Service["s3"].Resources.Memory)
+	assert.Equal(t, 0.6, analytics.Service["s3"].Health)
 	assert.Len(t, analytics.Service["s3"].Instances.All, 2)
 	assert.Len(t, analytics.Service["s3"].Instances.Running, 1)
 	assert.Len(t, analytics.Service["s3"].Instances.Pending, 1)
 	assert.Len(t, analytics.Service["s3"].Instances.Stopped, 0)
 	assert.Len(t, analytics.Service["s3"].Instances.Paused, 0)
 	//SERVICE 4
-	assert.Equal(t, enum.RED, analytics.Service["s4"].Load)
-	assert.Equal(t, enum.RED, analytics.Service["s4"].Resources.Cpu)
-	assert.Equal(t, enum.RED, analytics.Service["s4"].Resources.Memory)
-	assert.Equal(t, enum.RED, analytics.Service["s4"].Health)
+	assert.Equal(t, 1.0, analytics.Service["s4"].Load)
+	assert.Equal(t, 1.0, analytics.Service["s4"].Resources.Cpu)
+	assert.Equal(t, 1.0, analytics.Service["s4"].Resources.Memory)
+	assert.Equal(t, 1.0, analytics.Service["s4"].Health)
 	assert.Len(t, analytics.Service["s4"].Instances.All, 2)
 	assert.Len(t, analytics.Service["s4"].Instances.Running, 2)
 	assert.Len(t, analytics.Service["s4"].Instances.Pending, 0)
@@ -307,18 +308,18 @@ func createLocal() GruAnalytics {
 	s1_is := createInstaceStatus(1, 0, 1, 1)
 	s3_is := createInstaceStatus(1, 1, 0, 0)
 	s4_is := createInstaceStatus(2, 0, 0, 0)
-	s1_sa := createServiceAnalytics(enum.WHITE, enum.WHITE, enum.WHITE, enum.WHITE, s1_is)
-	s3_sa := createServiceAnalytics(enum.YELLOW, enum.YELLOW, enum.YELLOW, enum.YELLOW, s3_is)
-	s4_sa := createServiceAnalytics(enum.RED, enum.RED, enum.RED, enum.RED, s4_is)
+	s1_sa := createServiceAnalytics(0.2, 0.2, 0.2, 0.2, s1_is)
+	s3_sa := createServiceAnalytics(0.6, 0.6, 0.6, 0.6, s3_is)
+	s4_sa := createServiceAnalytics(1.0, 1.0, 1.0, 1.0, s4_is)
 	local.Service["s1"] = s1_sa
 	local.Service["s3"] = s3_sa
 	local.Service["s4"] = s4_sa
 
 	local.System = createSystemAnalytics(
 		[]string{"s1", "s3", "s4"},
-		enum.ORANGE,
-		enum.YELLOW,
-		enum.YELLOW,
+		0.8,
+		0.6,
+		0.6,
 		s1_is, s3_is, s4_is)
 
 	return local
@@ -336,28 +337,28 @@ func createPeers() []GruAnalytics {
 	s1_is := createInstaceStatus(1, 2, 2, 0)
 	s1b_is := createInstaceStatus(3, 0, 1, 0)
 	s2_is := createInstaceStatus(1, 1, 0, 1)
-	s1_sa := createServiceAnalytics(enum.YELLOW, enum.GREEN, enum.GREEN, enum.GREEN, s1_is)
-	s1b_sa := createServiceAnalytics(enum.RED, enum.ORANGE, enum.ORANGE, enum.ORANGE, s1b_is)
-	s2_sa := createServiceAnalytics(enum.GREEN, enum.YELLOW, enum.WHITE, enum.YELLOW, s2_is)
+	s1_sa := createServiceAnalytics(0.6, 0.4, 0.4, 0.4, s1_is)
+	s1b_sa := createServiceAnalytics(1.0, 0.8, 0.8, 0.8, s1b_is)
+	s2_sa := createServiceAnalytics(0.4, 0.6, 0.2, 0.6, s2_is)
 	p1.Service["s1"] = s1_sa
 	p2.Service["s1"] = s1b_sa
 	p2.Service["s2"] = s2_sa
 
 	p1.System = createSystemAnalytics(
 		[]string{"s1"},
-		enum.YELLOW,
-		enum.YELLOW,
-		enum.YELLOW,
+		0.6,
+		0.6,
+		0.6,
 		s1_is)
 	p2.System = createSystemAnalytics(
 		[]string{"s1", "s2"},
-		enum.ORANGE,
-		enum.RED,
-		enum.RED,
+		0.8,
+		1.0,
+		1.0,
 		s1b_is, s2_is)
 
-	p1.Health = enum.GREEN
-	p2.Health = enum.RED
+	p1.Health = 0.4
+	p2.Health = 1.0
 
 	return []GruAnalytics{p1, p2}
 }
@@ -398,8 +399,8 @@ func randStringBytes(n int) string {
 	return string(b)
 }
 
-func createServiceAnalytics(load enum.Label, cpu enum.Label, mem enum.Label,
-	health enum.Label, instStatus service.InstanceStatus) ServiceAnalytics {
+func createServiceAnalytics(load float64, cpu float64, mem float64,
+	health float64, instStatus service.InstanceStatus) ServiceAnalytics {
 
 	srvA := ServiceAnalytics{
 		Load: load,
@@ -414,8 +415,8 @@ func createServiceAnalytics(load enum.Label, cpu enum.Label, mem enum.Label,
 	return srvA
 }
 
-func createSystemAnalytics(services []string, cpu enum.Label,
-	mem enum.Label, health enum.Label, instStatus ...service.InstanceStatus) SystemAnalytics {
+func createSystemAnalytics(services []string, cpu float64,
+	mem float64, health float64, instStatus ...service.InstanceStatus) SystemAnalytics {
 
 	sysInstSt := service.InstanceStatus{}
 	for _, st := range instStatus {
@@ -453,9 +454,9 @@ func TestComputeClusterAvg(t *testing.T) {
 
 	computeClusterAvg(peers, &analytics)
 	assert.Len(t, analytics.Cluster.Services, 4)
-	assert.Equal(t, enum.YELLOW, analytics.Cluster.ResourcesAnalytics.Cpu)
-	assert.Equal(t, enum.YELLOW, analytics.Cluster.ResourcesAnalytics.Memory)
-	assert.Equal(t, enum.YELLOW, analytics.Cluster.Health)
+	assert.InEpsilon(t, 0.73, analytics.Cluster.ResourcesAnalytics.Cpu, c_EPSILON)
+	assert.InEpsilon(t, 0.73, analytics.Cluster.ResourcesAnalytics.Memory, c_EPSILON)
+	assert.InEpsilon(t, 0.73, analytics.Cluster.Health, c_EPSILON)
 }
 
 func TestAnalyzeCluster(t *testing.T) {

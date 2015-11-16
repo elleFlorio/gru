@@ -13,28 +13,27 @@ func (p *ScaleOut) Name() string {
 }
 
 //TODO find a way to compute a label that make some sense...
-func (p *ScaleOut) Label(name string, analytics analyzer.GruAnalytics) enum.Label {
+func (p *ScaleOut) Weight(name string, analytics analyzer.GruAnalytics) float64 {
 	srv, _ := service.GetServiceByName(name)
 	inst_run := len(srv.Instances.Running)
 	inst_pen := len(srv.Instances.Pending)
 
 	if (inst_pen + inst_run) > 0 {
-		return enum.WHITE
+		return 0.0
 	}
 
 	srvAnalytics := analytics.Service[name]
-	if srvAnalytics.Resources.Available.Value() > enum.ORANGE.Value() {
-		return enum.WHITE
+	if srvAnalytics.Resources.Available < 1.0 {
+		return 0.0
 	}
 
-	load := srvAnalytics.Load.Value()
-	cpu := srvAnalytics.Resources.Cpu.Value()
-	//mem := srvAnalytics.Resources.Memory.Value() for now not use memory
-	//resources := srvAnalytics.Resources.Available.Value()
+	load := srvAnalytics.Load
+	cpu := srvAnalytics.Resources.Cpu
+	//mem := srvAnalytics.Resources.Memory for now not use memory
 
 	policyValue := (load + cpu) / 2 // I don't know...
 
-	return enum.FromLabelValue(policyValue)
+	return policyValue
 }
 
 func (p *ScaleOut) Actions() []enum.Action {

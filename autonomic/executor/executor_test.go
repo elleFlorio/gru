@@ -24,9 +24,9 @@ func TestRun(t *testing.T) {
 	}
 
 	assert.NotPanics(t, Run)
-	strategy.StoreMockPlan(enum.RED, srv, []enum.Action{enum.START})
+	strategy.StoreMockPlan(1.0, srv, []enum.Action{enum.START})
 	assert.Panics(t, Run)
-	strategy.StoreMockPlan(enum.RED, srv, []enum.Action{enum.NOACTION})
+	strategy.StoreMockPlan(1.0, srv, []enum.Action{enum.NOACTION})
 	assert.NotPanics(t, Run)
 }
 

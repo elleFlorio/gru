@@ -6,7 +6,7 @@ import (
 )
 
 type GruPlan struct {
-	Label   enum.Label
+	Weight  float64
 	Target  *service.Service
 	Actions []enum.Action
 }

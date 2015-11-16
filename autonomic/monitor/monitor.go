@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -125,6 +126,8 @@ func computeServiceCpuPerc(name string, stats *GruStats) {
 // in % using the formula used in this function.
 // Explaination: http://stackoverflow.com/questions/1420426/calculating-cpu-usage-of-a-process-in-linux
 // TODO probably I just need the first and the last value...
+// 2015/11/16 - corrected according to what the docker client does:
+// https://github.com/docker/docker/blob/master/api/client/stats.go#L316
 func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 	sum := 0.0
 	instNext := 0.0
@@ -144,11 +147,11 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 			cpu = 0
 		} else {
 			// "100 * cpu" should produce values in [0, 100]
-			cpu = instDelta / sysDelta
+			cpu = (instDelta / sysDelta) * float64(node.Config().Resources.TotalCpus)
 		}
 		sum += cpu
 	}
-	return sum / float64(len(instCpus)-1)
+	return math.Min(1.0, sum/float64(len(instCpus)-1))
 }
 
 func computeServiceMemory(name string, stats *GruStats) {

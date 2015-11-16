@@ -38,24 +38,24 @@ func TestMakeDecision(t *testing.T) {
 	a := []enum.Action{enum.START}
 
 	plans := []GruPlan{
-		CreateMockPlan(enum.WHITE, s, a),
-		CreateMockPlan(enum.GREEN, s, a),
-		CreateMockPlan(enum.YELLOW, s, a),
-		CreateMockPlan(enum.ORANGE, s, a),
-		CreateMockPlan(enum.RED, s, a),
+		CreateMockPlan(0.0, s, a),
+		CreateMockPlan(0.2, s, a),
+		CreateMockPlan(0.5, s, a),
+		CreateMockPlan(0.8, s, a),
+		CreateMockPlan(1.0, s, a),
 	}
 	New("dummy")
 	plan = MakeDecision(plans)
-	assert.Equal(t, plan.Label, enum.RED)
+	assert.Equal(t, plan.Weight, 1.0)
 
 	plans = []GruPlan{
-		CreateMockPlan(enum.WHITE, s, a),
-		CreateMockPlan(enum.WHITE, s, a),
-		CreateMockPlan(enum.WHITE, s, a),
-		CreateMockPlan(enum.GREEN, s, []enum.Action{enum.NOACTION}),
+		CreateMockPlan(0.0, s, a),
+		CreateMockPlan(0.0, s, a),
+		CreateMockPlan(0.0, s, a),
+		CreateMockPlan(0.2, s, []enum.Action{enum.NOACTION}),
 	}
 	New("probabilistic")
 	plan = MakeDecision(plans)
-	assert.Equal(t, plan.Label, enum.GREEN)
+	assert.Equal(t, plan.Weight, 0.2)
 
 }

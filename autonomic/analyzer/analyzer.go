@@ -15,7 +15,7 @@ import (
 	"github.com/elleFlorio/gru/utils"
 )
 
-const overcommitratio float64 = 0.25
+const overcommitratio float64 = 0.0
 
 var (
 	gruAnalytics          GruAnalytics
@@ -71,22 +71,22 @@ func updateNodeResources() {
 func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
 	for name, value := range stats.Service {
 
-		loadLabel := analyzeServiceLoad(name, value.Metrics.ResponseTime)
-		cpuLabel := enum.FromValue(value.Cpu.Tot)
-		memLabel := enum.FromValue(value.Memory.Tot)
-		srvResources := computeServiceResources(name)
+		load := analyzeServiceLoad(name, value.Metrics.ResponseTime)
+		cpu := value.Cpu.Tot
+		mem := value.Memory.Tot
+		resAvailable := resourcesAvailable(name)
 		instances := value.Instances
 
-		health := enum.FromLabelValue((loadLabel.Value() + cpuLabel.Value() + memLabel.Value() + srvResources.Value()) / 4) //I don't like this...
+		health := 1 - ((load + mem + cpu - resAvailable) / 4) //I don't like this...
 
 		srvRes := ResourcesAnalytics{
-			cpuLabel,
-			memLabel,
-			srvResources,
+			cpu,
+			mem,
+			resAvailable,
 		}
 
 		srvAnalytics := ServiceAnalytics{
-			loadLabel,
+			load,
 			srvRes,
 			instances,
 			health,
@@ -96,7 +96,7 @@ func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
 	}
 }
 
-func analyzeServiceLoad(name string, responseTimes []float64) enum.Label {
+func analyzeServiceLoad(name string, responseTimes []float64) float64 {
 	srv, _ := service.GetServiceByName(name)
 	maxRt := srv.Constraints.MaxRespTime
 	avgRt := computeAvgResponseTime(responseTimes)
@@ -125,7 +125,7 @@ func computeAvgResponseTime(responseTimes []float64) float64 {
 	return avg
 }
 
-func computeLoad(maxRt float64, avgRt float64) enum.Label {
+func computeLoad(maxRt float64, avgRt float64) float64 {
 	// I want the maximum response time
 	// to correspond to the 60% of load
 	// (limit of the orange label)
@@ -135,12 +135,11 @@ func computeLoad(maxRt float64, avgRt float64) enum.Label {
 	}
 
 	loadValue := avgRt / upperBound
-	loadLabel := enum.FromValue(loadValue)
 
-	return loadLabel
+	return loadValue
 }
 
-func computeServiceResources(name string) enum.Label {
+func resourcesAvailable(name string) float64 {
 	var err error
 
 	nodeMem := node.Config().Resources.TotalMemory
@@ -160,44 +159,21 @@ func computeServiceResources(name string) enum.Label {
 		srvMem, err = utils.RAMInBytes(srv.Configuration.Memory)
 		if err != nil {
 			log.WithField("error", err).Warnln("Cannot convert service RAM in Bytes.")
-			return enum.RED
+			return 0.0
 		}
 	} else {
 		srvMem = 0
 	}
 
-	// TODO test the correct policy about this
-	// this value allow to decide if a container that doesn't specify a cpu or memory limit
-	// is considered to use all/no cpu and all/no ram - i.e.
-	// set to 0 = container uses virtually no resources
-	// set to 1 = container uses virtually all the resources
-	var (
-		cpuScore float64 = 0
-		memScore float64 = 0
-		weight   float64 = 1
-	)
-
-	if nodeMem < int64(srvMem) || nodeCpu < int64(srvCpu) {
-		return enum.RED
+	if nodeCpu < int64(srvCpu) || nodeMem < int64(srvMem) {
+		return 0.0
 	}
 
-	nodeCpuOverCommit := (float64(nodeCpu) * overcommitratio) + float64(nodeCpu)
-	nodeMemOverCommit := (float64(nodeMem) * overcommitratio) + float64(nodeMem)
-
-	if srvCpu > 0 {
-		cpuScore = float64(nodeUsedCpu+srvCpu) / nodeCpuOverCommit
+	if (nodeCpu-nodeUsedCpu) < int64(srvCpu) || (nodeMem-nodeUsedMem) < int64(srvMem) {
+		return 0.0
 	}
 
-	if srvMem > 0 {
-		memScore = float64(nodeUsedMem+srvMem) / nodeMemOverCommit
-	}
-
-	if cpuScore <= 1.0 && memScore <= 1.0 {
-		weight = (cpuScore + memScore) / 2
-	}
-
-	return enum.FromValue(weight)
-
+	return 1.0
 }
 
 func getNumberOfCpuFromString(cpuset string) int64 {
@@ -215,17 +191,18 @@ func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
 	}
 
 	temp := 0.0
-	cpuLabel := enum.FromValue(stats.System.Cpu)
-	memLabel := enum.FromValue(temp)
-	resLabel := computeSystemResources()
+	cpu := stats.System.Cpu
+	//TODO compute system mem!!!
+	mem := temp
+	res := systemResourcesAvailable()
 	instances := stats.System.Instances
 
-	health := resLabel //Ok, maybe this is a bit... "mah"...
+	health := 1 - ((cpu + mem - res) / 3) //Ok, maybe this is a bit... "mah"...
 
 	sysRes := ResourcesAnalytics{
-		cpuLabel,
-		memLabel,
-		resLabel,
+		cpu,
+		mem,
+		res,
 	}
 
 	SystemAnalytics := SystemAnalytics{
@@ -238,7 +215,7 @@ func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
 	gruAnalytics.System = SystemAnalytics
 }
 
-func computeSystemResources() enum.Label {
+func systemResourcesAvailable() float64 {
 	totalCpu := float64(node.Config().Resources.TotalCpus)
 	totalMemory := float64(node.Config().Resources.TotalMemory)
 	usedCpu := float64(node.Config().Resources.UsedCpu)
@@ -248,23 +225,22 @@ func computeSystemResources() enum.Label {
 	memRatio := usedMemory / totalMemory
 	avgRatio := (cpuRatio + memRatio) / 2
 
-	return enum.FromValue(avgRatio)
+	return (1 - avgRatio)
 }
 
 func computeNodeHealth(analytics *GruAnalytics) {
 	nServices := len(analytics.Service)
 	sumHealth := 0.0
 	for _, value := range analytics.Service {
-		sumHealth += value.Health.Value()
+		sumHealth += value.Health
 	}
 	srvAvgHealth := sumHealth / float64(nServices)
 
-	sysHealth := analytics.System.Health.Value()
+	sysHealth := analytics.System.Health
 
 	totHealth := (srvAvgHealth + sysHealth) / 2
-	totHealthLabel := enum.FromValue(totHealth)
 
-	analytics.Health = totHealthLabel
+	analytics.Health = totHealth
 }
 
 func analyzeCluster(analytics *GruAnalytics) {
@@ -305,17 +281,17 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 			avgSa = active[0]
 			active = active[1:]
 
-			sumLoad := avgSa.Load.Value()
-			sumCpu := avgSa.Resources.Cpu.Value()
-			sumMem := avgSa.Resources.Memory.Value()
-			sumH := avgSa.Health.Value()
+			sumLoad := avgSa.Load
+			sumCpu := avgSa.Resources.Cpu
+			sumMem := avgSa.Resources.Memory
+			sumH := avgSa.Health
 
 			for _, actv := range active {
 				//LABELS
-				sumLoad += actv.Load.Value()
-				sumCpu += actv.Resources.Cpu.Value()
-				sumMem += actv.Resources.Memory.Value()
-				sumH += actv.Health.Value()
+				sumLoad += actv.Load
+				sumCpu += actv.Resources.Cpu
+				sumMem += actv.Resources.Memory
+				sumH += actv.Health
 
 				//INSTANCES
 				avgSa.Instances.All = append(avgSa.Instances.All, actv.Instances.All...)
@@ -331,10 +307,10 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 			avgMem := sumMem / total
 			avgH := sumH / total
 
-			avgSa.Load = enum.FromLabelValue(avgLoad)
-			avgSa.Resources.Cpu = enum.FromLabelValue(avgCpu)
-			avgSa.Resources.Memory = enum.FromLabelValue(avgMem)
-			avgSa.Health = enum.FromLabelValue(avgH)
+			avgSa.Load = avgLoad
+			avgSa.Resources.Cpu = avgCpu
+			avgSa.Resources.Memory = avgMem
+			avgSa.Health = avgH
 
 			avg[name] = avgSa
 
@@ -354,21 +330,21 @@ func computeClusterAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 
 	for _, peer := range peers {
 		clstrSrvs = checkAndAppend(clstrSrvs, peer.System.Services)
-		sumCpu += peer.System.Resources.Cpu.Value()
-		sumMem += peer.System.Resources.Memory.Value()
-		sumH += peer.System.Health.Value()
+		sumCpu += peer.System.Resources.Cpu
+		sumMem += peer.System.Resources.Memory
+		sumH += peer.System.Health
 	}
 
 	clstrSrvs = checkAndAppend(clstrSrvs, analytics.System.Services)
 	total := float64(len(peers) + 1)
-	avgCpu := (analytics.System.Resources.Cpu.Value() + sumCpu) / total
-	avgMem := (analytics.System.Resources.Memory.Value() + sumMem) / total
-	avgH := (analytics.System.Health.Value() + sumH) / total
+	avgCpu := (analytics.System.Resources.Cpu + sumCpu) / total
+	avgMem := (analytics.System.Resources.Memory + sumMem) / total
+	avgH := (analytics.System.Health + sumH) / total
 
 	analytics.Cluster.Services = clstrSrvs
-	analytics.Cluster.ResourcesAnalytics.Cpu = enum.FromLabelValue(avgCpu)
-	analytics.Cluster.ResourcesAnalytics.Memory = enum.FromLabelValue(avgMem)
-	analytics.Cluster.Health = enum.FromLabelValue(avgH)
+	analytics.Cluster.ResourcesAnalytics.Cpu = avgCpu
+	analytics.Cluster.ResourcesAnalytics.Memory = avgMem
+	analytics.Cluster.Health = avgH
 }
 
 func checkAndAppend(slice []string, values []string) []string {
@@ -416,11 +392,11 @@ func displayAnalyticsOfServices(analytics GruAnalytics) {
 	for srv, value := range analytics.Service {
 		log.WithFields(log.Fields{
 			"service":   srv,
-			"cpu":       value.Resources.Cpu.ToString(),
-			"memory":    value.Resources.Memory.ToString(),
-			"resources": value.Resources.Available.ToString(),
-			"load":      value.Load.ToString(),
-			"health":    value.Health.ToString(),
+			"cpu":       value.Resources.Cpu,
+			"memory":    value.Resources.Memory,
+			"resources": value.Resources.Available,
+			"load":      value.Load,
+			"health":    value.Health,
 		}).Infoln("Computed analytics")
 	}
 }

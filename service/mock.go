@@ -42,7 +42,7 @@ func CreateMockFiles() string {
             },
             "Configuration":{
             	"CpuShares":512,
-            	"CpusetCpus":1
+            	"CpusetCpus":"1"
             }
 
         }`
@@ -79,12 +79,18 @@ func CreateMockServices() []Service {
 		Name:  "service1",
 		Type:  "webserver",
 		Image: "test/tomcat",
+		Constraints: Constraints{
+			MaxRespTime: 2000,
+		},
 	}
 
 	service2 := Service{
 		Name:  "service2",
 		Type:  "webserver",
 		Image: "test/jetty",
+		Constraints: Constraints{
+			MaxRespTime: 6000,
+		},
 	}
 
 	service3 := Service{

@@ -36,7 +36,7 @@ func TestBuildPlans(t *testing.T) {
 	assert.Len(t, plans, 1)
 	analytics = analyzer.CreateMockAnalytics()
 	plans = buildPlans(analytics)
-	nPlans := len(srvcs)*len(policy.List()) + 1 // +1 for the noAction plan
+	nPlans := len(srvcs)*len(policy.List()) + 1 // count also the noAction plan
 	assert.Len(t, plans, nPlans)
 }
 
@@ -49,14 +49,14 @@ func TestSavePlan(t *testing.T) {
 }
 
 func TestConvertPlanToData(t *testing.T) {
-	plan := strategy.CreateMockPlan(enum.WHITE, service.Service{}, []enum.Action{enum.START})
+	plan := strategy.CreateMockPlan(0.0, service.Service{}, []enum.Action{enum.START})
 
 	_, err := convertPlanToData(plan)
 	assert.NoError(t, err)
 }
 
 func TestConvertDataToPlan(t *testing.T) {
-	plan := strategy.CreateMockPlan(enum.WHITE, service.Service{}, []enum.Action{enum.START})
+	plan := strategy.CreateMockPlan(0.0, service.Service{}, []enum.Action{enum.START})
 	data_ok, err := convertPlanToData(plan)
 	data_bad := []byte{}
 
@@ -74,7 +74,7 @@ func TestGetPlannerData(t *testing.T) {
 	_, err = GetPlannerData()
 	assert.Error(t, err)
 
-	strategy.StoreMockPlan(enum.ORANGE, service.Service{}, []enum.Action{})
+	strategy.StoreMockPlan(0.8, service.Service{}, []enum.Action{})
 	_, err = GetPlannerData()
 	assert.NoError(t, err)
 }

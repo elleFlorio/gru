@@ -6,6 +6,7 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	"github.com/elleFlorio/gru/autonomic/monitor/metric"
+	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
@@ -14,6 +15,12 @@ func init() {
 	//Initialize storage
 	storage.New("internal")
 	metric.Manager().Start()
+	n := node.Node{
+		Resources: node.Resources{
+			TotalCpus: 1,
+		},
+	}
+	node.UpdateNodeConfig(n)
 }
 
 func TestUpdateRunningInstances(t *testing.T) {

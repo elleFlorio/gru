@@ -31,8 +31,7 @@ func createMockConfigFileNode() string {
 		"Name":"mockNode",
 		"Constraints":{
 			"CpuMax":0.8,
-			"CpuMin":0.2,
-			"MaxInstances":10
+			"CpuMin":0.2
 		}
 	}`
 
