@@ -55,6 +55,7 @@ func CreateContainerConfig(sConf service.Config) *dockerclient.ContainerConfig {
 	containerConfig.Cmd = sConf.Cmd
 	containerConfig.Volumes = sConf.Volumes
 	containerConfig.Entrypoint = sConf.Entrypoint
+	containerConfig.ExposedPorts = sConf.ExposedPorts
 	containerConfig.CpuShares = sConf.CpuShares
 	containerConfig.Cpuset = sConf.CpusetCpus
 

@@ -29,6 +29,7 @@ type Config struct {
 	Memory       string                   `json:"memory"`
 	CpuShares    int64                    `json:"cpushares"`
 	CpusetCpus   string                   `json:"cpusetcpus"`
+	ExposedPorts map[string]struct{}      `json:exposedports`
 	PortBindings map[string][]PortBinding `json:"portbindings"`
 	Links        []string                 `json:"links"`
 }
