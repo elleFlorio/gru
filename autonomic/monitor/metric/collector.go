@@ -9,25 +9,20 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
-func collector(contLog io.ReadCloser, ch_data chan logEntry, ch_stop chan struct{}) {
+func collector(contLog io.ReadCloser, ch_data chan logEntry) {
 	var err error
 	var line []byte
 	var data logEntry
 
 	scanner := bufio.NewScanner(contLog)
 	for scanner.Scan() {
-		select {
-		case <-ch_stop:
-			return
-		default:
-			line = scanner.Bytes()
-			if regex.Match(line) {
-				data, err = getDataFromLogLine(string(line))
-				if err != nil {
-					log.WithField("error", err).Errorln("Error parsing container logs")
-				} else {
-					ch_data <- data
-				}
+		line = scanner.Bytes()
+		if regex.Match(line) {
+			data, err = getDataFromLogLine(string(line))
+			if err != nil {
+				log.WithField("error", err).Errorln("Error parsing container logs")
+			} else {
+				ch_data <- data
 			}
 		}
 	}
@@ -35,6 +30,8 @@ func collector(contLog io.ReadCloser, ch_data chan logEntry, ch_stop chan struct
 	if err = scanner.Err(); err != nil {
 		log.WithField("error", err).Errorln("Error in scanner.")
 	}
+
+	log.Debugln("Collector is stopping...")
 }
 
 func getDataFromLogLine(line string) (logEntry, error) {

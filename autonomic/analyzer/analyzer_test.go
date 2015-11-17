@@ -246,10 +246,10 @@ func TestComputeServicesAvg(t *testing.T) {
 
 	computeServicesAvg(peers, &analytics)
 	//SERVICE 1
-	assert.InEpsilon(t, 0.6, analytics.Service["s1"].Load, c_EPSILON)
-	assert.InEpsilon(t, 0.45, analytics.Service["s1"].Resources.Cpu, c_EPSILON)
-	assert.InEpsilon(t, 0.45, analytics.Service["s1"].Resources.Memory, c_EPSILON)
-	assert.InEpsilon(t, 0.45, analytics.Service["s1"].Health, c_EPSILON)
+	assert.InEpsilon(t, 0.36, analytics.Service["s1"].Load, c_EPSILON)
+	assert.InEpsilon(t, 0.28, analytics.Service["s1"].Resources.Cpu, c_EPSILON)
+	assert.InEpsilon(t, 0.28, analytics.Service["s1"].Resources.Memory, c_EPSILON)
+	assert.InEpsilon(t, 0.28, analytics.Service["s1"].Health, c_EPSILON)
 	assert.Len(t, analytics.Service["s1"].Instances.All, 12)
 	assert.Len(t, analytics.Service["s1"].Instances.Running, 5)
 	assert.Len(t, analytics.Service["s1"].Instances.Pending, 2)

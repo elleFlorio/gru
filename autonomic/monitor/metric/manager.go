@@ -103,7 +103,7 @@ func (m *MetricManager) cleanMetrics() {
 
 func (m *MetricManager) StartCollector(contLog io.ReadCloser) {
 	log.Debugln("starting collector")
-	go collector(contLog, m.ch_data, m.ch_stop)
+	go collector(contLog, m.ch_data)
 }
 
 func (m *MetricManager) GetMetrics() servicesMap {

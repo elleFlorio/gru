@@ -301,7 +301,7 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 				avgSa.Instances.Paused = append(avgSa.Instances.Paused, actv.Instances.Paused...)
 			}
 
-			total := float64(len(active) + 1)
+			total := float64(len(avgSa.Instances.Running))
 			avgLoad := sumLoad / total
 			avgCpu := sumCpu / total
 			avgMem := sumMem / total
