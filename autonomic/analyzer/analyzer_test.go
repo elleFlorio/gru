@@ -246,45 +246,45 @@ func TestComputeServicesAvg(t *testing.T) {
 
 	computeServicesAvg(peers, &analytics)
 	//SERVICE 1
-	assert.InEpsilon(t, 0.36, analytics.Service["s1"].Load, c_EPSILON)
-	assert.InEpsilon(t, 0.28, analytics.Service["s1"].Resources.Cpu, c_EPSILON)
-	assert.InEpsilon(t, 0.28, analytics.Service["s1"].Resources.Memory, c_EPSILON)
-	assert.InEpsilon(t, 0.28, analytics.Service["s1"].Health, c_EPSILON)
-	assert.Len(t, analytics.Service["s1"].Instances.All, 12)
-	assert.Len(t, analytics.Service["s1"].Instances.Running, 5)
-	assert.Len(t, analytics.Service["s1"].Instances.Pending, 2)
+	assert.InEpsilon(t, 0.6, analytics.Service["s1"].Load, c_EPSILON)
+	assert.InEpsilon(t, 0.4, analytics.Service["s1"].Resources.Cpu, c_EPSILON)
+	assert.InEpsilon(t, 0.4, analytics.Service["s1"].Resources.Memory, c_EPSILON)
+	assert.InEpsilon(t, 0.4, analytics.Service["s1"].Health, c_EPSILON)
+	assert.Len(t, analytics.Service["s1"].Instances.All, 8)
+	assert.Len(t, analytics.Service["s1"].Instances.Running, 3)
+	assert.Len(t, analytics.Service["s1"].Instances.Pending, 0)
 	assert.Len(t, analytics.Service["s1"].Instances.Stopped, 4)
 	assert.Len(t, analytics.Service["s1"].Instances.Paused, 1)
 	//SERVICE 2
-	assert.Equal(t, 0.4, analytics.Service["s2"].Load)
-	assert.Equal(t, 0.6, analytics.Service["s2"].Resources.Cpu)
-	assert.Equal(t, 0.2, analytics.Service["s2"].Resources.Memory)
-	assert.Equal(t, 0.6, analytics.Service["s2"].Health)
-	assert.Len(t, analytics.Service["s2"].Instances.All, 3)
-	assert.Len(t, analytics.Service["s2"].Instances.Running, 1)
-	assert.Len(t, analytics.Service["s2"].Instances.Pending, 1)
-	assert.Len(t, analytics.Service["s2"].Instances.Stopped, 0)
+	assert.InEpsilon(t, 0.6, analytics.Service["s2"].Load, c_EPSILON)
+	assert.InEpsilon(t, 0.8, analytics.Service["s2"].Resources.Cpu, c_EPSILON)
+	assert.InEpsilon(t, 0.6, analytics.Service["s2"].Resources.Memory, c_EPSILON)
+	assert.InEpsilon(t, 0.4, analytics.Service["s2"].Health, c_EPSILON)
+	assert.Len(t, analytics.Service["s2"].Instances.All, 4)
+	assert.Len(t, analytics.Service["s2"].Instances.Running, 2)
+	assert.Len(t, analytics.Service["s2"].Instances.Pending, 0)
+	assert.Len(t, analytics.Service["s2"].Instances.Stopped, 1)
 	assert.Len(t, analytics.Service["s2"].Instances.Paused, 1)
 	//SERVICE 3
-	assert.Equal(t, 0.6, analytics.Service["s3"].Load)
-	assert.Equal(t, 0.6, analytics.Service["s3"].Resources.Cpu)
-	assert.Equal(t, 0.6, analytics.Service["s3"].Resources.Memory)
-	assert.Equal(t, 0.6, analytics.Service["s3"].Health)
-	assert.Len(t, analytics.Service["s3"].Instances.All, 2)
+	assert.InEpsilon(t, 0.6, analytics.Service["s3"].Load, c_EPSILON)
+	assert.InEpsilon(t, 0.6, analytics.Service["s3"].Resources.Cpu, c_EPSILON)
+	assert.InEpsilon(t, 0.6, analytics.Service["s3"].Resources.Memory, c_EPSILON)
+	assert.InEpsilon(t, 0.6, analytics.Service["s3"].Health, c_EPSILON)
+	assert.Len(t, analytics.Service["s3"].Instances.All, 1)
 	assert.Len(t, analytics.Service["s3"].Instances.Running, 1)
-	assert.Len(t, analytics.Service["s3"].Instances.Pending, 1)
+	assert.Len(t, analytics.Service["s3"].Instances.Pending, 0)
 	assert.Len(t, analytics.Service["s3"].Instances.Stopped, 0)
 	assert.Len(t, analytics.Service["s3"].Instances.Paused, 0)
 	//SERVICE 4
-	assert.Equal(t, 1.0, analytics.Service["s4"].Load)
-	assert.Equal(t, 1.0, analytics.Service["s4"].Resources.Cpu)
-	assert.Equal(t, 1.0, analytics.Service["s4"].Resources.Memory)
-	assert.Equal(t, 1.0, analytics.Service["s4"].Health)
-	assert.Len(t, analytics.Service["s4"].Instances.All, 2)
+	assert.InEpsilon(t, 0.75, analytics.Service["s4"].Load, c_EPSILON)
+	assert.InEpsilon(t, 0.75, analytics.Service["s4"].Resources.Cpu, c_EPSILON)
+	assert.InEpsilon(t, 0.75, analytics.Service["s4"].Resources.Memory, c_EPSILON)
+	assert.InEpsilon(t, 0.75, analytics.Service["s4"].Health, c_EPSILON)
+	assert.Len(t, analytics.Service["s4"].Instances.All, 3)
 	assert.Len(t, analytics.Service["s4"].Instances.Running, 2)
 	assert.Len(t, analytics.Service["s4"].Instances.Pending, 0)
 	assert.Len(t, analytics.Service["s4"].Instances.Stopped, 0)
-	assert.Len(t, analytics.Service["s4"].Instances.Paused, 0)
+	assert.Len(t, analytics.Service["s4"].Instances.Paused, 1)
 
 }
 
@@ -306,8 +306,8 @@ func createLocal() GruAnalytics {
 	}
 
 	s1_is := createInstaceStatus(1, 0, 1, 1)
-	s3_is := createInstaceStatus(1, 1, 0, 0)
-	s4_is := createInstaceStatus(2, 0, 0, 0)
+	s3_is := createInstaceStatus(1, 0, 0, 0)
+	s4_is := createInstaceStatus(1, 0, 0, 0)
 	s1_sa := createServiceAnalytics(0.2, 0.2, 0.2, 0.2, s1_is)
 	s3_sa := createServiceAnalytics(0.6, 0.6, 0.6, 0.6, s3_is)
 	s4_sa := createServiceAnalytics(1.0, 1.0, 1.0, 1.0, s4_is)
@@ -334,22 +334,28 @@ func createPeers() []GruAnalytics {
 		Service: make(map[string]ServiceAnalytics),
 	}
 
-	s1_is := createInstaceStatus(1, 2, 2, 0)
-	s1b_is := createInstaceStatus(3, 0, 1, 0)
-	s2_is := createInstaceStatus(1, 1, 0, 1)
+	s1_is := createInstaceStatus(1, 0, 2, 0)
+	s1b_is := createInstaceStatus(1, 0, 1, 0)
+	s2_is := createInstaceStatus(1, 0, 0, 1)
+	s2b_is := createInstaceStatus(1, 0, 1, 0)
 	s1_sa := createServiceAnalytics(0.6, 0.4, 0.4, 0.4, s1_is)
-	s1b_sa := createServiceAnalytics(1.0, 0.8, 0.8, 0.8, s1b_is)
+	s1b_sa := createServiceAnalytics(1.0, 0.6, 0.6, 0.6, s1b_is)
 	s2_sa := createServiceAnalytics(0.4, 0.6, 0.2, 0.6, s2_is)
+	s2b_sa := createServiceAnalytics(0.8, 1.0, 1.0, 0.2, s2b_is)
+	s4_is := createInstaceStatus(1, 0, 0, 1)
+	s4_sa := createServiceAnalytics(0.5, 0.5, 0.5, 0.5, s4_is)
 	p1.Service["s1"] = s1_sa
+	p1.Service["s2"] = s2b_sa
+	p1.Service["s4"] = s4_sa
 	p2.Service["s1"] = s1b_sa
 	p2.Service["s2"] = s2_sa
 
 	p1.System = createSystemAnalytics(
-		[]string{"s1"},
+		[]string{"s1", "s2", "s4"},
 		0.6,
 		0.6,
 		0.6,
-		s1_is)
+		s1_is, s2b_is, s4_is)
 	p2.System = createSystemAnalytics(
 		[]string{"s1", "s2"},
 		0.8,

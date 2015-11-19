@@ -70,7 +70,6 @@ func updateNodeResources() {
 
 func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
 	for name, value := range stats.Service {
-
 		load := analyzeServiceLoad(name, value.Metrics.ResponseTime)
 		cpu := value.Cpu.Tot
 		mem := value.Memory.Tot
@@ -102,11 +101,6 @@ func analyzeServiceLoad(name string, responseTimes []float64) float64 {
 	avgRt := computeAvgResponseTime(responseTimes)
 	load := computeLoad(maxRt, avgRt)
 
-	log.WithFields(log.Fields{
-		"avgRt":   avgRt,
-		"service": name,
-	}).Debugln("Computerd avg response time of serice")
-
 	return load
 }
 
@@ -128,13 +122,18 @@ func computeAvgResponseTime(responseTimes []float64) float64 {
 func computeLoad(maxRt float64, avgRt float64) float64 {
 	// I want the maximum response time
 	// to correspond to the 60% of load
-	// (limit of the orange label)
 	upperBound := maxRt / 0.6
 	if avgRt > upperBound {
 		avgRt = upperBound
 	}
 
 	loadValue := avgRt / upperBound
+
+	log.WithFields(log.Fields{
+		"upperBound": upperBound,
+		"avgRt":      avgRt,
+		"load":       loadValue,
+	}).Debugln("Computed load")
 
 	return loadValue
 }
@@ -268,18 +267,24 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 		var avgSa ServiceAnalytics
 
 		if ls, ok := analytics.Service[name]; ok {
-			active = append(active, ls)
+			if len(ls.Instances.Running) > 0 {
+				active = append(active, ls)
+			}
 		}
 
 		for _, peer := range peers {
 			if ps, ok := peer.Service[name]; ok {
-				active = append(active, ps)
+				if len(ps.Instances.Running) > 0 {
+					active = append(active, ps)
+				}
 			}
 		}
 
 		if len(active) > 1 {
 			avgSa = active[0]
+			log.Debugln(len(active))
 			active = active[1:]
+			log.Debugln(len(active))
 
 			sumLoad := avgSa.Load
 			sumCpu := avgSa.Resources.Cpu
@@ -287,6 +292,7 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 			sumH := avgSa.Health
 
 			for _, actv := range active {
+
 				//LABELS
 				sumLoad += actv.Load
 				sumCpu += actv.Resources.Cpu
@@ -301,11 +307,11 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 				avgSa.Instances.Paused = append(avgSa.Instances.Paused, actv.Instances.Paused...)
 			}
 
-			total := float64(len(avgSa.Instances.Running))
-			avgLoad := sumLoad / total
-			avgCpu := sumCpu / total
-			avgMem := sumMem / total
-			avgH := sumH / total
+			total_active := float64(len(active) + 1) // Because I removed the first one from the slice
+			avgLoad := sumLoad / total_active
+			avgCpu := sumCpu / total_active
+			avgMem := sumMem / total_active
+			avgH := sumH / total_active
 
 			avgSa.Load = avgLoad
 			avgSa.Resources.Cpu = avgCpu
