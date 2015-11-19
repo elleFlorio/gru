@@ -282,9 +282,7 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 
 		if len(active) > 1 {
 			avgSa = active[0]
-			log.Debugln(len(active))
 			active = active[1:]
-			log.Debugln(len(active))
 
 			sumLoad := avgSa.Load
 			sumCpu := avgSa.Resources.Cpu
