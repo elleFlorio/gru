@@ -13,6 +13,8 @@ import (
 
 var plc map[string]GruPolicy
 
+const c_EPSILON = 0.09
+
 func init() {
 	plc = map[string]GruPolicy{
 		"scalein":  &ScaleIn{},
@@ -50,14 +52,14 @@ func TestWeight(t *testing.T) {
 	analytics := createAnalytics()
 	node.UpdateNodeConfig(createNode())
 
-	assert.Equal(t, 0.25, plc["scalein"].Weight("service1", analytics))
-	assert.Equal(t, 0.65, plc["scalein"].Weight("service2", analytics))
-	assert.Equal(t, 0.0, plc["scalein"].Weight("service3", analytics))
+	assert.InEpsilon(t, 0.0, plc["scalein"].Weight("service1", analytics), c_EPSILON)
+	assert.InEpsilon(t, 0.25, plc["scalein"].Weight("service2", analytics), c_EPSILON)
+	assert.InEpsilon(t, 0.0, plc["scalein"].Weight("service3", analytics), c_EPSILON)
 
-	assert.Equal(t, 0.0, plc["scaleout"].Weight("service1", analytics))
-	assert.Equal(t, 0.0, plc["scaleout"].Weight("service2", analytics))
-	assert.Equal(t, 0.2, plc["scaleout"].Weight("service3", analytics))
-	assert.Equal(t, 0.0, plc["scaleout"].Weight("service4", analytics))
+	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service1", analytics), c_EPSILON)
+	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service2", analytics), c_EPSILON)
+	assert.InEpsilon(t, 0.5, plc["scaleout"].Weight("service3", analytics), c_EPSILON)
+	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service4", analytics), c_EPSILON)
 }
 
 func createServices() []service.Service {
@@ -95,8 +97,8 @@ func createAnalytics() analyzer.GruAnalytics {
 	srv2A.Resources.Available = 1.0
 
 	srv3A := analyzer.ServiceAnalytics{}
-	srv3A.Load = 0.2
-	srv3A.Resources.Cpu = 0.2
+	srv3A.Load = 0.9
+	srv3A.Resources.Cpu = 0.8
 	srv3A.Resources.Available = 1.0
 
 	srv4A := analyzer.ServiceAnalytics{}

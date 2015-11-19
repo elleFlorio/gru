@@ -1,11 +1,15 @@
 package policy
 
 import (
+	"math"
+
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
 )
+
+const c_THRESHOLD_SCALEIN = 0.4
 
 type ScaleIn struct{}
 
@@ -29,11 +33,18 @@ func (p *ScaleIn) Weight(name string, analytics analyzer.GruAnalytics) float64 {
 	}
 
 	srvAnalytics := analytics.Service[name]
+	// LOAD
 	load := srvAnalytics.Load
+	value_load := math.Min(load, c_THRESHOLD_SCALEIN)
+	weight_load := 1 - value_load/c_THRESHOLD_SCALEIN
+	// CPU
 	cpu := srvAnalytics.Resources.Cpu
-	//mem := srvAnalytics.Resources.Memory for now not use memory
+	value_cpu := math.Min(cpu, c_THRESHOLD_SCALEIN)
+	weight_cpu := 1 - value_cpu/c_THRESHOLD_SCALEIN
+	// MEMORY
+	// TODO?
 
-	policyValue := 1 - ((load + cpu) / 2)
+	policyValue := (weight_load + weight_cpu) / 2
 
 	return policyValue
 }
