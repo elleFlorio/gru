@@ -27,7 +27,7 @@ func (p *Stop) Run(config GruActionConfig) error {
 	}
 
 	toStop := running[0]
-	err = container.Docker().Client.StopContainer(toStop, 1)
+	err = container.Docker().Client.StopContainer(toStop, config.Parameters.StopTimeout)
 	if err != nil {
 		log.WithField("error", err).Errorln("Cannot stop container ", toStop)
 		return err

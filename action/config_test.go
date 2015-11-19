@@ -17,6 +17,7 @@ func createServConfig() service.Config {
 	cfg.Links = []string{"pippo"}
 	cfg.Memory = "1G"
 	cfg.PortBindings = createMockBindings()
+	cfg.StopTimeout = 30
 
 	return cfg
 }

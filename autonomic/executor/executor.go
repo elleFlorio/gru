@@ -29,6 +29,7 @@ func buildConfig(srv *service.Service) action.GruActionConfig {
 	actConfig.HostConfig = action.CreateHostConfig(srv.Configuration)
 	actConfig.ContainerConfig = action.CreateContainerConfig(srv.Configuration)
 	actConfig.ContainerConfig.Image = srv.Image
+	actConfig.Parameters.StopTimeout = srv.Configuration.StopTimeout
 
 	return actConfig
 }

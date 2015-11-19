@@ -32,6 +32,7 @@ type Config struct {
 	ExposedPorts map[string]struct{}      `json:exposedports`
 	PortBindings map[string][]PortBinding `json:"portbindings"`
 	Links        []string                 `json:"links"`
+	StopTimeout  int                      `json:stoptimeout`
 }
 
 type PortBinding struct {

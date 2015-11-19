@@ -11,8 +11,13 @@ import (
 type GruActionConfig struct {
 	Service         string
 	Instances       service.InstanceStatus
+	Parameters      ActionParameters
 	HostConfig      *dockerclient.HostConfig
 	ContainerConfig *dockerclient.ContainerConfig
+}
+
+type ActionParameters struct {
+	StopTimeout int
 }
 
 func CreateHostConfig(sConf service.Config) *dockerclient.HostConfig {
