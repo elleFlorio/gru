@@ -53,12 +53,12 @@ func TestWeight(t *testing.T) {
 	node.UpdateNodeConfig(createNode())
 
 	assert.InEpsilon(t, 0.0, plc["scalein"].Weight("service1", analytics), c_EPSILON)
-	assert.InEpsilon(t, 0.25, plc["scalein"].Weight("service2", analytics), c_EPSILON)
+	assert.InEpsilon(t, 0.16, plc["scalein"].Weight("service2", analytics), c_EPSILON)
 	assert.InEpsilon(t, 0.0, plc["scalein"].Weight("service3", analytics), c_EPSILON)
 
 	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service1", analytics), c_EPSILON)
 	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service2", analytics), c_EPSILON)
-	assert.InEpsilon(t, 0.5, plc["scaleout"].Weight("service3", analytics), c_EPSILON)
+	assert.InEpsilon(t, 0.37, plc["scaleout"].Weight("service3", analytics), c_EPSILON)
 	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service4", analytics), c_EPSILON)
 }
 

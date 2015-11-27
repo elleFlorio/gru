@@ -9,7 +9,8 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-const c_THRESHOLD_SCALEIN = 0.4
+const c_THRESHOLD_SCALEIN_LOAD = 0.3
+const c_THRESHOLD_SCALEIN_CPU = 0.3
 
 type ScaleIn struct{}
 
@@ -35,12 +36,12 @@ func (p *ScaleIn) Weight(name string, analytics analyzer.GruAnalytics) float64 {
 	srvAnalytics := analytics.Service[name]
 	// LOAD
 	load := srvAnalytics.Load
-	value_load := math.Min(load, c_THRESHOLD_SCALEIN)
-	weight_load := 1 - value_load/c_THRESHOLD_SCALEIN
+	value_load := math.Min(load, c_THRESHOLD_SCALEIN_LOAD)
+	weight_load := 1 - value_load/c_THRESHOLD_SCALEIN_LOAD
 	// CPU
 	cpu := srvAnalytics.Resources.Cpu
-	value_cpu := math.Min(cpu, c_THRESHOLD_SCALEIN)
-	weight_cpu := 1 - value_cpu/c_THRESHOLD_SCALEIN
+	value_cpu := math.Min(cpu, c_THRESHOLD_SCALEIN_CPU)
+	weight_cpu := 1 - value_cpu/c_THRESHOLD_SCALEIN_CPU
 	// MEMORY
 	// TODO?
 
