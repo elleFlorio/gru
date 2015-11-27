@@ -63,12 +63,6 @@ func Start(cError chan error, cStop chan struct{}) {
 
 // Events are: create, destroy, die, exec_create, exec_start, export, kill, oom, pause, restart, start, stop, unpause
 func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}) {
-	log.WithFields(log.Fields{
-		"status": "received event",
-		"event":  event.Status,
-		"from":   event.From,
-	}).Debug("Running monitor")
-
 	c_evntstart := args[0].(chan string)
 
 	switch event.Status {
@@ -87,15 +81,23 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 			c_evntstart <- event.Id
 		}
 	case "stop":
-	case "die":
+		log.WithFields(log.Fields{
+			"event": event.Status,
+			"from":  event.From,
+		}).Debugln("Received stop signal")
 	case "kill":
+		log.WithFields(log.Fields{
+			"event": event.Status,
+			"from":  event.From,
+		}).Debugln("Received kill signal")
+	case "die":
 		removeResource(event.Id, &gruStats, &history)
 	default:
 		log.WithFields(log.Fields{
-			"status": "event not handled",
-			"event":  event.Status,
-			"from":   event.From,
-		}).Warnln("Running monitor")
+			"err":   "event not handled",
+			"event": event.Status,
+			"from":  event.From,
+		}).Debugln("Received unknown signal")
 	}
 
 }

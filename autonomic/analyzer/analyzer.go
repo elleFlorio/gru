@@ -298,11 +298,11 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 				sumH += actv.Health
 
 				//INSTANCES
-				avgSa.Instances.All = append(avgSa.Instances.All, actv.Instances.All...)
+				/*avgSa.Instances.All = append(avgSa.Instances.All, actv.Instances.All...)
 				avgSa.Instances.Running = append(avgSa.Instances.Running, actv.Instances.Running...)
 				avgSa.Instances.Pending = append(avgSa.Instances.Pending, actv.Instances.Pending...)
 				avgSa.Instances.Stopped = append(avgSa.Instances.Stopped, actv.Instances.Stopped...)
-				avgSa.Instances.Paused = append(avgSa.Instances.Paused, actv.Instances.Paused...)
+				avgSa.Instances.Paused = append(avgSa.Instances.Paused, actv.Instances.Paused...)*/
 			}
 
 			total_active := float64(len(active) + 1) // Because I removed the first one from the slice
