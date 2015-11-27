@@ -82,9 +82,8 @@ func TestGetPlannerData(t *testing.T) {
 func TestRun(t *testing.T) {
 	srvcs := service.CreateMockServices()
 	service.UpdateServices(srvcs)
-	assert.NotPanics(t, Run)
+	assert.Nil(t, Run(analyzer.GruAnalytics{}))
 
-	analyzer.StoreMockAnalytics()
-	assert.NotPanics(t, Run)
-
+	analytics := analyzer.CreateMockAnalytics()
+	assert.NotNil(t, Run(analytics))
 }

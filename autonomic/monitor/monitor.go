@@ -37,7 +37,7 @@ func init() {
 	history = statsHistory{make(map[string]instanceHistory)}
 }
 
-func Run() {
+func Run() GruStats {
 	snapshot := GruStats{
 		Service:  make(map[string]ServiceStats),
 		Instance: make(map[string]InstanceStats),
@@ -59,6 +59,7 @@ func Run() {
 	}
 
 	displayStatsOfServices(snapshot)
+	return snapshot
 }
 
 func computeServicesStats(stats *GruStats) {

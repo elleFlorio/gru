@@ -43,10 +43,10 @@ func RunLoop() {
 				log.WithField("warning", err).Warnln("Cannot update friends data")
 			}
 
-			monitor.Run()
-			analyzer.Run()
-			planner.Run()
-			executor.Run()
+			stats := monitor.Run()
+			analytics := analyzer.Run(stats)
+			plan := planner.Run(analytics)
+			executor.Run(plan)
 
 		case <-c_err:
 			log.WithField("status", "error").Errorln("Running autonomic loop")

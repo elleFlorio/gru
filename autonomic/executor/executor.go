@@ -4,18 +4,16 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/action"
-	"github.com/elleFlorio/gru/autonomic/planner"
+	"github.com/elleFlorio/gru/autonomic/planner/strategy"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 )
 
-func Run() {
-	log.WithField("status", "start").Infoln("Running Executor")
-	defer log.WithField("status", "done").Infoln("Running Executor")
+func Run(plan *strategy.GruPlan) {
+	log.Debugln("Running Executor")
 
-	plan, err := planner.GetPlannerData()
-	if err != nil {
-		log.WithField("error", "Cannot execute actions").Errorln("Running Executor.")
+	if plan == nil {
+		log.WithField("error", "No plan to execute").Errorln("Cannot execute actions.")
 	} else {
 		config := buildConfig(plan.Target)
 		executeActions(plan.Actions, config)

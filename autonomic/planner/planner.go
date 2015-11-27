@@ -29,21 +29,22 @@ func SetPlannerStrategy(strategyName string) {
 	log.WithField("strategy", strtg.Name()).Infoln("Strategy initialized")
 }
 
-func Run() {
-	log.WithField("status", "start").Debugln("Running planner")
-	defer log.WithField("status", "done").Debugln("Running planner")
+func Run(analytics analyzer.GruAnalytics) *strategy.GruPlan {
+	log.Debugln("Running planner")
+	var thePlan *strategy.GruPlan
 
-	analytics, err := analyzer.GetAnalyzerData()
-	if err != nil {
-		log.WithField("error", "Cannot compute plans").Errorln("Running Planner.")
+	if len(analytics.Service) == 0 {
+		log.WithField("error", "No services analytics").Errorln("Cannot compute plans.")
 	} else {
 		plans := buildPlans(analytics)
-		thePlan := currentStrategy.MakeDecision(plans)
+		thePlan = currentStrategy.MakeDecision(plans)
 		err := savePlan(thePlan)
 		if err != nil {
 			log.WithField("error", "Plan data not saved ").Errorln("Running Planner")
 		}
 	}
+
+	return thePlan
 }
 
 func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {

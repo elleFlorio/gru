@@ -28,26 +28,26 @@ func init() {
 	}
 }
 
-func Run() {
-	log.WithField("status", "start").Infoln("Running analyzer")
-	defer log.WithField("status", "done").Infoln("Running analyzer")
+func Run(stats monitor.GruStats) GruAnalytics {
+	log.Debugln("Running analyzer")
 
-	stats, err := monitor.GetMonitorData()
-	if err != nil {
-		log.WithField("error", "Cannot compute analytics").Errorln("Running Analyzer.")
+	if len(stats.Service) == 0 {
+		log.WithField("error", "No services stats").Errorln("Cannot compute analytics.")
 	} else {
 		updateNodeResources()
 		analyzeServices(&gruAnalytics, stats)
 		analyzeSystem(&gruAnalytics, stats)
 		computeNodeHealth(&gruAnalytics)
 		analyzeCluster(&gruAnalytics)
-		err = saveAnalytics(gruAnalytics)
+		err := saveAnalytics(gruAnalytics)
 		if err != nil {
-			log.WithField("error", "Cluster analytics data not saved ").Errorln("Running Analyzer")
+			log.WithField("error", "Cannot save analytics ").Errorln("Analytics data not saved")
 		}
 
 		displayAnalyticsOfServices(gruAnalytics)
 	}
+
+	return gruAnalytics
 }
 
 func updateNodeResources() {
@@ -265,10 +265,12 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 	for _, name := range service.List() {
 		active := []ServiceAnalytics{}
 		var avgSa ServiceAnalytics
+		isLocal := false
 
 		if ls, ok := analytics.Service[name]; ok {
 			if len(ls.Instances.Running) > 0 {
 				active = append(active, ls)
+				isLocal = true
 			}
 		}
 
@@ -319,6 +321,9 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 			avg[name] = avgSa
 
 		} else if len(active) == 1 {
+			if !isLocal {
+				active[0].Instances = service.InstanceStatus{}
+			}
 			avg[name] = active[0]
 		}
 	}

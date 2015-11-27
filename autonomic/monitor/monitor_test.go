@@ -239,5 +239,5 @@ func TestRun(t *testing.T) {
 	history = CreateMockHistory()
 	service.UpdateServices(service.CreateMockServices())
 
-	assert.NotPanics(t, Run)
+	assert.NotEmpty(t, Run())
 }
