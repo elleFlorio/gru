@@ -36,8 +36,11 @@ Please remember that currently Gru is able only to autoscale your services conta
 
 ###### Prepare you application
 Gru needs to the execution time of your services in order to understand if it's necessary to scale them. I will implement different ways to send your monitoring data to Gru, but currently Gru read the logs of the container looking for a string formatted in this way:
+
 `gru:service_name:metric_name:unit`
+
 In the current version Gru supports only the execution time of services expressed in milleseconds, so your services have to write in the log a string like this:
+
 `gru:service_name:execution_time:ms`
 
 ###### Get Gru
