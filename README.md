@@ -112,8 +112,8 @@ In the current version Gru supports only the execution time of services expresse
 		"CpuShares": 0,
 		"CpusetCpus": "",
 		"PortBindings": {},
-		"Links":[]
-		"StopTimeout":0
+		"Links":[],
+		"StopTimeout": 0
 	}
 }
 ```
