@@ -3,6 +3,7 @@ package analyzer
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
@@ -29,10 +30,11 @@ func init() {
 }
 
 func Run(stats monitor.GruStats) GruAnalytics {
-	log.Debugln("Running analyzer")
+	log.WithField("status", "init").Debugln("Gru Analyzer")
+	defer log.WithField("status", "done").Debugln("Gru Analyzer")
 
 	if len(stats.Service) == 0 {
-		log.WithField("error", "No services stats").Errorln("Cannot compute analytics.")
+		log.WithField("err", "No services stats").Errorln("Cannot compute analytics.")
 	} else {
 		updateNodeResources()
 		analyzeServices(&gruAnalytics, stats)
@@ -41,7 +43,7 @@ func Run(stats monitor.GruStats) GruAnalytics {
 		analyzeCluster(&gruAnalytics)
 		err := saveAnalytics(gruAnalytics)
 		if err != nil {
-			log.WithField("error", "Cannot save analytics ").Errorln("Analytics data not saved")
+			log.WithField("err", "Cannot save analytics ").Errorln("Analytics data not saved")
 		}
 
 		displayAnalyticsOfServices(gruAnalytics)
@@ -53,11 +55,11 @@ func Run(stats monitor.GruStats) GruAnalytics {
 func updateNodeResources() {
 	_, err := node.UsedCpus()
 	if err != nil {
-		log.WithField("error", err).Errorln("Computing node used CPU")
+		log.WithField("err", err).Errorln("Error computing node used CPU")
 	}
 	_, err = node.UsedMemory()
 	if err != nil {
-		log.WithField("error", err).Errorln("Computing node used memory")
+		log.WithField("err", err).Errorln("Error computing node used memory")
 	}
 
 	log.WithFields(log.Fields{
@@ -157,7 +159,7 @@ func resourcesAvailable(name string) float64 {
 	if srv.Configuration.Memory != "" {
 		srvMem, err = utils.RAMInBytes(srv.Configuration.Memory)
 		if err != nil {
-			log.WithField("error", err).Warnln("Cannot convert service RAM in Bytes.")
+			log.WithField("err", err).Warnln("Cannot convert service RAM in Bytes.")
 			return 0.0
 		}
 	} else {
@@ -298,13 +300,6 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 				sumCpu += actv.Resources.Cpu
 				sumMem += actv.Resources.Memory
 				sumH += actv.Health
-
-				//INSTANCES
-				/*avgSa.Instances.All = append(avgSa.Instances.All, actv.Instances.All...)
-				avgSa.Instances.Running = append(avgSa.Instances.Running, actv.Instances.Running...)
-				avgSa.Instances.Pending = append(avgSa.Instances.Pending, actv.Instances.Pending...)
-				avgSa.Instances.Stopped = append(avgSa.Instances.Stopped, actv.Instances.Stopped...)
-				avgSa.Instances.Paused = append(avgSa.Instances.Paused, actv.Instances.Paused...)*/
 			}
 
 			total_active := float64(len(active) + 1) // Because I removed the first one from the slice
@@ -322,6 +317,9 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 
 		} else if len(active) == 1 {
 			if !isLocal {
+				// I don't want to merge instance status. This may
+				// cause some problems of synchronization with
+				// other peers
 				active[0].Instances = service.InstanceStatus{}
 			}
 			avg[name] = active[0]
@@ -378,7 +376,7 @@ func checkAndAppend(slice []string, values []string) []string {
 func saveAnalytics(analytics GruAnalytics) error {
 	data, err := convertAnalyticsToData(analytics)
 	if err != nil {
-		log.WithField("error", "Cannot convert analytics to data").Debugln("Running Analyzer")
+		log.WithField("err", err).Errorln("Cannot convert analytics to data")
 		return err
 	} else {
 		storage.StoreData(enum.CLUSTER.ToString(), data, enum.ANALYTICS)
@@ -390,7 +388,7 @@ func saveAnalytics(analytics GruAnalytics) error {
 func convertAnalyticsToData(analytics GruAnalytics) ([]byte, error) {
 	data, err := json.Marshal(analytics)
 	if err != nil {
-		log.WithField("error", err).Errorln("Error marshaling analytics data")
+		log.WithField("err", err).Errorln("Error marshaling analytics data")
 		return nil, err
 	}
 
@@ -401,12 +399,12 @@ func displayAnalyticsOfServices(analytics GruAnalytics) {
 	for srv, value := range analytics.Service {
 		log.WithFields(log.Fields{
 			"service":   srv,
-			"cpu":       value.Resources.Cpu,
-			"memory":    value.Resources.Memory,
-			"resources": value.Resources.Available,
-			"load":      value.Load,
-			"health":    value.Health,
-		}).Infoln("Computed analytics")
+			"cpu":       fmt.Sprintf("%.2f", value.Resources.Cpu),
+			"memory":    fmt.Sprintf("%.2f", value.Resources.Memory),
+			"resources": fmt.Sprintf("%.2f", value.Resources.Available),
+			"load":      fmt.Sprintf("%.2f", value.Load),
+			"health":    fmt.Sprintf("%.2f", value.Health),
+		}).Infoln("Analytics computed: ", srv)
 	}
 }
 
@@ -414,7 +412,7 @@ func GetAnalyzerData() (GruAnalytics, error) {
 	analytics := GruAnalytics{}
 	dataAnalyics, err := storage.GetData(enum.CLUSTER.ToString(), enum.ANALYTICS)
 	if err != nil {
-		log.WithField("error", err).Errorln("Cannot retrieve analytics data.")
+		log.WithField("err", err).Errorln("Cannot retrieve analytics data.")
 	} else {
 		analytics, err = convertDataToAnalytics(dataAnalyics)
 	}
@@ -426,7 +424,7 @@ func convertDataToAnalytics(data []byte) (GruAnalytics, error) {
 	analytics := GruAnalytics{}
 	err := json.Unmarshal(data, &analytics)
 	if err != nil {
-		log.WithField("error", err).Errorln("Error unmarshaling analytics data")
+		log.WithField("err", err).Errorln("Error unmarshaling analytics data")
 	}
 
 	return analytics, err

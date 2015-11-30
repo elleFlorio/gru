@@ -47,7 +47,7 @@ func (p *ScaleOut) Weight(name string, analytics analyzer.GruAnalytics) float64 
 	return policyValue
 }
 
-func (p *ScaleOut) Actions() []enum.Action {
+func (p *ScaleOut) Actions() enum.Actions {
 	return []enum.Action{
 		enum.START,
 	}

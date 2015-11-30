@@ -21,26 +21,23 @@ func Initialize(loopTimeInterval int, nFriends int, dataType string) {
 }
 
 func RunLoop() {
-	log.WithField("status", "start").Infoln("Running autonomic loop")
-	defer log.WithField("status", "done").Infoln("Running autonomic loop")
-
 	c_err := make(chan error)
 	c_stop := make(chan struct{})
 
-	go monitor.Start(c_err, c_stop)
+	monitor.Start(c_err, c_stop)
 	planner.SetPlannerStrategy("probabilistic")
 
 	// Set the ticker for the periodic execution
 	ticker := time.NewTicker(time.Duration(manager.LoopTimeInterval) * time.Second)
 
+	log.Infoln("Running autonomic loop")
 	for {
 		select {
 		case <-ticker.C:
-
 			communication.KeepAlive(manager.LoopTimeInterval)
 			err := communication.UpdateFriendsData(manager.MaxFrineds)
 			if err != nil {
-				log.WithField("warning", err).Warnln("Cannot update friends data")
+				log.WithField("err", err).Debugln("Cannot update friends data")
 			}
 
 			stats := monitor.Run()
@@ -49,7 +46,7 @@ func RunLoop() {
 			executor.Run(plan)
 
 		case <-c_err:
-			log.WithField("status", "error").Errorln("Running autonomic loop")
+			log.Errorln("Error running autonomic loop")
 		case <-c_stop:
 			ticker.Stop()
 		}

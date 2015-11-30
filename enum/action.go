@@ -1,6 +1,7 @@
 package enum
 
 type Action float64
+type Actions []Action
 
 const (
 	NOACTION Action = iota
@@ -34,4 +35,13 @@ func (a Action) ToString() string {
 	}
 
 	return s
+}
+
+func (as Actions) ToString() []string {
+	ss := make([]string, len(as), len(as))
+	for i, a := range as {
+		ss[i] = a.ToString()
+	}
+
+	return ss
 }

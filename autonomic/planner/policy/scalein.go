@@ -60,7 +60,7 @@ func contains(slice []string, s string) bool {
 	return false
 }
 
-func (p *ScaleIn) Actions() []enum.Action {
+func (p *ScaleIn) Actions() enum.Actions {
 	return []enum.Action{
 		enum.STOP,
 	}

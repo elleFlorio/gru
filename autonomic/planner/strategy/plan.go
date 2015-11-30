@@ -8,5 +8,5 @@ import (
 type GruPlan struct {
 	Weight  float64
 	Target  *service.Service
-	Actions []enum.Action
+	Actions enum.Actions
 }

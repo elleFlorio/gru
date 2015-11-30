@@ -25,7 +25,7 @@ func init() {
 func TestGetPolicies(t *testing.T) {
 	pls := GetPolicies()
 	names := make([]string, 0)
-	actions := make([][]enum.Action, 0)
+	actions := make([]enum.Actions, 0)
 	for _, item := range pls {
 		names = append(names, item.Name())
 		actions = append(actions, item.Actions())

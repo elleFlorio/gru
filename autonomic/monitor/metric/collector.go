@@ -20,7 +20,7 @@ func collector(contLog io.ReadCloser, ch_data chan logEntry) {
 		if regex.Match(line) {
 			data, err = getDataFromLogLine(string(line))
 			if err != nil {
-				log.WithField("error", err).Errorln("Error parsing container logs")
+				log.WithField("err", err).Errorln("Error parsing container logs")
 			} else {
 				ch_data <- data
 			}
@@ -28,10 +28,10 @@ func collector(contLog io.ReadCloser, ch_data chan logEntry) {
 	}
 
 	if err = scanner.Err(); err != nil {
-		log.WithField("error", err).Errorln("Error in scanner.")
+		log.WithField("err", err).Errorln("Error in scanner.")
 	}
 
-	log.Debugln("Collector is stopping...")
+	log.Debugln("Stopped collector")
 }
 
 func getDataFromLogLine(line string) (logEntry, error) {

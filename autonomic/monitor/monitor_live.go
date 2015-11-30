@@ -11,7 +11,11 @@ import (
 )
 
 func Start(cError chan error, cStop chan struct{}) {
-	log.WithField("status", "start").Debugln("Autonomic Monitor")
+	go startMonitoring(cError, cStop)
+}
+
+func startMonitoring(cError chan error, cStop chan struct{}) {
+	log.Debugln("Running autonomic monitoring")
 	metric.Manager().Start()
 
 	monitorActive = true
@@ -37,7 +41,7 @@ func Start(cError chan error, cStop chan struct{}) {
 			log.WithFields(log.Fields{
 				"err":   err,
 				"image": c.Image,
-			}).Warningln("Running monitor")
+			}).Warningln("Error monitoring service")
 		} else {
 			// This is needed becasuse on start I don't have data
 			// to analyze the container, so every running container
@@ -47,7 +51,9 @@ func Start(cError chan error, cStop chan struct{}) {
 			}
 			addResource(c.Id, srv.Name, status, &gruStats, &history)
 			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
-			startMonitorLog(c.Id)
+			if status == "pending" {
+				startMonitorLog(c.Id)
+			}
 		}
 	}
 
@@ -67,36 +73,28 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 
 	switch event.Status {
 	case "create":
+		log.WithField("image", event.From).Debugln("Created new container")
 	case "start":
 		// TODO handle error
 		srv, err := service.GetServiceByImage(event.From)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"status": "resource not added",
-				"error":  err,
-			}).Warnln("Running monitor")
+			log.WithField("err", err).Warnln("Cannot add resource")
 		} else {
 			addResource(event.Id, srv.Name, "pending", &gruStats, &history)
 			startMonitorLog(event.Id)
 			c_evntstart <- event.Id
 		}
 	case "stop":
-		log.WithFields(log.Fields{
-			"event": event.Status,
-			"from":  event.From,
-		}).Debugln("Received stop signal")
+		log.WithField("image", event.From).Debugln("Received stop signal")
 	case "kill":
-		log.WithFields(log.Fields{
-			"event": event.Status,
-			"from":  event.From,
-		}).Debugln("Received kill signal")
+		log.WithField("image", event.From).Debugln("Received kill signal")
 	case "die":
 		removeResource(event.Id, &gruStats, &history)
 	default:
 		log.WithFields(log.Fields{
 			"err":   "event not handled",
 			"event": event.Status,
-			"from":  event.From,
+			"image": event.From,
 		}).Debugln("Received unknown signal")
 	}
 
@@ -236,10 +234,9 @@ func removeResource(id string, stats *GruStats, hist *statsHistory) {
 	delete(hist.instance, id)
 
 	log.WithFields(log.Fields{
-		"status":  "removed instance",
 		"service": srvName,
 		"id":      id,
-	}).Infoln("Running monitor")
+	}).Infoln("Removed instance")
 }
 
 func startMonitorLog(id string) {
@@ -297,15 +294,12 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 }
 
 func monitorError(err error) {
-	log.WithFields(log.Fields{
-		"status": "error",
-		"error:": err,
-	}).Errorln("Running monitor")
+	log.WithField("err", err).Errorln("Error monitoring containers")
 	c_err <- err
 }
 
 func Stop() {
 	monitorActive = false
-	log.WithField("status", "done").Warnln("Running monitor")
+	log.Warnln("Autonomic monitor stopped")
 	c_stop <- struct{}{}
 }

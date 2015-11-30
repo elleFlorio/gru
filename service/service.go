@@ -31,16 +31,14 @@ func LoadServices(path string) error {
 		err = json.Unmarshal(tmp, &service)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"file":  file.Name(),
-				"error": err,
+				"file": file.Name(),
+				"err":  err,
 			}).Errorln("Error unmarshaling service file")
 		} else {
 			checkService(&service)
 			services = append(services, service)
 		}
 	}
-
-	log.Infoln("Services loading complete. Loaded files: ", len(services))
 
 	return nil
 }

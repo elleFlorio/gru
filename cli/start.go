@@ -14,7 +14,7 @@ import (
 const gruAgentConfigFile string = "/gru/config/gruagentconfig.json"
 
 func start(c *cli.Context) {
-	log.WithField("status", "start").Infoln("Starting gru agent")
+	log.Infoln("Starting gru agent")
 	defer agent.Run()
 
 	gruAgentConfigPath := os.Getenv("HOME") + gruAgentConfigFile

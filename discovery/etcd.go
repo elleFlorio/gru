@@ -54,7 +54,7 @@ func (p *etcdDiscovery) Register(myUUID string, myAddress string, ttl int) error
 		&client.SetOptions{TTL: time.Duration(ttl) * time.Second},
 	)
 	if err != nil {
-		log.WithField("error", err).Errorln("Registering to discovery service")
+		log.WithField("err", err).Errorln("Registering to discovery service")
 		return err
 	}
 
@@ -66,17 +66,16 @@ func (p *etcdDiscovery) Get(key string) (map[string]string, error) {
 
 	resp, err := p.kAPI.Get(context.Background(), key, nil)
 	if err != nil {
-		log.WithField("error", err).Errorln("Querying discovery service")
+		log.WithField("err", err).Errorln("Querying discovery service")
 		return nil, err
 	}
 
-	log.WithField("metadata", resp).Debugln("Get etcd")
-
+	log.Debugln("NodeEntries:")
 	for _, entry := range resp.Node.Nodes {
 		log.WithFields(log.Fields{
 			"key":   entry.Key,
 			"value": entry.Value,
-		}).Debugln("Node entries")
+		}).Debugln("")
 		result[entry.Key] = entry.Value
 	}
 
@@ -91,7 +90,7 @@ func (p *etcdDiscovery) Set(key string, value string, ttl int) error {
 		value,
 		&client.SetOptions{TTL: time.Duration(ttl) * time.Second})
 	if err != nil {
-		log.WithField("error", err).Errorln("Setting value to discovery service")
+		log.WithField("err", err).Errorln("Error setting value to discovery service")
 		return err
 	}
 

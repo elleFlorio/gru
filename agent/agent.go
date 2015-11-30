@@ -18,8 +18,7 @@ import (
 var config GruAgentConfig
 
 func LoadGruAgentConfig(filename string) error {
-	log.WithField("status", "start").Infoln("Loading agent configuration")
-	defer log.WithField("status", "ok").Infoln("Loaded agent configuration")
+	log.Infoln("Loading agent configuration")
 
 	tmp, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -51,6 +50,10 @@ func initializeServices() {
 	if err != nil {
 		signalErrorInAgent(err)
 	}
+	log.WithFields(log.Fields{
+		"services": "ok",
+		"loaded":   len(service.List()),
+	}).Infoln("Services initialized")
 }
 
 func initializeNode() {
@@ -61,11 +64,13 @@ func initializeNode() {
 		signalErrorInAgent(err)
 	}
 	node.ComputeTotalResources()
+	log.WithFields(log.Fields{
+		"node": "ok",
+		"UUID": node.Config().UUID,
+	}).Infoln("Node initialized")
 }
 
 func initializeDiscovery() {
-	log.Debugln("discovery service: ", config.Discovery.DiscoveryService)
-	log.Debugln("discovery uri: ", config.Discovery.DiscoveryServiceUri)
 	_, err := discovery.New(config.Discovery.DiscoveryService, config.Discovery.DiscoveryServiceUri)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -100,10 +105,7 @@ func initializeContainerEngine() {
 }
 
 func signalErrorInAgent(err error) {
-	log.WithFields(log.Fields{
-		"status": "error",
-		"error":  err,
-	}).Fatal("Running gru agent")
+	log.WithField("err", err).Fatal("Error running gru agent. Exit.")
 }
 
 func startAutonomicManager() {

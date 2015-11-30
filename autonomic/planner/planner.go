@@ -2,6 +2,7 @@ package planner
 
 import (
 	"encoding/json"
+	"fmt"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -18,7 +19,7 @@ var currentStrategy strategy.GruStrategy
 func SetPlannerStrategy(strategyName string) {
 	strtg, err := strategy.New(strategyName)
 	if err != nil {
-		log.WithField("error", err).Errorln("Strategy cannot be set")
+		log.WithField("err", err).Errorln("Strategy cannot be set")
 
 		// If error use default one
 		strtg, err = strategy.New("dummy")
@@ -30,18 +31,21 @@ func SetPlannerStrategy(strategyName string) {
 }
 
 func Run(analytics analyzer.GruAnalytics) *strategy.GruPlan {
-	log.Debugln("Running planner")
+	log.WithField("status", "init").Debugln("Gru Planner")
+	defer log.WithField("status", "done").Debugln("Gru Planner")
 	var thePlan *strategy.GruPlan
 
 	if len(analytics.Service) == 0 {
-		log.WithField("error", "No services analytics").Errorln("Cannot compute plans.")
+		log.WithField("err", "No services analytics").Errorln("Cannot compute plans.")
 	} else {
 		plans := buildPlans(analytics)
 		thePlan = currentStrategy.MakeDecision(plans)
 		err := savePlan(thePlan)
 		if err != nil {
-			log.WithField("error", "Plan data not saved ").Errorln("Running Planner")
+			log.WithField("err", err).Errorln("Plan data not saved")
 		}
+
+		displayThePlan(thePlan)
 	}
 
 	return thePlan
@@ -100,7 +104,7 @@ func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
 func savePlan(plan *strategy.GruPlan) error {
 	data, err := convertPlanToData(*plan)
 	if err != nil {
-		log.WithField("error", "Cannot convert plan to data").Debugln("Running Planner")
+		log.WithField("err", err).Debugln("Cannot convert plan to data")
 		return err
 	} else {
 		storage.StoreLocalData(data, enum.PLANS)
@@ -119,11 +123,19 @@ func convertPlanToData(plan strategy.GruPlan) ([]byte, error) {
 	return data, nil
 }
 
+func displayThePlan(thePlan *strategy.GruPlan) {
+	log.WithFields(log.Fields{
+		"target":  thePlan.Target.Name,
+		"actions": thePlan.Actions.ToString(),
+		"weight":  fmt.Sprintf("%.2f", thePlan.Weight),
+	}).Infoln("Plan computed")
+}
+
 func GetPlannerData() (strategy.GruPlan, error) {
 	plan := strategy.GruPlan{}
 	dataPlan, err := storage.GetLocalData(enum.PLANS)
 	if err != nil {
-		log.WithField("error", err).Errorln("Cannot retrieve plan data.")
+		log.WithField("err", err).Errorln("Cannot retrieve plan data.")
 	} else {
 		plan, err = convertDataToPlan(dataPlan)
 	}
@@ -135,7 +147,7 @@ func convertDataToPlan(data []byte) (strategy.GruPlan, error) {
 	plan := strategy.GruPlan{}
 	err := json.Unmarshal(data, &plan)
 	if err != nil {
-		log.WithField("error", err).Errorln("Error unmarshaling plan data")
+		log.WithField("err", err).Errorln("Error unmarshaling plan data")
 	}
 
 	return plan, err

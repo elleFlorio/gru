@@ -6,7 +6,7 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	"github.com/elleFlorio/gru/action"
+	"github.com/elleFlorio/gru/autonomic/executor/action"
 )
 
 // /gru/v1/actions

@@ -3,21 +3,24 @@ package executor
 import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	"github.com/elleFlorio/gru/action"
+	"github.com/elleFlorio/gru/autonomic/executor/action"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 )
 
 func Run(plan *strategy.GruPlan) {
-	log.Debugln("Running Executor")
+	log.WithField("status", "init").Debugln("Gru Executor")
+	defer log.WithField("status", "done").Debugln("Gru Executor")
 
 	if plan == nil {
-		log.WithField("error", "No plan to execute").Errorln("Cannot execute actions.")
+		log.WithField("err", "No plan to execute").Errorln("Cannot execute actions")
 	} else {
 		config := buildConfig(plan.Target)
 		executeActions(plan.Actions, config)
 	}
+
+	log.Infoln("-------------------------")
 }
 
 func buildConfig(srv *service.Service) action.GruActionConfig {
@@ -39,7 +42,7 @@ func executeActions(actions []enum.Action, config action.GruActionConfig) {
 		err = act.Run(config)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"error":  err,
+				"err":    err,
 				"action": act.Type().ToString(),
 			}).Errorln("Action not executed")
 		}

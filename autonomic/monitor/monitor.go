@@ -38,6 +38,8 @@ func init() {
 }
 
 func Run() GruStats {
+	log.WithField("status", "init").Debugln("Gru Monitor")
+	defer log.WithField("status", "done").Debugln("Gru Monitor")
 	snapshot := GruStats{
 		Service:  make(map[string]ServiceStats),
 		Instance: make(map[string]InstanceStats),
@@ -49,7 +51,7 @@ func Run() GruStats {
 	updateServicesInstances(snapshot)
 	err := saveStats(snapshot)
 	if err != nil {
-		log.WithField("error", "Stats data not saved").Errorln("Running monitor")
+		log.WithField("err", "Stats data not saved").Errorln("Running monitor")
 	}
 
 	services := service.List()
@@ -106,7 +108,7 @@ func computeServiceCpuPerc(name string, stats *GruStats) {
 			log.WithFields(log.Fields{
 				"instance": id,
 				"CPUavg":   instCpuAvg,
-			}).Debugln("Computed instance average CPU")
+			}).Debugln("Computed local instance average CPU")
 		}
 
 		avg = sum / float64(len(srvStats.Instances.Running))
@@ -120,7 +122,7 @@ func computeServiceCpuPerc(name string, stats *GruStats) {
 		"Service": name,
 		"CPUavg":  avg,
 		"CPUsum":  sum,
-	}).Debugln("Computed service CPU usage")
+	}).Debugln("Computed local service CPU usage")
 }
 
 // Since linux compute the cpu usage in units of jiffies, it needs to be converted
@@ -174,7 +176,7 @@ func computeServiceMemory(name string, stats *GruStats) {
 			log.WithFields(log.Fields{
 				"instance": id,
 				"Memory":   instMemPerc,
-			}).Debugln("Computed instance Memory")
+			}).Debugln("Computed local instance Memory")
 		}
 
 		avg = sum / float64(len(srvStats.Instances.Running))
@@ -197,7 +199,7 @@ func computeServiceMemory(name string, stats *GruStats) {
 		"Service":   name,
 		"MemoryAvg": avg,
 		"MemorySum": sum,
-	}).Debugln("Computed service memory usage")
+	}).Debugln("Computed local service memory usage")
 }
 
 func computeInstaceMemPerc(instMem []float64, limit string) float64 {
@@ -209,7 +211,7 @@ func computeInstaceMemPerc(instMem []float64, limit string) float64 {
 	if limit != "" {
 		limitBytes, err = utils.RAMInBytes(limit)
 		if err != nil {
-			log.WithField("error", err).Errorln("Error computing instance memory usage")
+			log.WithField("err", err).Errorln("Error computing instance memory usage")
 			limitBytes = totalMemory
 		}
 	}
@@ -224,7 +226,7 @@ func computeInstaceMemPerc(instMem []float64, limit string) float64 {
 
 func updateServiceMetrics(name string, metrics map[string][]float64, stats *GruStats) {
 	if len(metrics) == 0 {
-		log.Warnln("No metrics to update for service ", name)
+		log.Debugln("No metrics to update for service ", name)
 		return
 	}
 
@@ -233,7 +235,7 @@ func updateServiceMetrics(name string, metrics map[string][]float64, stats *GruS
 		switch metric {
 		case "execution_time":
 			srv.Metrics.ResponseTime = value
-			log.WithField("execution_time", value).Debugln("Updated response time of service ", name)
+			log.WithField("execution_time", value).Debugln("Updated execution time of service ", name)
 		case "response_time":
 			//TODO
 		default:
@@ -343,7 +345,7 @@ func updateServicesInstances(stats GruStats) {
 func saveStats(stats GruStats) error {
 	data, err := convertStatsToData(stats)
 	if err != nil {
-		log.WithField("error", "Cannot convert stats to data").Debugln("Running monitor")
+		log.WithField("err", err).Debugln("Cannot convert stats to data")
 		return err
 	} else {
 		storage.StoreLocalData(data, enum.STATS)
@@ -355,7 +357,7 @@ func saveStats(stats GruStats) error {
 func convertStatsToData(stats GruStats) ([]byte, error) {
 	data, err := json.Marshal(stats)
 	if err != nil {
-		log.WithField("error", err).Errorln("Error marshaling stats data")
+		log.WithField("err", err).Errorln("Error marshaling stats data")
 		return nil, err
 	}
 
@@ -366,11 +368,10 @@ func resetEventsStats(srvName string, stats *GruStats) {
 	srvStats := stats.Service[srvName]
 
 	log.WithFields(log.Fields{
-		"status":  "monitored events",
 		"service": srvName,
 		"start":   srvStats.Events.Start,
 		"stop":    srvStats.Events.Stop,
-	}).Debugln("Running monitor")
+	}).Debugln("Monitored events")
 
 	srvStats.Events = EventStats{}
 	stats.Service[srvName] = srvStats
@@ -385,7 +386,6 @@ func resetMetricStats(srvName string, stats *GruStats) {
 func displayStatsOfServices(stats GruStats) {
 	for srv, value := range stats.Service {
 		log.WithFields(log.Fields{
-			"service":  srv,
 			"pending:": len(value.Instances.Pending),
 			"running:": len(value.Instances.Running),
 			"stopped:": len(value.Instances.Stopped),
@@ -394,7 +394,7 @@ func displayStatsOfServices(stats GruStats) {
 			"cpu tot":  fmt.Sprintf("%.2f", value.Cpu.Tot),
 			"mem avg":  fmt.Sprintf("%.2f", value.Memory.Avg),
 			"mem tot":  fmt.Sprintf("%.2f", value.Memory.Tot),
-		}).Infoln("Stats computed")
+		}).Infoln("Stats computed: ", srv)
 	}
 }
 
@@ -402,7 +402,7 @@ func GetMonitorData() (GruStats, error) {
 	stats := GruStats{}
 	dataStats, err := storage.GetLocalData(enum.STATS)
 	if err != nil {
-		log.WithField("error", err).Errorln("Cannot retrieve stats data.")
+		log.WithField("err", err).Errorln("Cannot retrieve stats data.")
 	} else {
 		stats, err = convertDataToStats(dataStats)
 	}
@@ -414,7 +414,7 @@ func convertDataToStats(data []byte) (GruStats, error) {
 	stats := GruStats{}
 	err := json.Unmarshal(data, &stats)
 	if err != nil {
-		log.WithField("error", err).Errorln("Error unmarshaling stats data")
+		log.WithField("err", err).Errorln("Error unmarshaling stats data")
 	}
 
 	return stats, err

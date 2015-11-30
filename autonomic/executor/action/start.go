@@ -24,7 +24,7 @@ func (p *Start) Run(config GruActionConfig) error {
 		log.WithFields(log.Fields{
 			"start":   "Paused",
 			"service": config.Service,
-		}).Infoln("Starting a paused container")
+		}).Debugln("Starting a paused container")
 		toStart = paused[0]
 		err = container.Docker().Client.UnpauseContainer(toStart)
 		return err
@@ -34,7 +34,7 @@ func (p *Start) Run(config GruActionConfig) error {
 		log.WithFields(log.Fields{
 			"start":   "Stopped",
 			"service": config.Service,
-		}).Infoln("Starting a stopped container")
+		}).Debugln("Starting a stopped container")
 		toStart = stopped[0]
 		err = container.Docker().Client.StartContainer(toStart, config.HostConfig)
 		return err
@@ -43,7 +43,7 @@ func (p *Start) Run(config GruActionConfig) error {
 	log.WithFields(log.Fields{
 		"start":   "New",
 		"service": config.Service,
-	}).Warnln("No stopped/paused container to start: creating new one")
+	}).Debugln("No stopped/paused container to start: creating new one")
 	toStart, err = createNewContainer(config)
 	err = container.Docker().Client.StartContainer(toStart, config.HostConfig)
 
@@ -55,7 +55,7 @@ func createNewContainer(config GruActionConfig) (string, error) {
 	name := config.Service + "_" + uuid
 	id, err := container.Docker().Client.CreateContainer(config.ContainerConfig, name)
 	if err != nil {
-		log.WithField("error", err).Errorln("Cannot create a new container for service ", config.Service)
+		log.WithField("err", err).Errorln("Cannot create a new container for service ", config.Service)
 		return "", err
 	}
 

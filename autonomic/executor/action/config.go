@@ -30,7 +30,7 @@ func CreateHostConfig(sConf service.Config) *dockerclient.HostConfig {
 	hostConfig.PortBindings = createPortBindings(sConf.PortBindings)
 
 	if err != nil {
-		log.Warnln("Creating Host config: Memory limit not specified")
+		log.Debugln("Creating Host config: Memory limit not specified")
 	} else {
 		hostConfig.Memory = memInBytes
 	}
@@ -74,7 +74,7 @@ func getMemInBytes(memory string) int64 {
 	if memory != "" {
 		memInBytes, err = utils.RAMInBytes(memory)
 		if err != nil {
-			log.WithField("error", err).Warnln("Error creating container configuration.")
+			log.WithField("err", err).Warnln("Error creating container configuration")
 			return 0
 		}
 	} else {

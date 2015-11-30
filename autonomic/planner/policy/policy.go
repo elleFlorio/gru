@@ -8,7 +8,7 @@ import (
 type GruPolicy interface {
 	Name() string
 	Weight(string, analyzer.GruAnalytics) float64
-	Actions() []enum.Action
+	Actions() enum.Actions
 }
 
 var policies []GruPolicy

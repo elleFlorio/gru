@@ -14,9 +14,8 @@ import (
 )
 
 //TODO get these in an automatic way from api
-const path string = "/nodes/"
-const routeStats string = "/gru/v1/stats"
-const routeAnalytics string = "/gru/v1/analytics"
+const c_PATH_NODES string = "/nodes/"
+const c_ROUTE_ANALYTICS string = "/gru/v1/analytics"
 
 var (
 	ErrInvalidFriendsNumber error = errors.New("Friends number should be > 0")
@@ -26,9 +25,11 @@ var (
 )
 
 func KeepAlive(ttl int) {
-	err := discovery.Set(createAgentKey(), createAgentAddress(), ttl)
-	if err != nil {
-		log.WithField("error", err).Errorln("Cannot keep the agent alive")
+	if discovery.Name() != "noservice" {
+		err := discovery.Set(createAgentKey(), createAgentAddress(), ttl)
+		if err != nil {
+			log.WithField("err", err).Errorln("Cannot keep the agent alive")
+		}
 	}
 }
 
@@ -37,18 +38,19 @@ func createAgentAddress() string {
 }
 
 func createAgentKey() string {
-	return path + node.Config().UUID
+	return c_PATH_NODES + node.Config().UUID
 }
 
 func UpdateFriendsData(nFriends int) error {
-	log.WithField("status", "start").Debugln("Updating friends data")
-	defer log.WithField("status", "done").Debugln("Updating friends data")
+	log.Debugln("Updating friends data")
 	storage.DeleteAllData(enum.ANALYTICS)
 
 	peers, err := getAllPeers()
 	if err != nil {
 		return err
 	}
+
+	log.WithField("peers", len(peers)).Debugln("Number of peers")
 
 	if len(peers) == 0 {
 		return ErrNoPeers
@@ -59,6 +61,8 @@ func UpdateFriendsData(nFriends int) error {
 		return err
 	}
 
+	log.WithField("friends", friends).Debugln("Friends to connect with")
+
 	err = getFriendsData(friends)
 	if err != nil {
 		return err
@@ -68,12 +72,10 @@ func UpdateFriendsData(nFriends int) error {
 }
 
 func getAllPeers() (map[string]string, error) {
-	peers, err := discovery.Get(path)
+	peers, err := discovery.Get(c_PATH_NODES)
 	if err != nil {
 		return nil, err
 	}
-
-	log.WithField("peers", len(peers)).Debugln("Number of peers")
 
 	return peers, nil
 }
@@ -120,14 +122,14 @@ func getFriendsData(friends map[string]string) error {
 		// This should not be possible, but in a local test (multiple nodes on the same node with
 		//different ports) it happened.
 		if address != createAgentAddress() {
-			friendRoute := address + routeAnalytics
+			friendRoute := address + c_ROUTE_ANALYTICS
 			friendData, err := network.DoRequest("GET", friendRoute, nil)
 			if err != nil {
-				log.WithField("address", address).Warnln("Error retrieving friend stats")
+				log.WithField("address", address).Debugln("Error retrieving friend stats")
 			}
 			err = storage.StoreData(friend, friendData, enum.ANALYTICS)
 			if err != nil {
-				log.WithField("error", err).Warnln("Error storing friend stats")
+				log.WithField("err", err).Debugln("Error storing friend stats")
 			}
 		}
 	}

@@ -17,9 +17,10 @@ var (
 	data_a Enum = ANALYTICS
 	data_p Enum = PLANS
 
-	action_no Enum = NOACTION
-	action_st Enum = START
-	action_sp Enum = STOP
+	action_no   Enum    = NOACTION
+	action_st   Enum    = START
+	action_sp   Enum    = STOP
+	actions_all Actions = Actions{action_no.(Action), action_st.(Action), action_sp.(Action)}
 
 	owner_l Enum = LOCAL
 	owner_c Enum = CLUSTER
@@ -61,6 +62,7 @@ func TestToString(t *testing.T) {
 	assert.Equal(t, "NOACTION", action_no.ToString())
 	assert.Equal(t, "START", action_st.ToString())
 	assert.Equal(t, "STOP", action_sp.ToString())
+	assert.Equal(t, []string{"NOACTION", "START", "STOP"}, actions_all.ToString())
 
 	assert.Equal(t, "LOCAL", owner_l.ToString())
 	assert.Equal(t, "CLUSTER", owner_c.ToString())

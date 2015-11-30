@@ -17,20 +17,14 @@ var config Node
 func LoadNodeConfig(filename string) error {
 	config.UUID, _ = utils.GenerateUUID()
 
-	log.WithField("status", "start").Infoln("Node configuration loading")
-	defer log.WithFields(log.Fields{
-		"status": "done",
-		"UUID":   config.UUID,
-	}).Infoln("Node configuration loading")
-
 	tmp, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.WithField("error", err).Errorln("Error reading node configuration file")
+		log.WithField("err", err).Errorln("Error reading node configuration file")
 		return err
 	}
 	err = json.Unmarshal(tmp, &config)
 	if err != nil {
-		log.WithField("error", err).Errorln("Error unmarshaling node configuration file")
+		log.WithField("err", err).Errorln("Error unmarshaling node configuration file")
 		return err
 	}
 
@@ -40,7 +34,7 @@ func LoadNodeConfig(filename string) error {
 func ComputeTotalResources() {
 	info, err := container.Docker().Client.Info()
 	if err != nil {
-		log.WithField("error", err).Errorln("Error reading total resources")
+		log.WithField("err", err).Errorln("Error reading total resources")
 		return
 	}
 	config.Resources.TotalCpus = info.NCPU
