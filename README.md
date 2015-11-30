@@ -22,16 +22,23 @@ Gru will be able to automagically manage containers distributed in a huge number
 Gru will use a decentralized approach based on the idea of self-organizing multiagent system: Gru Agents are deployed in every node and communicate with the Docker daemon and with other agents to monitor the system and plan the best action to actuate. In this way there is no single point of failure.
 
 **Plug & Play**
-Gru will integrate seamlessly with you system based on containers: no need to do something strange, just start the Gru Agents in every node and let them manage your distributed application!
+Develop your contenerized application with no worries: Gru will integrate seamlessly with you system based on containers. No need to do something strange, just start the Gru Agents in every node and let them manage your distributed application!
 
 ## Current status
 The project is at an early stage of development.
-That translates in something like version 0.0.0.0.0.0.0.0.0.0.0.0.1-pre_development_alpha.
-I don't suggest to try it by now, however below you can find the documentation to run it in your local machine.
-Currently Gru is working on a single node, scaling containers in order to balance the resource of that node between services according to the workload. The implementation of the distributed system is in progress; if you want to run Gru on multiple nodes you need an etcd server (https://github.com/coreos/etcd) for agents discovery.
+I don't suggest to try it by now, however below you can find the documentation to run it in your local machine or cluster.
+Currently Gru can work in a cluster of nodes, automagically scaling services instances according to traffic load.
+Gru needs a running instance of an etcd server (https://github.com/coreos/etcd) for agents discovery.
 
 ## Documentation
-These are the steps you need to follow to run the current version of Gru in your system (Linux only). Please remember that currently Gru is not able to really manage your containers and it's under active development.
+These are the steps you need to follow to run the current version of Gru in your system (Linux only).
+Please remember that currently Gru is able only to autoscale your services containers and it's under active development.
+
+###### Prepare you application
+Gru needs to the execution time of your services in order to understand if it's necessary to scale them. I will implement different ways to send your monitoring data to Gru, but currently Gru read the logs of the container looking for a string formatted in this way:
+`gru:service_name:metric_name:unit`
+In the current version Gru supports only the execution time of services expressed in milleseconds, so your services have to write in the log a string like this:
+`gru:service_name:execution_time:ms`
 
 ###### Get Gru
 `go get` this repo, or download it and compile/install using the go compiler
@@ -80,7 +87,7 @@ These are the steps you need to follow to run the current version of Gru in your
 {
 	"Name":"node_name",
 	"Constraints":{
-		BaseServices:[]
+		"BaseServices":[]
 	}
 }
 ```
@@ -103,6 +110,7 @@ These are the steps you need to follow to run the current version of Gru in your
 		"CpusetCpus": "",
 		"PortBindings": {},
 		"Links":[]
+		"StopTimeout":0
 	}
 }
 ```
