@@ -5,7 +5,7 @@ import (
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
-	"github.com/elleFlorio/gru/autonomic/monitor/metric"
+	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
 	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"

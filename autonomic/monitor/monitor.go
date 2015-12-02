@@ -8,7 +8,7 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	"github.com/elleFlorio/gru/autonomic/monitor/metric"
+	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"

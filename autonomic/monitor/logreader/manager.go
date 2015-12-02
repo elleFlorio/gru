@@ -57,10 +57,10 @@ func Manager() *MetricManager {
 }
 
 func (m *MetricManager) Start() {
-	go m.startMetricManager()
+	go m.startLogReaderManager()
 }
 
-func (m *MetricManager) startMetricManager() {
+func (m *MetricManager) startLogReaderManager() {
 	var e logEntry
 
 	for {

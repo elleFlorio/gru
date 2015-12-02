@@ -5,7 +5,7 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 
-	"github.com/elleFlorio/gru/autonomic/monitor/metric"
+	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/service"
 )
