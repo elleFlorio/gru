@@ -57,6 +57,7 @@ func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
 	if len(analytics.Service) == 0 {
 		log.Warnln("No service for building plans.")
 		noServicePlan := strategy.GruPlan{
+			"noservice",
 			1.0,
 			&service.Service{Name: "noService"},
 			[]enum.Action{enum.NOACTION},
@@ -72,7 +73,7 @@ func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
 			weight := plc.Weight(name, analytics)
 			target, _ := service.GetServiceByName(name)
 			actions := plc.Actions()
-			plan := strategy.GruPlan{weight, target, actions}
+			plan := strategy.GruPlan{plc.Name(), weight, target, actions}
 			log.WithFields(log.Fields{
 				"policy":  plc.Name(),
 				"weight":  weight,
@@ -87,6 +88,7 @@ func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
 	}
 	weight_na := 1 - weight_max
 	plan_na := strategy.GruPlan{
+		"noaction",
 		weight_na,
 		&service.Service{Name: "NoService"},
 		[]enum.Action{enum.NOACTION},

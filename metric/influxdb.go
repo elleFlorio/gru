@@ -5,39 +5,43 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/influxdb/influxdb/client/v2"
+
+	"github.com/elleFlorio/gru/utils"
 )
 
 type influxdb struct {
 	influx client.Client
-	config influxdbConfig
+	config *influxdbConfig
 	batch  client.BatchPoints
 }
 
 type influxdbConfig struct {
-	url      string
-	dbName   string
-	username string
-	password string
+	Url      string
+	DbName   string
+	Username string
+	Password string
 }
 
 func (db *influxdb) Name() string {
 	return "influxdb"
 }
 
-func (db *influxdb) Initialize(config interface{}) error {
+func (db *influxdb) Initialize(config map[string]interface{}) error {
 	var err error
-	db.config = config.(influxdbConfig)
+	db.config = &influxdbConfig{}
+	utils.FillStruct(db.config, config)
+	log.Debugln(db.config.Url)
 	db.influx, err = client.NewHTTPClient(client.HTTPConfig{
-		Addr:     db.config.url,
-		Username: db.config.username,
-		Password: db.config.password,
+		Addr:     db.config.Url,
+		Username: db.config.Username,
+		Password: db.config.Password,
 	})
 	if err != nil {
 		return err
 	}
 
 	db.batch, err = client.NewBatchPoints(client.BatchPointsConfig{
-		Database:  db.config.dbName,
+		Database:  db.config.DbName,
 		Precision: "s",
 	})
 	if err != nil {
@@ -103,13 +107,6 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 	}
 	points = append(points, planPoint)
 
-	actionPoint, err := createInfluxActions(nodeUUID, metrics.Action)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error creating metrics for Action")
-		return points, err
-	}
-	points = append(points, actionPoint)
-
 	return points, nil
 }
 
@@ -139,6 +136,7 @@ func createInfluxService(nodeUUID string, service ServiceMetric) (*client.Point,
 		"service_image": service.Image,
 	}
 	fields := map[string]interface{}{
+		"all":     service.Instances.All,
 		"pending": service.Instances.Pending,
 		"running": service.Instances.Running,
 		"stopped": service.Instances.Stopped,
@@ -209,23 +207,6 @@ func createInfluxPlans(nodeUUID string, plans PlansMetric) (*client.Point, error
 	}
 
 	point, err := client.NewPoint("plans", tags, fields, time.Now())
-	if err != nil {
-		return nil, err
-	}
-
-	return point, nil
-}
-
-func createInfluxActions(nodeUUID string, actions ActionsMetric) (*client.Point, error) {
-	tags := map[string]string{
-		"node":   nodeUUID,
-		"policy": actions.Action,
-	}
-	fields := map[string]interface{}{
-		"target": actions.Target,
-	}
-
-	point, err := client.NewPoint("actions", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
 	}

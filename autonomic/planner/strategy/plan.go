@@ -6,6 +6,7 @@ import (
 )
 
 type GruPlan struct {
+	Policy  string
 	Weight  float64
 	Target  *service.Service
 	Actions enum.Actions

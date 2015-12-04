@@ -11,12 +11,12 @@ import (
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func CreateMockPlan(w float64, s service.Service, a []enum.Action) GruPlan {
-	return GruPlan{w, &s, a}
+func CreateMockPlan(p string, w float64, s service.Service, a []enum.Action) GruPlan {
+	return GruPlan{p, w, &s, a}
 }
 
-func StoreMockPlan(w float64, s service.Service, a []enum.Action) {
-	plan := CreateMockPlan(w, s, a)
+func StoreMockPlan(p string, w float64, s service.Service, a []enum.Action) {
+	plan := CreateMockPlan(p, w, s, a)
 	data, _ := convertPlanToData(plan)
 	storage.StoreLocalData(data, enum.PLANS)
 }
@@ -34,13 +34,14 @@ func CreateRandomPlans(n int) []GruPlan {
 	plans := []GruPlan{}
 	for i := 0; i < n; i++ {
 		value := randUniform(0, 1)
+		p := "p"
 		w := value
 		s := service.Service{Name: randStringBytes(5)}
 		a := []enum.Action{enum.START}
 		if value > 0.5 {
 			a = []enum.Action{enum.STOP}
 		}
-		plans = append(plans, GruPlan{w, &s, a})
+		plans = append(plans, GruPlan{p, w, &s, a})
 	}
 
 	return plans

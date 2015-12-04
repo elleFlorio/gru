@@ -10,6 +10,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic"
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/discovery"
+	"github.com/elleFlorio/gru/metric"
 	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
@@ -37,10 +38,58 @@ func Run() {
 	initializeDiscovery()
 	initializeStorage()
 	initializeContainerEngine()
+	initializeMetricSerivice()
 	initializeServices()
 	initializeNode()
 
 	startAutonomicManager()
+}
+
+func initializeDiscovery() {
+	_, err := discovery.New(config.Discovery.DiscoveryService, config.Discovery.DiscoveryServiceUri)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"status":  "warning",
+			"error":   err,
+			"default": "No discovery service, running in single node mode",
+		}).Warnln("Error initializing discovery service")
+	} else {
+		log.WithField(discovery.Name(), "ok").Infoln("Discovery service initialized")
+	}
+}
+
+func initializeStorage() {
+	_, err := storage.New(config.Storage.StorageService)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"status":  "warning",
+			"error":   err,
+			"default": storage.Name(),
+		}).Warnln("Error initializing storage service")
+	} else {
+		log.WithField(storage.Name(), "ok").Infoln("Storage service initialized")
+	}
+}
+
+func initializeContainerEngine() {
+	err := container.Connect(config.Docker.DaemonUrl, config.Docker.DaemonTimeout)
+	if err != nil {
+		signalErrorInAgent(err)
+	}
+	log.WithField("docker", "ok").Infoln("Container engine initialized")
+}
+
+func initializeMetricSerivice() {
+	_, err := metric.New(config.Metric.MetricService, config.Metric.Configuration)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"status":  "warning",
+			"error":   err,
+			"default": metric.Name(),
+		}).Warnln("Error initializing metric service")
+	} else {
+		log.WithField(metric.Name(), "ok").Infoln("Metric service initialized")
+	}
 }
 
 func initializeServices() {
@@ -68,40 +117,6 @@ func initializeNode() {
 		"node": "ok",
 		"UUID": node.Config().UUID,
 	}).Infoln("Node initialized")
-}
-
-func initializeDiscovery() {
-	_, err := discovery.New(config.Discovery.DiscoveryService, config.Discovery.DiscoveryServiceUri)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"status":  "waring",
-			"error":   err,
-			"default": "No discovery service, running in single node mode",
-		}).Warnln("Running gru agent")
-	} else {
-		log.WithField(discovery.Name(), "ok").Infoln("Discovery service initialized")
-	}
-}
-
-func initializeStorage() {
-	_, err := storage.New(config.Storage.StorageService)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"status":  "waring",
-			"error":   err,
-			"default": storage.Name(),
-		}).Warnln("Running gru agent")
-	} else {
-		log.WithField(storage.Name(), "ok").Infoln("Storage service initialized")
-	}
-}
-
-func initializeContainerEngine() {
-	err := container.Connect(config.Docker.DaemonUrl, config.Docker.DaemonTimeout)
-	if err != nil {
-		signalErrorInAgent(err)
-	}
-	log.WithField("docker", "ok").Infoln("Container engine initialized")
 }
 
 func signalErrorInAgent(err error) {

@@ -8,6 +8,7 @@ type GruAgentConfig struct {
 	Autonomic AutonomicConfig `json:"autonomic"`
 	Discovery DiscoveryConfig `json:"discovery"`
 	Storage   StorageConfig   `json:"storage"`
+	Metric    MetricConfig    `json:"metric"`
 }
 
 type ServiceConfig struct {
@@ -41,4 +42,12 @@ type DiscoveryConfig struct {
 
 type StorageConfig struct {
 	StorageService string `json:"storageservice"`
+}
+
+// This is a temporal solution.
+// When and if new services will be added I will find
+// the correct way to make it generic
+type MetricConfig struct {
+	MetricService string                 `json:"metricservice"`
+	Configuration map[string]interface{} `json:configuration`
 }

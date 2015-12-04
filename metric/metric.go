@@ -4,7 +4,6 @@ type GruMetric struct {
 	Node    NodeMetrics
 	Service map[string]ServiceMetric
 	Plan    PlansMetric
-	Action  ActionsMetric
 }
 
 type NodeMetrics struct {
@@ -24,6 +23,7 @@ type ServiceMetric struct {
 }
 
 type InstancesMetric struct {
+	All     int
 	Pending int
 	Running int
 	Stopped int
@@ -49,9 +49,4 @@ type PlansMetric struct {
 	Policy string
 	Target string
 	Weight float64
-}
-
-type ActionsMetric struct {
-	Target string
-	Action string
 }

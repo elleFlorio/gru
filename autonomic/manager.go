@@ -10,6 +10,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
 	"github.com/elleFlorio/gru/communication"
+	"github.com/elleFlorio/gru/metric"
 )
 
 var manager AutonomicConfig
@@ -44,6 +45,9 @@ func RunLoop() {
 			analytics := analyzer.Run(stats)
 			plan := planner.Run(analytics)
 			executor.Run(plan)
+
+			metric.UpdateMetrics()
+			err = metric.StoreMetrics(metric.Metrics())
 
 		case <-c_err:
 			log.Errorln("Error running autonomic loop")
