@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/elleFlorio/gru",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.1",
 	"Packages": [
 		"./..."
 	],
@@ -42,6 +42,21 @@
 		{
 			"ImportPath": "github.com/gorilla/mux",
 			"Rev": "f15e0c49460fd49eebe2bcc8486b05d1bef68d3a"
+		},
+		{
+			"ImportPath": "github.com/influxdb/influxdb/client/v2",
+			"Comment": "v0.9.5-rc1-197-gc7a0863",
+			"Rev": "c7a0863371ea3f893eacd55b2f81444bb2cce3ed"
+		},
+		{
+			"ImportPath": "github.com/influxdb/influxdb/models",
+			"Comment": "v0.9.5-rc1-197-gc7a0863",
+			"Rev": "c7a0863371ea3f893eacd55b2f81444bb2cce3ed"
+		},
+		{
+			"ImportPath": "github.com/influxdb/influxdb/pkg/escape",
+			"Comment": "v0.9.5-rc1-197-gc7a0863",
+			"Rev": "c7a0863371ea3f893eacd55b2f81444bb2cce3ed"
 		},
 		{
 			"ImportPath": "github.com/jbrukh/window",
