@@ -4,7 +4,7 @@ import (
 	"time"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/influxdb/influxdb/client/v2"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/influxdb/influxdb/client/v2"
 
 	"github.com/elleFlorio/gru/utils"
 )
@@ -74,41 +74,55 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 
 	nodePoint, err := createInfluxNode(metrics.Node)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error creating metrics for Node")
+		log.WithField("err", err).Errorln("Error creating node metrics")
 		return points, err
 	}
 	points = append(points, nodePoint)
 
 	for _, service := range metrics.Service {
-		servicePoint, err := createInfluxService(nodeUUID, service)
+		statusPoint, err := createInfluxInstanceStatus(nodeUUID, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating service metrics for Service ", service.Name)
+			log.WithField("err", err).Errorln("Error creating instance status metrics for Service ", service.Name)
 			return points, err
 		}
-		points = append(points, servicePoint)
+		points = append(points, statusPoint)
 
-		statsPoint, err := createInfluxStats(nodeUUID, service)
+		cpuPoint, err := createInfluxCpuService(nodeUUID, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating stats metrics for Service ", service.Name)
+			log.WithField("err", err).Errorln("Error creating cpu metrics for Service ", service.Name)
 			return points, err
 		}
-		points = append(points, statsPoint)
+		points = append(points, cpuPoint)
 
-		analyticsPoint, err := createInfluxAnalytics(nodeUUID, service)
+		memPoint, err := createInfluxMemService(nodeUUID, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating analytics metrics for Service ", service.Name)
+			log.WithField("err", err).Errorln("Error creating memory metrics for Service ", service.Name)
 			return points, err
 		}
-		points = append(points, analyticsPoint)
+		points = append(points, memPoint)
+
+		loadPoint, err := createInfluxLoadService(nodeUUID, service)
+		if err != nil {
+			log.WithField("err", err).Errorln("Error creating load metrics for Service ", service.Name)
+			return points, err
+		}
+		points = append(points, loadPoint)
+
+		healthPoint, err := createInfluxHealthService(nodeUUID, service)
+		if err != nil {
+			log.WithField("err", err).Errorln("Error creating health metrics for Service ", service.Name)
+			return points, err
+		}
+		points = append(points, healthPoint)
 
 	}
 
-	planPoint, err := createInfluxPlans(nodeUUID, metrics.Plan)
+	policyPoint, err := createInfluxPolicy(nodeUUID, metrics.Plan)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error creating metrics for Plan")
+		log.WithField("err", err).Errorln("Error creating policy metrics")
 		return points, err
 	}
-	points = append(points, planPoint)
+	points = append(points, policyPoint)
 
 	return points, nil
 }
@@ -133,7 +147,7 @@ func createInfluxNode(node NodeMetrics) (*client.Point, error) {
 	return point, nil
 }
 
-func createInfluxService(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+func createInfluxInstanceStatus(nodeUUID string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
 		"node":          nodeUUID,
 		"service_name":  service.Name,
@@ -148,17 +162,17 @@ func createInfluxService(nodeUUID string, service ServiceMetric) (*client.Point,
 		"paused":  service.Instances.Paused,
 	}
 
-	point, err := client.NewPoint("service", tags, fields, time.Now())
+	point, err := client.NewPoint("instance_status", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
-	log.WithField("series", "service").Debugln("Created influx metrics")
+	log.WithField("series", "instance_status").Debugln("Created influx metrics")
 
 	return point, nil
 }
 
-func createInfluxStats(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+func createInfluxCpuService(nodeUUID string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
 		"node":          nodeUUID,
 		"service_name":  service.Name,
@@ -166,23 +180,22 @@ func createInfluxStats(nodeUUID string, service ServiceMetric) (*client.Point, e
 		"service_image": service.Image,
 	}
 	fields := map[string]interface{}{
-		"cpu_tot": service.Stats.CpuTot,
-		"cpu_avg": service.Stats.CpuAvg,
-		"mem_tot": service.Stats.MemTot,
-		"mem_avg": service.Stats.MemAvg,
+		"stats_tot":       service.Stats.CpuTot,
+		"stats_avg":       service.Stats.CpuAvg,
+		"analytics_value": service.Analytics.Cpu,
 	}
 
-	point, err := client.NewPoint("statistics", tags, fields, time.Now())
+	point, err := client.NewPoint("cpu_service", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
-	log.WithField("series", "statistics").Debugln("Created influx metrics")
+	log.WithField("series", "cpu_service").Debugln("Created influx metrics")
 
 	return point, nil
 }
 
-func createInfluxAnalytics(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+func createInfluxMemService(nodeUUID string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
 		"node":          nodeUUID,
 		"service_name":  service.Name,
@@ -190,39 +203,79 @@ func createInfluxAnalytics(nodeUUID string, service ServiceMetric) (*client.Poin
 		"service_image": service.Image,
 	}
 	fields := map[string]interface{}{
-		"load":      service.Analytics.Load,
-		"cpu":       service.Analytics.Cpu,
-		"memory":    service.Analytics.Memory,
-		"resources": service.Analytics.Resources,
-		"health":    service.Analytics.Health,
+		"stats_tot":       service.Stats.MemTot,
+		"stats_avg":       service.Stats.MemAvg,
+		"analytics_value": service.Analytics.Memory,
 	}
 
-	point, err := client.NewPoint("analytics", tags, fields, time.Now())
+	point, err := client.NewPoint("memory_service", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
-	log.WithField("series", "analytics").Debugln("Created influx metrics")
+	log.WithField("series", "memory_service").Debugln("Created influx metrics")
 
 	return point, nil
 }
 
-func createInfluxPlans(nodeUUID string, plans PlansMetric) (*client.Point, error) {
+func createInfluxLoadService(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+	tags := map[string]string{
+		"node":          nodeUUID,
+		"service_name":  service.Name,
+		"service_type":  service.Type,
+		"service_image": service.Image,
+	}
+	fields := map[string]interface{}{
+		"value": service.Analytics.Load,
+	}
+
+	point, err := client.NewPoint("load_service", tags, fields, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	log.WithField("series", "load_service").Debugln("Created influx metrics")
+
+	return point, nil
+}
+
+func createInfluxHealthService(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+	tags := map[string]string{
+		"node":          nodeUUID,
+		"service_name":  service.Name,
+		"service_type":  service.Type,
+		"service_image": service.Image,
+	}
+	fields := map[string]interface{}{
+		"value": service.Analytics.Health,
+	}
+
+	point, err := client.NewPoint("health_service", tags, fields, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	log.WithField("series", "health_service").Debugln("Created influx metrics")
+
+	return point, nil
+}
+
+func createInfluxPolicy(nodeUUID string, plans PlansMetric) (*client.Point, error) {
 	tags := map[string]string{
 		"node":   nodeUUID,
 		"target": plans.Policy,
 	}
 	fields := map[string]interface{}{
-		"policy": plans.Target,
+		"policy": plans.Policy,
 		"weight": plans.Weight,
 	}
 
-	point, err := client.NewPoint("plans", tags, fields, time.Now())
+	point, err := client.NewPoint("policy", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
-	log.WithField("series", "plans").Debugln("Created influx metrics")
+	log.WithField("series", "policy").Debugln("Created influx metrics")
 
 	return point, nil
 }
