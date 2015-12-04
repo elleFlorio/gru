@@ -19,8 +19,6 @@ func Run(plan *strategy.GruPlan) {
 		config := buildConfig(plan.Target)
 		executeActions(plan.Actions, config)
 	}
-
-	log.Infoln("-------------------------")
 }
 
 func buildConfig(srv *service.Service) action.GruActionConfig {

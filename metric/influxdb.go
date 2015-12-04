@@ -30,7 +30,9 @@ func (db *influxdb) Initialize(config map[string]interface{}) error {
 	var err error
 	db.config = &influxdbConfig{}
 	utils.FillStruct(db.config, config)
-	log.Debugln(db.config.Url)
+
+	log.Debugln("Initializing influxdb at address: ", db.config.Url)
+
 	db.influx, err = client.NewHTTPClient(client.HTTPConfig{
 		Addr:     db.config.Url,
 		Username: db.config.Username,
@@ -85,19 +87,20 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 		}
 		points = append(points, servicePoint)
 
-		statsPoint, err := createInfluxService(nodeUUID, service)
+		statsPoint, err := createInfluxStats(nodeUUID, service)
 		if err != nil {
 			log.WithField("err", err).Errorln("Error creating stats metrics for Service ", service.Name)
 			return points, err
 		}
 		points = append(points, statsPoint)
 
-		analyticsPoint, err := createInfluxService(nodeUUID, service)
+		analyticsPoint, err := createInfluxAnalytics(nodeUUID, service)
 		if err != nil {
 			log.WithField("err", err).Errorln("Error creating analytics metrics for Service ", service.Name)
 			return points, err
 		}
 		points = append(points, analyticsPoint)
+
 	}
 
 	planPoint, err := createInfluxPlans(nodeUUID, metrics.Plan)
@@ -125,6 +128,8 @@ func createInfluxNode(node NodeMetrics) (*client.Point, error) {
 		return nil, err
 	}
 
+	log.WithField("series", "node").Debugln("Created influx metrics")
+
 	return point, nil
 }
 
@@ -148,6 +153,8 @@ func createInfluxService(nodeUUID string, service ServiceMetric) (*client.Point,
 		return nil, err
 	}
 
+	log.WithField("series", "service").Debugln("Created influx metrics")
+
 	return point, nil
 }
 
@@ -165,10 +172,12 @@ func createInfluxStats(nodeUUID string, service ServiceMetric) (*client.Point, e
 		"mem_avg": service.Stats.MemAvg,
 	}
 
-	point, err := client.NewPoint("stats", tags, fields, time.Now())
+	point, err := client.NewPoint("statistics", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
 	}
+
+	log.WithField("series", "statistics").Debugln("Created influx metrics")
 
 	return point, nil
 }
@@ -193,16 +202,18 @@ func createInfluxAnalytics(nodeUUID string, service ServiceMetric) (*client.Poin
 		return nil, err
 	}
 
+	log.WithField("series", "analytics").Debugln("Created influx metrics")
+
 	return point, nil
 }
 
 func createInfluxPlans(nodeUUID string, plans PlansMetric) (*client.Point, error) {
 	tags := map[string]string{
 		"node":   nodeUUID,
-		"policy": plans.Policy,
+		"target": plans.Policy,
 	}
 	fields := map[string]interface{}{
-		"target": plans.Target,
+		"policy": plans.Target,
 		"weight": plans.Weight,
 	}
 
@@ -210,6 +221,8 @@ func createInfluxPlans(nodeUUID string, plans PlansMetric) (*client.Point, error
 	if err != nil {
 		return nil, err
 	}
+
+	log.WithField("series", "plans").Debugln("Created influx metrics")
 
 	return point, nil
 }

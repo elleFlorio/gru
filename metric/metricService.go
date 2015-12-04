@@ -32,10 +32,6 @@ func init() {
 	}
 }
 
-func clearMetrics() {
-	metrics = GruMetric{Service: make(map[string]ServiceMetric)}
-}
-
 func New(name string, conf map[string]interface{}) (metricService, error) {
 	metricServ = 0
 	for index, mtrc := range metricServices {
@@ -79,7 +75,7 @@ func Metrics() GruMetric {
 
 func UpdateMetrics() {
 	var err error
-	clearMetrics()
+	metrics = newMetrics()
 	metrics.Node.UUID = node.Config().UUID
 
 	for _, name := range service.List() {
@@ -108,7 +104,7 @@ func UpdateMetrics() {
 				metrics.Node.Cpu = stats.System.Cpu
 				metrics.Node.Memory = 0.0 // TODO
 			} else {
-				log.Warnln("Cannot find stats metrics for service ", name)
+				log.Debugln("Cannot find stats metrics for service ", name)
 			}
 		}
 
@@ -123,7 +119,7 @@ func UpdateMetrics() {
 				srv_metrics.Analytics.Load = srv_analytisc.Load
 				srv_metrics.Analytics.Health = srv_analytisc.Health
 			} else {
-				log.Warnln("Cannot find analytics metrics for service ", name)
+				log.Debugln("Cannot find analytics metrics for service ", name)
 			}
 		}
 
@@ -139,4 +135,25 @@ func UpdateMetrics() {
 		metrics.Plan.Weight = plans.Weight
 	}
 
+}
+
+func newMetrics() GruMetric {
+	new_metrics := GruMetric{Service: make(map[string]ServiceMetric)}
+	node_new := NodeMetrics{"", 0.0, 0.0, 1.0}
+	new_metrics.Node = node_new
+	for _, name := range service.List() {
+		service_new := ServiceMetric{}
+
+		stats_new := StatsMetric{0.0, 0.0, 0.0, 0.0}
+		service_new.Stats = stats_new
+
+		analytics_new := AnalyticsMetric{0.0, 0.0, 1.0, 0.0, 1.0}
+		service_new.Analytics = analytics_new
+
+		new_metrics.Service[name] = service_new
+	}
+	plans_new := PlansMetric{"noaction", "noservice", 1.0}
+	new_metrics.Plan = plans_new
+
+	return new_metrics
 }

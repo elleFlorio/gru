@@ -31,9 +31,9 @@ func Run() {
 		log.SetLevel(level)
 
 		// If a log level wasn't specified enforce log-level=error
-		/*if !c.IsSet("log-level") && !c.IsSet("l") {
+		if !c.IsSet("log-level") && !c.IsSet("l") {
 			log.SetLevel(log.ErrorLevel)
-		}*/
+		}
 
 		return nil
 	}

@@ -46,13 +46,23 @@ func RunLoop() {
 			plan := planner.Run(analytics)
 			executor.Run(plan)
 
-			metric.UpdateMetrics()
-			err = metric.StoreMetrics(metric.Metrics())
+			collectMetrics()
+
+			log.Infoln("-------------------------")
 
 		case <-c_err:
 			log.Errorln("Error running autonomic loop")
 		case <-c_stop:
 			ticker.Stop()
 		}
+	}
+}
+
+func collectMetrics() {
+	log.Debugln("Collecting metrics")
+	metric.UpdateMetrics()
+	err := metric.StoreMetrics(metric.Metrics())
+	if err != nil {
+		log.WithField("errr", err).Errorln("Error collecting agent metrics")
 	}
 }

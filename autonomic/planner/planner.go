@@ -57,7 +57,7 @@ func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
 	if len(analytics.Service) == 0 {
 		log.Warnln("No service for building plans.")
 		noServicePlan := strategy.GruPlan{
-			"noservice",
+			"noaction",
 			1.0,
 			&service.Service{Name: "noService"},
 			[]enum.Action{enum.NOACTION},
