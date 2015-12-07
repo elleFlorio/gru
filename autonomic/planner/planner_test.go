@@ -49,14 +49,14 @@ func TestSavePlan(t *testing.T) {
 }
 
 func TestConvertPlanToData(t *testing.T) {
-	plan := strategy.CreateMockPlan(0.0, service.Service{}, enum.Actions{enum.START})
+	plan := strategy.CreateMockPlan("scaleout", 0.0, service.Service{}, enum.Actions{enum.START})
 
 	_, err := convertPlanToData(plan)
 	assert.NoError(t, err)
 }
 
 func TestConvertDataToPlan(t *testing.T) {
-	plan := strategy.CreateMockPlan(0.0, service.Service{}, enum.Actions{enum.START})
+	plan := strategy.CreateMockPlan("scaleout", 0.0, service.Service{}, enum.Actions{enum.START})
 	data_ok, err := convertPlanToData(plan)
 	data_bad := []byte{}
 
@@ -74,7 +74,7 @@ func TestGetPlannerData(t *testing.T) {
 	_, err = GetPlannerData()
 	assert.Error(t, err)
 
-	strategy.StoreMockPlan(0.8, service.Service{}, enum.Actions{})
+	strategy.StoreMockPlan("policy", 0.8, service.Service{}, enum.Actions{})
 	_, err = GetPlannerData()
 	assert.NoError(t, err)
 }

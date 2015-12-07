@@ -29,7 +29,10 @@ func (db *influxdb) Name() string {
 func (db *influxdb) Initialize(config map[string]interface{}) error {
 	var err error
 	db.config = &influxdbConfig{}
-	utils.FillStruct(db.config, config)
+	err = utils.FillStruct(db.config, config)
+	if err != nil {
+		return err
+	}
 
 	log.Debugln("Initializing influxdb at address: ", db.config.Url)
 

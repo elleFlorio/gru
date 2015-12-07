@@ -11,11 +11,11 @@ import (
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func CreateMockPlan(p string, w float64, s service.Service, a []enum.Action) GruPlan {
+func CreateMockPlan(p string, w float64, s service.Service, a enum.Actions) GruPlan {
 	return GruPlan{p, w, &s, a}
 }
 
-func StoreMockPlan(p string, w float64, s service.Service, a []enum.Action) {
+func StoreMockPlan(p string, w float64, s service.Service, a enum.Actions) {
 	plan := CreateMockPlan(p, w, s, a)
 	data, _ := convertPlanToData(plan)
 	storage.StoreLocalData(data, enum.PLANS)
