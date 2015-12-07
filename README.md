@@ -28,7 +28,7 @@ Develop your contenerized application with no worries: Gru will integrate seamle
 The project is at an early stage of development.
 I don't suggest to try it by now, however below you can find the documentation to run it in your local machine or cluster.
 Currently Gru can work in a cluster of nodes, automagically scaling services instances according to traffic load.
-Gru needs a running instance of an etcd server (https://github.com/coreos/etcd) for agents discovery.
+Gru needs a running instance of an etcd server (https://github.com/coreos/etcd) for agents discovery and influxdb (https://influxdb.com/) to store metrics data.
 
 ## Documentation
 These are the steps you need to follow to run the current version of Gru in your system (Linux only).
@@ -82,6 +82,16 @@ In the current version Gru supports only the execution time of services expresse
 	
 	"Storage": {
 		"StorageService":"internal"
+	},
+
+	"Metric": {
+		"MetricService":"influxdb",
+		"Configuration": {
+			"Url":"http://localhost:8086",
+			"DbName":"gruDB",
+			"Username":"gru",
+			"Password":"gru"
+		}
 	}
 }
 ```
