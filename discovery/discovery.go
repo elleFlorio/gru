@@ -9,14 +9,17 @@ import (
 type Discovery interface {
 	Name() string
 	Initialize(string) error
-	Register(string, string, int) error
-	Get(string) (map[string]string, error)
-	Set(string, string, int) error
+	Register(string, string) error
+	Get(string, Options) (map[string]string, error)
+	Set(string, string, Options) error
 }
 
+type Options map[string]interface{}
+
 var (
-	discoveries     []Discovery
-	discService     int
+	discoveries []Discovery
+	discService int
+
 	ErrNotSupported = errors.New("discovery service not supported")
 )
 
@@ -56,14 +59,14 @@ func Initialize(uri string) error {
 	return service().Initialize(uri)
 }
 
-func Register(myUUID string, myAddress string, ttl int) error {
-	return service().Register(myUUID, myAddress, ttl)
+func Register(nodePath string, nodeAddress string) error {
+	return service().Register(nodePath, nodeAddress)
 }
 
-func Get(key string) (map[string]string, error) {
-	return service().Get(key)
+func Get(key string, opt Options) (map[string]string, error) {
+	return service().Get(key, opt)
 }
 
-func Set(key string, value string, ttl int) error {
-	return service().Set(key, value, ttl)
+func Set(key string, value string, opt Options) error {
+	return service().Set(key, value, opt)
 }
