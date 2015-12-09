@@ -8,6 +8,7 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/container"
+	"github.com/elleFlorio/gru/network"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/utils"
 )
@@ -29,6 +30,27 @@ func LoadNodeConfig(filename string) error {
 	}
 
 	return nil
+}
+
+func CreateNode(name string) Node {
+	node_UUID, err := utils.GenerateUUID()
+	if err != nil {
+		log.WithField("err", err).Errorln("Error generating node UUID")
+	}
+	node_address := "http://" + network.Config().IpAddress + ":" + network.Config().Port
+
+	config = Node{
+		UUID:    node_UUID,
+		Name:    name,
+		Address: node_address,
+		Active:  false,
+	}
+
+	return config
+}
+
+func ActivateNode() {
+	config.Active = true
 }
 
 func ComputeTotalResources() {
