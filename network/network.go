@@ -14,7 +14,7 @@ var (
 	ErrNoIpAddress error = errors.New("Cannot retrieve node ip address.")
 )
 
-func SetNetworkConfig(ipAddress string, port string) error {
+func InitializeNetwork(ipAddress string, port string) error {
 	if ipAddress != "" {
 		config.IpAddress = ipAddress
 	} else {
