@@ -35,7 +35,6 @@ func RunLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			communication.KeepAlive(manager.LoopTimeInterval)
 			err := communication.UpdateFriendsData(manager.MaxFrineds)
 			if err != nil {
 				log.WithField("err", err).Debugln("Cannot update friends data")
