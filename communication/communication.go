@@ -24,15 +24,6 @@ var (
 	ErrNoFriends            error = errors.New("There are no friends to reach")
 )
 
-func KeepAlive(ttl int) {
-	if discovery.Name() != "noservice" {
-		err := discovery.Set(createAgentKey(), createAgentAddress(), ttl)
-		if err != nil {
-			log.WithField("err", err).Errorln("Cannot keep the agent alive")
-		}
-	}
-}
-
 func createAgentAddress() string {
 	return "http://" + network.Config().IpAddress + ":" + network.Config().Port
 }
@@ -72,7 +63,7 @@ func UpdateFriendsData(nFriends int) error {
 }
 
 func getAllPeers() (map[string]string, error) {
-	peers, err := discovery.Get(c_PATH_NODES)
+	peers, err := discovery.Get(c_PATH_NODES, discovery.Options{})
 	if err != nil {
 		return nil, err
 	}
