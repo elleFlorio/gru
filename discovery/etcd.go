@@ -78,24 +78,24 @@ func (p *etcdDiscovery) Get(key string, opt Options) (map[string]string, error) 
 		return nil, err
 	}
 
-	if len(resp.Node.Nodes) > 0 {
-		log.Debugln("Node Entries:")
-		for _, entry := range resp.Node.Nodes {
-			log.WithFields(log.Fields{
-				"key":   entry.Key,
-				"value": entry.Value,
-			}).Debugln("Entry")
-			result[entry.Key] = entry.Value
-		}
-	} else {
-		log.WithFields(log.Fields{
-			"key":   resp.Node.Key,
-			"value": resp.Node.Value,
-		}).Debugln("Node entry")
-		result[resp.Node.Key] = resp.Node.Value
-	}
+	result = exploreNode(resp.Node, result)
 
 	return result, nil
+}
+
+func exploreNode(node *client.Node, result map[string]string) map[string]string {
+	if len(node.Nodes) > 0 {
+		for _, next := range node.Nodes {
+			result = exploreNode(next, result)
+		}
+	} else {
+		result[node.Key] = node.Value
+		log.WithFields(log.Fields{
+			"key":   node.Key,
+			"value": node.Value,
+		}).Debugln("Node entry")
+	}
+	return result
 }
 
 func (p *etcdDiscovery) Set(key string, value string, opt Options) error {
