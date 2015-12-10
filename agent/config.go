@@ -1,27 +1,10 @@
 package agent
 
 type GruAgentConfig struct {
-	Service   ServiceConfig   `json:"service"`
-	Node      NodeConfig      `json:"node"`
-	Network   NetConfig       `json:"network"`
 	Docker    DockerConfig    `json:"docker"`
 	Autonomic AutonomicConfig `json:"autonomic"`
-	Discovery DiscoveryConfig `json:"discovery"`
 	Storage   StorageConfig   `json:"storage"`
 	Metric    MetricConfig    `json:"metric"`
-}
-
-type ServiceConfig struct {
-	ServiceConfigFolder string `json:"serviceconfigfolder"`
-}
-
-type NodeConfig struct {
-	NodeConfigFile string `json:"nodeconfigfile"`
-}
-
-type NetConfig struct {
-	IpAddres string `json:"ipaddress"`
-	Port     string `json:"port"`
 }
 
 type DockerConfig struct {
@@ -30,14 +13,8 @@ type DockerConfig struct {
 }
 
 type AutonomicConfig struct {
-	LoopTimeInterval int    `json:"looptimeinterval"`
-	MaxFriends       int    `json:"maxfriends"`
-	DataToShare      string `json:"datatoshare"`
-}
-
-type DiscoveryConfig struct {
-	DiscoveryService    string `json:"discoveryservice"`
-	DiscoveryServiceUri string `json:"discoveryserviceuri"`
+	LoopTimeInterval int `json:"looptimeinterval"`
+	MaxFriends       int `json:"maxfriends"`
 }
 
 type StorageConfig struct {
@@ -49,5 +26,5 @@ type StorageConfig struct {
 // the correct way to make it generic
 type MetricConfig struct {
 	MetricService string                 `json:"metricservice"`
-	Configuration map[string]interface{} `json:configuration`
+	Configuration map[string]interface{} `json:"configuration"`
 }

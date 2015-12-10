@@ -29,6 +29,7 @@ func join(c *cli.Context) {
 
 	initializeNetwork(ipAddress, port)
 	initializeDiscovery("etcd", etcdAddress)
+
 	initializeNode(nodeName, clusterName)
 	registerToCluster(clusterName)
 	defer api.StartServer(port)
@@ -66,6 +67,7 @@ func initializeNode(nodeName string, clusterName string) {
 
 func nameExist(nodeName string, clusterName string) bool {
 	names := cluster.ListNodes(clusterName, false)
+	log.Debugln("Nodes list: ", names)
 	for _, name := range names {
 		if name == nodeName {
 			return true
