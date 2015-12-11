@@ -9,16 +9,15 @@ import (
 	"github.com/elleFlorio/gru/autonomic/executor"
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
-	"github.com/elleFlorio/gru/communication"
+	"github.com/elleFlorio/gru/cluster"
 	"github.com/elleFlorio/gru/metric"
 )
 
 var manager AutonomicConfig
 
-func Initialize(loopTimeInterval int, nFriends int, dataType string) {
+func Initialize(loopTimeInterval int, nFriends int) {
 	manager.LoopTimeInterval = loopTimeInterval
 	manager.MaxFrineds = nFriends
-	manager.DataToShare = dataType
 }
 
 func RunLoop() {
@@ -35,8 +34,7 @@ func RunLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			communication.KeepAlive(manager.LoopTimeInterval)
-			err := communication.UpdateFriendsData(manager.MaxFrineds)
+			err := cluster.UpdateFriendsData(manager.MaxFrineds)
 			if err != nil {
 				log.WithField("err", err).Debugln("Cannot update friends data")
 			}

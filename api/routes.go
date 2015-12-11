@@ -124,4 +124,12 @@ var routes = Routes{
 		"/gru/v1/actions",
 		GetInfoActions,
 	},
+
+	//COMMANDS
+	Route{
+		"ExecCommands",
+		"POST",
+		"/gru/v1/commands",
+		PostCommand,
+	},
 }

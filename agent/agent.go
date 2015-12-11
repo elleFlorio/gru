@@ -9,53 +9,39 @@ import (
 
 	"github.com/elleFlorio/gru/autonomic"
 	"github.com/elleFlorio/gru/container"
-	"github.com/elleFlorio/gru/discovery"
 	"github.com/elleFlorio/gru/metric"
-	"github.com/elleFlorio/gru/node"
-	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
 
+const gruAgentConfigFile string = "/gru/config/gruagentconfig.json"
+
 var config GruAgentConfig
 
-func LoadGruAgentConfig(filename string) error {
-	log.Infoln("Loading agent configuration")
-
-	tmp, err := ioutil.ReadFile(filename)
-	if err != nil {
-		log.WithField("error", err).Errorln("Error reading configuration file")
-		return err
-	}
-	err = json.Unmarshal(tmp, &config)
-	if err != nil {
-		log.WithField("error", err).Errorln("Error unmarshaling configuration file")
-		return err
-	}
-	return nil
+func Initialize(agentConfig GruAgentConfig) {
+	config = agentConfig
 }
 
+// func LoadGruAgentConfig(filename string) error {
+// 	log.Infoln("Loading agent configuration")
+
+// 	tmp, err := ioutil.ReadFile(filename)
+// 	if err != nil {
+// 		log.WithField("error", err).Errorln("Error reading configuration file")
+// 		return err
+// 	}
+// 	err = json.Unmarshal(tmp, &config)
+// 	if err != nil {
+// 		log.WithField("error", err).Errorln("Error unmarshaling configuration file")
+// 		return err
+// 	}
+// 	return nil
+// }
+
 func Run() {
-	initializeDiscovery()
 	initializeStorage()
 	initializeContainerEngine()
 	initializeMetricSerivice()
-	initializeServices()
-	initializeNode()
-
 	startAutonomicManager()
-}
-
-func initializeDiscovery() {
-	_, err := discovery.New(config.Discovery.DiscoveryService, config.Discovery.DiscoveryServiceUri)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"status":  "warning",
-			"error":   err,
-			"default": "No discovery service, running in single node mode",
-		}).Warnln("Error initializing discovery service")
-	} else {
-		log.WithField(discovery.Name(), "ok").Infoln("Discovery service initialized")
-	}
 }
 
 func initializeStorage() {
@@ -92,33 +78,6 @@ func initializeMetricSerivice() {
 	}
 }
 
-func initializeServices() {
-	servicesPath := os.Getenv("HOME") + config.Service.ServiceConfigFolder
-	//Do I need to return the slice of services?
-	err := service.LoadServices(servicesPath)
-	if err != nil {
-		signalErrorInAgent(err)
-	}
-	log.WithFields(log.Fields{
-		"services": "ok",
-		"loaded":   len(service.List()),
-	}).Infoln("Services initialized")
-}
-
-func initializeNode() {
-	nodeConfigPath := os.Getenv("HOME") + config.Node.NodeConfigFile
-
-	err := node.LoadNodeConfig(nodeConfigPath)
-	if err != nil {
-		signalErrorInAgent(err)
-	}
-	node.ComputeTotalResources()
-	log.WithFields(log.Fields{
-		"node": "ok",
-		"UUID": node.Config().UUID,
-	}).Infoln("Node initialized")
-}
-
 func signalErrorInAgent(err error) {
 	log.WithField("err", err).Fatal("Error running gru agent. Exit.")
 }
@@ -126,8 +85,7 @@ func signalErrorInAgent(err error) {
 func startAutonomicManager() {
 	autonomic.Initialize(
 		config.Autonomic.LoopTimeInterval,
-		config.Autonomic.MaxFriends,
-		config.Autonomic.DataToShare)
+		config.Autonomic.MaxFriends)
 	autonomic.RunLoop()
 }
 

@@ -27,7 +27,7 @@ func start(c *cli.Context) {
 		}).Fatalln("Starting gru agent")
 	}
 
-	network.SetNetworkConfig(agent.Config().Network.IpAddres, agent.Config().Network.Port)
+	network.InitializeNetwork(agent.Config().Network.IpAddres, agent.Config().Network.Port)
 	go api.StartServer(network.Config().Port)
 
 	log.WithField("status", "ok").Infoln("Gru agent started")

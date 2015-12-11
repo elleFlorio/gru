@@ -6,6 +6,8 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/coreos/etcd/client"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/golang.org/x/net/context"
+
+	"github.com/elleFlorio/gru/utils"
 )
 
 type etcdDiscovery struct {
@@ -44,14 +46,13 @@ func (p *etcdDiscovery) Initialize(uri string) error {
 	return nil
 }
 
-func (p *etcdDiscovery) Register(myUUID string, myAddress string, ttl int) error {
-	path := "/nodes/" + myUUID
+func (p *etcdDiscovery) Register(nodePath string, nodeAddress string) error {
 
 	_, err := p.kAPI.Set(
 		context.Background(),
-		path,
-		myAddress,
-		&client.SetOptions{TTL: time.Duration(ttl) * time.Second},
+		nodePath,
+		nodeAddress,
+		nil,
 	)
 	if err != nil {
 		log.WithField("err", err).Errorln("Registering to discovery service")
@@ -61,34 +62,60 @@ func (p *etcdDiscovery) Register(myUUID string, myAddress string, ttl int) error
 	return err
 }
 
-func (p *etcdDiscovery) Get(key string) (map[string]string, error) {
+func (p *etcdDiscovery) Get(key string, opt Options) (map[string]string, error) {
+	var err error
 	result := make(map[string]string)
+	cli_opt := &client.GetOptions{}
+	err = utils.FillStruct(cli_opt, opt)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error reading discovery get options")
+		return nil, err
+	}
 
-	resp, err := p.kAPI.Get(context.Background(), key, nil)
+	resp, err := p.kAPI.Get(context.Background(), key, cli_opt)
 	if err != nil {
 		log.WithField("err", err).Errorln("Querying discovery service")
 		return nil, err
 	}
 
-	log.Debugln("NodeEntries:")
-	for _, entry := range resp.Node.Nodes {
-		log.WithFields(log.Fields{
-			"key":   entry.Key,
-			"value": entry.Value,
-		}).Debugln("")
-		result[entry.Key] = entry.Value
-	}
+	result = exploreNode(resp.Node, result)
 
 	return result, nil
 }
 
-func (p *etcdDiscovery) Set(key string, value string, ttl int) error {
+func exploreNode(node *client.Node, result map[string]string) map[string]string {
+	if len(node.Nodes) > 0 {
+		for _, next := range node.Nodes {
+			result = exploreNode(next, result)
+		}
+	} else {
+		result[node.Key] = node.Value
+		log.WithFields(log.Fields{
+			"key":   node.Key,
+			"value": node.Value,
+		}).Debugln("Node entry")
+	}
+	return result
+}
 
-	_, err := p.kAPI.Set(
+func (p *etcdDiscovery) Set(key string, value string, opt Options) error {
+	var err error
+
+	cli_opt := &client.SetOptions{}
+	if _, ok := opt["PrevExist"]; ok {
+		opt["PrevExist"] = client.PrevExist
+	}
+	err = utils.FillStruct(cli_opt, opt)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error reading discovery set options")
+		return err
+	}
+
+	_, err = p.kAPI.Set(
 		context.Background(),
 		key,
 		value,
-		&client.SetOptions{TTL: time.Duration(ttl) * time.Second})
+		cli_opt)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error setting value to discovery service")
 		return err

@@ -1,4 +1,4 @@
-package communication
+package cluster
 
 import (
 	"math/rand"
