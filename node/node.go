@@ -32,7 +32,7 @@ func LoadNodeConfig(filename string) error {
 	return nil
 }
 
-func CreateNode(name string) Node {
+func CreateNode(name string) {
 	node_UUID, err := utils.GenerateUUID()
 	if err != nil {
 		log.WithField("err", err).Errorln("Error generating node UUID")
@@ -46,14 +46,10 @@ func CreateNode(name string) Node {
 		Active:  false,
 	}
 
-	return config
+	computeTotalResources()
 }
 
-func ActivateNode() {
-	config.Active = true
-}
-
-func ComputeTotalResources() {
+func computeTotalResources() {
 	info, err := container.Docker().Client.Info()
 	if err != nil {
 		log.WithField("err", err).Errorln("Error reading total resources")
@@ -61,6 +57,10 @@ func ComputeTotalResources() {
 	}
 	config.Resources.TotalCpus = info.NCPU
 	config.Resources.TotalMemory = info.MemTotal
+}
+
+func ActivateNode() {
+	config.Active = true
 }
 
 func UsedCpus() (int64, error) {

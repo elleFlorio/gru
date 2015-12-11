@@ -1,11 +1,7 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
-	"path/filepath"
-
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
@@ -16,31 +12,38 @@ var (
 	ErrNoSuchService = errors.New("Service does not exists")
 )
 
-func LoadServices(path string) error {
-	folder, err := ioutil.ReadDir(path)
-	if err != nil {
-		log.Errorln("Error opening services folder", err.Error())
-		return err
-	}
+// func LoadServices(path string) error {
+// 	folder, err := ioutil.ReadDir(path)
+// 	if err != nil {
+// 		log.Errorln("Error opening services folder", err.Error())
+// 		return err
+// 	}
 
-	for _, file := range folder {
-		var service Service
-		filep := path + string(filepath.Separator) + file.Name()
-		log.Debugln("reading file ", filep)
-		tmp, _ := ioutil.ReadFile(filep)
-		err = json.Unmarshal(tmp, &service)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"file": file.Name(),
-				"err":  err,
-			}).Errorln("Error unmarshaling service file")
-		} else {
-			checkService(&service)
-			services = append(services, service)
-		}
-	}
+// 	for _, file := range folder {
+// 		var service Service
+// 		filep := path + string(filepath.Separator) + file.Name()
+// 		log.Debugln("reading file ", filep)
+// 		tmp, _ := ioutil.ReadFile(filep)
+// 		err = json.Unmarshal(tmp, &service)
+// 		if err != nil {
+// 			log.WithFields(log.Fields{
+// 				"file": file.Name(),
+// 				"err":  err,
+// 			}).Errorln("Error unmarshaling service file")
+// 		} else {
+// 			checkService(&service)
+// 			services = append(services, service)
+// 		}
+// 	}
 
-	return nil
+// 	return nil
+// }
+
+func Initialize(list []Service) {
+	for i := 0; i < len(list); i++ {
+		checkService(&list[i])
+	}
+	services = list
 }
 
 func checkService(service *Service) {

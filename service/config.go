@@ -5,8 +5,8 @@ type Service struct {
 	Type          string         `json:"type"`
 	Image         string         `json:"image"`
 	Instances     InstanceStatus `json:"instances"`
-	Constraints   Constraints    `json:"constraints"` //Needed?
-	Configuration Config         `json: "configuration"`
+	Constraints   Constraints    `json:"constraints"`
+	Configuration Config         `json:"configuration"`
 }
 
 type InstanceStatus struct {
@@ -29,10 +29,10 @@ type Config struct {
 	Memory       string                   `json:"memory"`
 	CpuShares    int64                    `json:"cpushares"`
 	CpusetCpus   string                   `json:"cpusetcpus"`
-	ExposedPorts map[string]struct{}      `json:exposedports`
+	ExposedPorts map[string]struct{}      `json:"exposedports"`
 	PortBindings map[string][]PortBinding `json:"portbindings"`
 	Links        []string                 `json:"links"`
-	StopTimeout  int                      `json:stoptimeout`
+	StopTimeout  int                      `json:"stoptimeout"`
 }
 
 type PortBinding struct {

@@ -1,18 +1,28 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/codegangsta/cli"
 
+	"github.com/elleFlorio/gru/agent"
 	"github.com/elleFlorio/gru/api"
 	"github.com/elleFlorio/gru/cluster"
+	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/discovery"
+	"github.com/elleFlorio/gru/metric"
 	"github.com/elleFlorio/gru/network"
 	"github.com/elleFlorio/gru/node"
+	"github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
 )
+
+const c_GRU_PATH = "/gru/"
+const c_CONFIG_PATH = "config/"
+const c_CONFIG_SERVICES = "services/"
 
 func join(c *cli.Context) {
 	var clusterName string
@@ -27,10 +37,19 @@ func join(c *cli.Context) {
 	etcdAddress := c.String("etcdserver")
 	nodeName := c.String("name")
 
+	// infrastructure
 	initializeNetwork(ipAddress, port)
 	initializeDiscovery("etcd", etcdAddress)
-
+	// Configuration
+	initializeAgent(clusterName)
+	// Core agent services
+	initializeStorage()
+	initializeMetricSerivice()
+	initializeContainerEngine()
+	// Resources
 	initializeNode(nodeName, clusterName)
+	initializeServices(clusterName)
+	// Join Cluster
 	registerToCluster(clusterName)
 	defer api.StartServer(port)
 
@@ -51,8 +70,48 @@ func initializeDiscovery(name string, address string) {
 	}
 }
 
+func initializeAgent(clusterName string) {
+	confPath := c_GRU_PATH + clusterName + "/" + c_CONFIG_PATH
+	agentConfig := agent.GruAgentConfig{}
+	getConfig(confPath, &agentConfig)
+	agent.Initialize(agentConfig)
+}
+
+func initializeStorage() {
+	_, err := storage.New(agent.Config().Storage.StorageService)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"status":  "warning",
+			"error":   err,
+			"default": storage.Name(),
+		}).Warnln("Error initializing storage service")
+	} else {
+		log.WithField(storage.Name(), "ok").Infoln("Storage service initialized")
+	}
+}
+
+func initializeMetricSerivice() {
+	_, err := metric.New(agent.Config().Metric.MetricService, agent.Config().Metric.Configuration)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"status":  "warning",
+			"error":   err,
+			"default": metric.Name(),
+		}).Warnln("Error initializing metric service")
+	} else {
+		log.WithField(metric.Name(), "ok").Infoln("Metric service initialized")
+	}
+}
+
+func initializeContainerEngine() {
+	err := container.Connect(agent.Config().Docker.DaemonUrl, agent.Config().Docker.DaemonTimeout)
+	if err != nil {
+		log.WithField("err", err).Fatalln("Error initializing container engine")
+	}
+	log.WithField("docker", "ok").Infoln("Container engine initialized")
+}
+
 func initializeNode(nodeName string, clusterName string) {
-	//TODO check for random name
 	if nodeName == "random_name" {
 		nodeName = utils.GetRandomName(0)
 	}
@@ -61,7 +120,7 @@ func initializeNode(nodeName string, clusterName string) {
 		nodeName = utils.GetRandomName(counter)
 		counter++
 	}
-
+	log.Debugln("Node name: ", nodeName)
 	node.CreateNode(nodeName)
 }
 
@@ -74,6 +133,34 @@ func nameExist(nodeName string, clusterName string) bool {
 		}
 	}
 	return false
+}
+
+func initializeServices(clusterName string) {
+	services := []service.Service{}
+	list := cluster.ListServices(clusterName)
+	for _, name := range list {
+		servicePath := c_GRU_PATH + clusterName + "/" + c_CONFIG_SERVICES + name
+		serviceConfig := service.Service{}
+		getConfig(servicePath, &serviceConfig)
+		services = append(services, serviceConfig)
+	}
+
+	service.Initialize(services)
+}
+
+func getConfig(configPath string, config interface{}) {
+	var err error
+
+	resp, err := discovery.Get(configPath, discovery.Options{})
+	if err != nil {
+		log.WithField("err", err).Fatalln("Error getting configuration")
+	}
+
+	conf_str := resp[configPath]
+	err = json.Unmarshal([]byte(conf_str), config)
+	if err != nil {
+		log.WithField("err", err).Fatalln("Error unmarshaling configuration")
+	}
 }
 
 func registerToCluster(name string) {

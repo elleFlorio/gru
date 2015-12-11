@@ -59,17 +59,17 @@ func RegisterCluster(name string, id string) {
 	}
 	log.Debugln("Created nodes folder")
 
-	err = discovery.Set(c_GRU_PATH+name+"/"+c_CONFIG_FOLDER, "", opt)
-	if err != nil {
-		log.Errorln("Error creating config folder")
-	}
-	log.Debugln("Created config folder")
-
 	err = discovery.Set(c_GRU_PATH+name+"/"+c_SERVICES_FOLDER, "", opt)
 	if err != nil {
 		log.Errorln("Error creating services folder")
 	}
 	log.Debugln("Created services folder")
+
+	err = discovery.Set(c_GRU_PATH+name+"/"+c_CONFIG_FOLDER, "empty", discovery.Options{})
+	if err != nil {
+		log.Errorln("Error creating config key")
+	}
+	log.Debugln("Created config key")
 }
 
 func JoinCluster(name string) error {
@@ -230,6 +230,29 @@ func getNodeNames(resp map[string]string, onlyActive bool, nodesPath string) []s
 	}
 
 	return names
+}
+
+func ListServices(clusterName string) []string {
+	servicesPath := c_GRU_PATH + clusterName + "/" + c_SERVICES_FOLDER
+	resp, err := discovery.Get(servicesPath, discovery.Options{})
+	if err != nil {
+		log.WithField("err", err).Errorln("Error listing services in cluster ", clusterName)
+		return []string{}
+	}
+
+	services := []string{}
+	for k, _ := range resp {
+		path := strings.Split(k, "/")
+		name := path[len(path)-1]
+		if name == "services" {
+			log.Debugln("Services folder empty")
+			return services
+		}
+
+		services = append(services, name)
+	}
+
+	return services
 }
 
 func UpdateFriendsData(nFriends int) error {
