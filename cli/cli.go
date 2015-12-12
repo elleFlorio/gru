@@ -83,6 +83,18 @@ func Run() {
 				},
 			},
 		},
+		{
+			Name:   "manage",
+			Usage:  "manage a GRU cluster",
+			Action: manage,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "etcdserver, e",
+					Value: "http://localhost:4001",
+					Usage: fmt.Sprintf("url of etcd server. Default is 'http://localhost:4001'"),
+				},
+			},
+		},
 	}
 
 	app.Run(os.Args)
