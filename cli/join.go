@@ -21,7 +21,7 @@ import (
 )
 
 const c_GRU_PATH = "/gru/"
-const c_CONFIG_PATH = "config/"
+const c_CONFIG_PATH = "config"
 const c_CONFIG_SERVICES = "services/"
 
 func join(c *cli.Context) {
@@ -42,13 +42,13 @@ func join(c *cli.Context) {
 	initializeDiscovery("etcd", etcdAddress)
 	// Configuration
 	initializeAgent(clusterName)
+	initializeServices(clusterName)
 	// Core agent services
 	initializeStorage()
 	initializeMetricSerivice()
 	initializeContainerEngine()
 	// Resources
 	initializeNode(nodeName, clusterName)
-	initializeServices(clusterName)
 	// Join Cluster
 	registerToCluster(clusterName)
 	defer api.StartServer(port)
@@ -71,10 +71,48 @@ func initializeDiscovery(name string, address string) {
 }
 
 func initializeAgent(clusterName string) {
-	confPath := c_GRU_PATH + clusterName + "/" + c_CONFIG_PATH
+	configPath := c_GRU_PATH + clusterName + "/" + c_CONFIG_PATH
 	agentConfig := agent.GruAgentConfig{}
-	getConfig(confPath, &agentConfig)
+	getConfig(configPath, &agentConfig)
 	agent.Initialize(agentConfig)
+}
+func initializeServices(clusterName string) {
+	services := []service.Service{}
+	list := cluster.ListServices(clusterName)
+	for _, name := range list {
+		servicePath := c_GRU_PATH + clusterName + "/" + c_CONFIG_SERVICES + name
+		serviceConfig := service.Service{}
+		getConfig(servicePath, &serviceConfig)
+		services = append(services, serviceConfig)
+	}
+
+	service.Initialize(services)
+}
+
+func getConfig(configPath string, config interface{}) {
+	var err error
+
+	resp, err := discovery.Get(configPath, discovery.Options{})
+	if err != nil {
+		log.WithField("err", err).Fatalln("Error getting configuration")
+	}
+
+	conf_str := resp[configPath]
+	err = json.Unmarshal([]byte(conf_str), config)
+	if err != nil {
+		log.WithField("err", err).Fatalln("Error unmarshaling configuration")
+	}
+}
+
+func nameExist(nodeName string, clusterName string) bool {
+	names := cluster.ListNodes(clusterName, false)
+	log.Debugln("Nodes list: ", names)
+	for _, name := range names {
+		if name == nodeName {
+			return true
+		}
+	}
+	return false
 }
 
 func initializeStorage() {
@@ -122,45 +160,6 @@ func initializeNode(nodeName string, clusterName string) {
 	}
 	log.Debugln("Node name: ", nodeName)
 	node.CreateNode(nodeName)
-}
-
-func nameExist(nodeName string, clusterName string) bool {
-	names := cluster.ListNodes(clusterName, false)
-	log.Debugln("Nodes list: ", names)
-	for _, name := range names {
-		if name == nodeName {
-			return true
-		}
-	}
-	return false
-}
-
-func initializeServices(clusterName string) {
-	services := []service.Service{}
-	list := cluster.ListServices(clusterName)
-	for _, name := range list {
-		servicePath := c_GRU_PATH + clusterName + "/" + c_CONFIG_SERVICES + name
-		serviceConfig := service.Service{}
-		getConfig(servicePath, &serviceConfig)
-		services = append(services, serviceConfig)
-	}
-
-	service.Initialize(services)
-}
-
-func getConfig(configPath string, config interface{}) {
-	var err error
-
-	resp, err := discovery.Get(configPath, discovery.Options{})
-	if err != nil {
-		log.WithField("err", err).Fatalln("Error getting configuration")
-	}
-
-	conf_str := resp[configPath]
-	err = json.Unmarshal([]byte(conf_str), config)
-	if err != nil {
-		log.WithField("err", err).Fatalln("Error unmarshaling configuration")
-	}
 }
 
 func registerToCluster(name string) {
