@@ -165,6 +165,26 @@ func GetMyCluster() (Cluster, error) {
 	return myCluster, nil
 }
 
+func ListClusters() []string {
+	resp, err := discovery.Get(c_GRU_PATH, discovery.Options{})
+	if err != nil {
+		log.WithField("err", err).Errorln("Error listing clusters")
+		return []string{}
+	}
+	clusters := []string{}
+	for k, _ := range resp {
+		tokens := strings.Split(k, "/")
+		if len(tokens) != 3 {
+			// No clusters
+			return []string{}
+		}
+		clusters = append(clusters, tokens[2])
+	}
+
+	return clusters
+
+}
+
 func ListNodes(clusterName string, onlyActive bool) []string {
 	nodesPath := c_GRU_PATH + clusterName + "/" + c_NODES_FOLDER
 	resp, err := discovery.Get(nodesPath, discovery.Options{"Recursive": true})
