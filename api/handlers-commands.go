@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -11,6 +10,8 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/agent"
+	"github.com/elleFlorio/gru/cluster"
+	"github.com/elleFlorio/gru/node"
 )
 
 type Command struct {
@@ -82,7 +83,35 @@ func startCommand(cmd Command) {
 }
 
 func startAgent() {
-	fmt.Println("Starting agent...")
-	log.Infoln("Starting agent...")
-	go agent.Run()
+	if !node.GetNode().Active {
+		go runAgent()
+	} else {
+		log.Warnln("Node already active")
+	}
+}
+
+func runAgent() {
+	activateNode()
+	defer deactivateNode()
+	agent.Run()
+}
+
+func activateNode() {
+	log.Debugln("Activating node")
+	myCluster, err := cluster.GetMyCluster()
+	if err != nil {
+		log.WithField("err", err).Errorln("Error getting my cluster")
+	}
+	node.ToggleActiveNode()
+	cluster.WriteNodeActive(myCluster.NodePath, true)
+}
+
+func deactivateNode() {
+	log.Debugln("Deactivating node")
+	myCluster, err := cluster.GetMyCluster()
+	if err != nil {
+		log.WithField("err", err).Errorln("Error getting my cluster")
+	}
+	node.ToggleActiveNode()
+	cluster.WriteNodeActive(myCluster.NodePath, false)
 }

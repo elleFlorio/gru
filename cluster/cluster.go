@@ -1,8 +1,8 @@
 package cluster
 
 import (
+	"encoding/json"
 	"errors"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -10,10 +10,7 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/discovery"
-	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/network"
 	"github.com/elleFlorio/gru/node"
-	"github.com/elleFlorio/gru/storage"
 )
 
 // etcd
@@ -22,9 +19,6 @@ const c_NODES_FOLDER = "nodes/"
 const c_CONFIG_FOLDER = "config/"
 const c_SERVICES_FOLDER = "services/"
 const c_TTL = 5
-
-// api
-const c_ROUTE_ANALYTICS string = "/gru/v1/analytics"
 
 type Cluster struct {
 	UUID        string
@@ -80,7 +74,7 @@ func JoinCluster(name string) error {
 		return err
 	}
 	if id, ok := data[key]; ok {
-		initCluster(name, id, c_GRU_PATH+name, c_GRU_PATH+name+"/"+c_NODES_FOLDER+node.Config().Name)
+		initCluster(name, id, c_GRU_PATH+name, c_GRU_PATH+name+"/"+c_NODES_FOLDER+node.GetNode().Configuration.Name)
 		err := createNodeFolder()
 		if err != nil {
 			return err
@@ -93,25 +87,12 @@ func JoinCluster(name string) error {
 	return nil
 }
 
-func initCluster(name string, id string, clusterPath string, nodesPath string) {
+func initCluster(name string, id string, clusterPath string, nodePath string) {
 	myCluster = Cluster{
 		id,
 		name,
 		clusterPath,
-		nodesPath,
-	}
-}
-
-func keepAlive(ttl int) {
-	ticker := time.NewTicker(time.Second * time.Duration(ttl))
-	for {
-		select {
-		case <-ticker.C:
-			err := updateNodeFolder(ttl)
-			if err != nil {
-				log.Errorln("Error keeping the node alive")
-			}
-		}
+		nodePath,
 	}
 }
 
@@ -130,25 +111,28 @@ func createNodeFolder() error {
 	return nil
 }
 
-func updateNodeFolder(ttl int) error {
-	var err error
-	var active string
-	if node.Config().Active {
-		active = "true"
-	} else {
-		active = "false"
+func keepAlive(ttl int) {
+	ticker := time.NewTicker(time.Second * time.Duration(ttl))
+	for {
+		select {
+		case <-ticker.C:
+			err := updateNodeFolder(ttl)
+			if err != nil {
+				log.Errorln("Error keeping the node alive")
+			}
+		}
 	}
+}
 
+func updateNodeFolder(ttl int) error {
 	opt := discovery.Options{
 		"TTL":       time.Second * time.Duration(ttl),
 		"Dir":       true,
 		"PrevExist": true,
 	}
-	err = discovery.Set(myCluster.NodePath, "", opt)
-	err = discovery.Set(myCluster.NodePath+"/uuid", node.Config().UUID, discovery.Options{})
-	err = discovery.Set(myCluster.NodePath+"/name", node.Config().Name, discovery.Options{})
-	err = discovery.Set(myCluster.NodePath+"/address", node.Config().Address, discovery.Options{})
-	err = discovery.Set(myCluster.NodePath+"/active", active, discovery.Options{})
+	err := discovery.Set(myCluster.NodePath, "", opt)
+	WriteNodeConfig(myCluster.NodePath, node.GetNode().Configuration)
+	WriteNodeActive(myCluster.NodePath, node.GetNode().Active)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error updating node folder")
 		return err
@@ -165,58 +149,80 @@ func GetMyCluster() (Cluster, error) {
 	return myCluster, nil
 }
 
-func ListClusters() []string {
+func ListClusters() map[string]string {
 	resp, err := discovery.Get(c_GRU_PATH, discovery.Options{})
 	if err != nil {
 		log.WithField("err", err).Errorln("Error listing clusters")
-		return []string{}
+		return map[string]string{}
 	}
 	clusters := []string{}
 	for k, _ := range resp {
 		tokens := strings.Split(k, "/")
 		if len(tokens) != 3 {
 			// No clusters
-			return []string{}
+			return map[string]string{}
 		}
 		clusters = append(clusters, tokens[2])
 	}
 
-	return clusters
+	clustersUuid := make(map[string]string, len(clusters))
+	for _, name := range clusters {
+		resp, err := discovery.Get(c_GRU_PATH+name+"/uuid", discovery.Options{})
+		if err != nil {
+			log.Error("Error getting UUID of cluster ", name)
+		}
+		clustersUuid[name] = resp[c_GRU_PATH+name+"/uuid"]
+	}
+
+	return clustersUuid
 
 }
 
-func ListNodes(clusterName string, onlyActive bool) []string {
-	nodesPath := c_GRU_PATH + clusterName + "/" + c_NODES_FOLDER
-	resp, err := discovery.Get(nodesPath, discovery.Options{"Recursive": true})
+func ListNodes(clusterName string, onlyActive bool) map[string]string {
+	log.Debugln("Listing nodes")
+	nodesPath := c_GRU_PATH + clusterName + "/nodes"
+
+	resp, err := discovery.Get(nodesPath, discovery.Options{})
 	if err != nil {
 		log.WithField("err", err).Errorln("Error listing nodes in cluster ", clusterName)
-		return []string{}
+		return map[string]string{}
 	}
-	return getNodeNames(resp, onlyActive, nodesPath)
+
+	nameAddress := make(map[string]string, len(resp))
+	for nodePath, _ := range resp {
+		log.Debugln("Reading configuration of node ", nodePath)
+		config := &node.Config{}
+		ReadNodeConfig(nodePath, config)
+		if onlyActive {
+			log.Debugln("Checking if node is active")
+			if ReadNodeActive(nodePath) {
+				nameAddress[config.Name] = config.Address
+			}
+		} else {
+			nameAddress[config.Name] = config.Address
+		}
+	}
+
+	return nameAddress
 }
 
 func GetNodes(clusterName string, onlyActive bool) []node.Node {
 	nodes := []node.Node{}
-	nodesPath := c_GRU_PATH + clusterName + "/nodes/"
+	nodesPath := c_GRU_PATH + clusterName + "/nodes"
 	resp, err := discovery.Get(nodesPath, discovery.Options{"Recursive": true})
 	if err != nil {
 		log.WithField("err", err).Errorln("Error listing nodes in cluster ", clusterName)
 		return nodes
 	}
 
-	names := getNodeNames(resp, onlyActive, nodesPath)
-	for _, name := range names {
-		newNode := node.Node{}
-		newNode.Name = name
-		newNode.UUID = resp[nodesPath+name+"/uuid"]
-		newNode.Address = resp[nodesPath+name+"/address"]
-		newNode.Active, _ = strconv.ParseBool(resp[nodesPath+name+"/active"])
+	for nodePath, _ := range resp {
+		n := ReadNode(nodePath)
 		if onlyActive {
-			if newNode.Active {
-				nodes = append(nodes, newNode)
+			if n.Active {
+				nodes = append(nodes, n)
 			}
 		} else {
-			nodes = append(nodes, newNode)
+			nodes = append(nodes, n)
 		}
 	}
 
@@ -225,35 +231,8 @@ func GetNodes(clusterName string, onlyActive bool) []node.Node {
 	return nodes
 }
 
-func getNodeNames(resp map[string]string, onlyActive bool, nodesPath string) []string {
-	names := []string{}
-	for key, _ := range resp {
-		path := strings.Split(key, "/")
-		fieldName := path[len(path)-1]
-
-		if fieldName == "nodes" {
-			log.Debugln("Nodes folder empty")
-			return names
-		}
-
-		if fieldName == "name" {
-			nodeName := resp[key]
-			if onlyActive {
-				active, _ := strconv.ParseBool(resp[nodesPath+nodeName+"/active"])
-				if active {
-					names = append(names, nodeName)
-				}
-			} else {
-				names = append(names, nodeName)
-			}
-		}
-	}
-
-	return names
-}
-
 func ListServices(clusterName string) []string {
-	servicesPath := c_GRU_PATH + clusterName + "/" + c_SERVICES_FOLDER
+	servicesPath := c_GRU_PATH + clusterName + "/services"
 	resp, err := discovery.Get(servicesPath, discovery.Options{})
 	if err != nil {
 		log.WithField("err", err).Errorln("Error listing services in cluster ", clusterName)
@@ -264,34 +243,65 @@ func ListServices(clusterName string) []string {
 	for k, _ := range resp {
 		path := strings.Split(k, "/")
 		name := path[len(path)-1]
-		if name == "services" {
-			log.Debugln("Services folder empty")
-			return services
-		}
-
 		services = append(services, name)
 	}
 
 	return services
 }
 
-func UpdateFriendsData(nFriends int) error {
-	log.Debugln("Updating friends data")
-	storage.DeleteAllData(enum.ANALYTICS)
+func WriteNode(nodeData node.Node) {
+	WriteNodeConfig(myCluster.NodePath, nodeData.Configuration)
+	WriteNodeConstraints(myCluster.NodePath, nodeData.Constraints)
+	WriteNodeResources(myCluster.NodePath, nodeData.Resources)
+	WriteNodeActive(myCluster.NodePath, nodeData.Active)
+}
 
-	peers := getAllPeers()
-	log.WithField("peers", len(peers)).Debugln("Number of peers")
-	if len(peers) == 0 {
-		return ErrNoPeers
+func WriteNodeConfig(nodePath string, nodeConfig node.Config) {
+	configPath := nodePath + "/config"
+	err := writeData(configPath, nodeConfig)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error writing node configuration")
+	}
+}
+
+func WriteNodeConstraints(nodePath string, nodeConstraints node.Constraints) {
+	constraintsPath := nodePath + "/constraints"
+	err := writeData(constraintsPath, nodeConstraints)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error writing node constraints")
+	}
+}
+
+func WriteNodeResources(nodePath string, nodeResources node.Resources) {
+	resourcesPath := nodePath + "/resources"
+	err := writeData(resourcesPath, nodeResources)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error writing node resources")
+	}
+}
+
+func WriteNodeActive(nodePath string, active bool) {
+	activePath := nodePath + "/active"
+	var value string
+	if active {
+		value = "true"
+	} else {
+		value = "false"
+	}
+	err := discovery.Set(activePath, value, discovery.Options{})
+	if err != nil {
+		log.WithField("err", err).Errorln("Error writing node active")
 	}
 
-	friends, err := chooseRandomFriends(peers, nFriends)
+}
+
+func writeData(path string, value interface{}) error {
+	var err error
+	data, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
-	log.WithField("friends", friends).Debugln("Friends to connect with")
-
-	err = getFriendsData(friends)
+	err = discovery.Set(path, string(data), discovery.Options{})
 	if err != nil {
 		return err
 	}
@@ -299,65 +309,69 @@ func UpdateFriendsData(nFriends int) error {
 	return nil
 }
 
-func getAllPeers() map[string]string {
-	peers := map[string]string{}
-	nodes := GetNodes(myCluster.Name, true)
-	for _, peer := range nodes {
-		peers[peer.Name] = peer.Address
-	}
+func ReadNode(nodePath string) node.Node {
+	config := node.Config{}
+	constraints := node.Constraints{}
+	resources := node.Resources{}
+	ReadNodeConfig(nodePath, &config)
+	ReadNodeConstraints(nodePath, &constraints)
+	ReadNodeResources(nodePath, &resources)
+	active := ReadNodeActive(nodePath)
 
-	return peers
+	return node.Node{config, constraints, resources, active}
 }
 
-// Is there a more efficient way to do this?
-func chooseRandomFriends(peers map[string]string, n int) (map[string]string, error) {
-	nPeers := len(peers)
-	if nPeers <= 1 {
-		return nil, ErrNoFriends
+func ReadNodeConfig(nodePath string, config *node.Config) {
+	configPath := nodePath + "/config"
+	err := readData(configPath, config)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error reading node configuration")
 	}
-
-	if n <= 0 {
-		return nil, ErrInvalidFriendsNumber
-	} else if n > nPeers {
-		n = nPeers
-	}
-
-	friends := make(map[string]string, n)
-
-	peersKeys := make([]string, 0, len(peers))
-	for peerKey, _ := range peers {
-		peersKeys = append(peersKeys, peerKey)
-	}
-
-	friendsKeys := make([]string, 0, n)
-	indexes := rand.Perm(nPeers)[:n]
-	for _, index := range indexes {
-		if peersKeys[index] != node.Config().UUID {
-			friendsKeys = append(friendsKeys, peersKeys[index])
-		}
-	}
-
-	for _, friendKey := range friendsKeys {
-		friends[friendKey] = peers[friendKey]
-	}
-
-	return friends, nil
 }
 
-func getFriendsData(friends map[string]string) error {
+func ReadNodeConstraints(nodePath string, constraints *node.Constraints) {
+	constraintsPath := nodePath + "/constraints"
+	err := readData(constraintsPath, constraints)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error reading node constraints")
+	}
+}
+
+func ReadNodeResources(nodePath string, resources *node.Resources) {
+	resourcesPath := nodePath + "/resources"
+	err := readData(resourcesPath, resources)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error reading node resources")
+	}
+}
+
+func ReadNodeActive(nodePath string) bool {
+	activePath := nodePath + "/active"
+	resp, err := discovery.Get(activePath, discovery.Options{})
+	if err != nil {
+		log.WithField("err", err).Errorln("Error reading node active")
+		return false
+	}
+	active, err := strconv.ParseBool(resp[activePath])
+	if err != nil {
+		log.WithField("err", err).Errorln("Error parsing node active")
+		return false
+	}
+
+	return active
+}
+
+func readData(path string, dest interface{}) error {
 	var err error
-
-	for friend, address := range friends {
-		friendRoute := address + c_ROUTE_ANALYTICS
-		friendData, err := network.DoRequest("GET", friendRoute, nil)
-		if err != nil {
-			log.WithField("address", address).Debugln("Error retrieving friend stats")
-		}
-		err = storage.StoreData(friend, friendData, enum.ANALYTICS)
-		if err != nil {
-			log.WithField("err", err).Debugln("Error storing friend stats")
-		}
+	resp, err := discovery.Get(path, discovery.Options{})
+	if err != nil {
+		return err
+	}
+	data := resp[path]
+	err = json.Unmarshal([]byte(data), dest)
+	if err != nil {
+		return err
 	}
 
-	return err
+	return nil
 }

@@ -80,6 +80,13 @@ func (p *etcdDiscovery) Get(key string, opt Options) (map[string]string, error) 
 
 	result = exploreNode(resp.Node, result)
 
+	// Clean empty results
+	for k, v := range result {
+		if k == key && v == "" {
+			delete(result, k)
+		}
+	}
+
 	return result, nil
 }
 
@@ -94,6 +101,7 @@ func exploreNode(node *client.Node, result map[string]string) map[string]string 
 			"key":   node.Key,
 			"value": node.Value,
 		}).Debugln("Node entry")
+
 	}
 	return result
 }

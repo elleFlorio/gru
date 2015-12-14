@@ -14,7 +14,11 @@ import (
 
 	"github.com/elleFlorio/gru/cluster"
 	"github.com/elleFlorio/gru/discovery"
+	"github.com/elleFlorio/gru/network"
 )
+
+const c_GRU_PATH = "/gru/"
+const c_NODES_PATH = "nodes/"
 
 type Manager struct {
 	Remote      discovery.Discovery
@@ -105,6 +109,10 @@ func (m *Manager) ParseCommand(cmd string) bool {
 			m.use(cmd)
 		case "list":
 			m.list(cmd)
+		case "set":
+			//TODO
+		case "start":
+			m.start(cmd)
 		default:
 			unknown(cmd)
 		}
@@ -123,17 +131,24 @@ func (m *Manager) list(cmd string) {
 		return
 	}
 
-	var names []string
+	var names map[string]string
 	switch args[1] {
 	case "clusters":
 		names = cluster.ListClusters()
+		fmt.Fprintf(w, "NAME\tUUID\n")
+	case "nodes":
+		if !m.isClusterSet() {
+			return
+		}
+		names = cluster.ListNodes(m.Cluster, false)
+		fmt.Fprintf(w, "NAME\tADDRESS\n")
 	default:
 		fmt.Println("Unrecognized identifier. Please specify clusters/nodes")
 		return
 	}
 
-	for _, name := range names {
-		fmt.Fprintln(w, name)
+	for name, _ := range names {
+		fmt.Fprintf(w, "%s\t%s\n", name, names[name])
 	}
 	w.Flush()
 }
@@ -149,6 +164,102 @@ func (m *Manager) use(cmd string) {
 	fmt.Printf("Using cluster %s\n", d)
 }
 
+func (m *Manager) set(cmd string) {
+	// args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
+	// who := args[1]
+	// what := args[2]
+	// to_what := args[3:]
+
+	// if m.Cluster == "" {
+	// 	fmt.Println("Cluster not set. Please set it with 'use' command")
+	// 	return
+	// }
+	// nodes := cluster.ListNodes(m.Cluster, false)
+	// services := cluster.ListServices(m.Cluster)
+
+	// switch what {
+	// case "base-services":
+	// 	if address, ok := nodes[who]; !ok {
+	// 		fmt.Println("Unrecognized node ", who)
+	// 	}
+	// 	ok, notValid := checkValidServices(to_what, services)
+	// 	if !ok {
+	// 		fmt.Println("Services are not valid:")
+	// 		for _, name := range notValid {
+	// 			fmt.Println(name)
+	// 		}
+	// 		return
+	// 	}
+	// 	key := c_GRU_PATH + m.Cluster + "/" + c_NODES_PATH + who + "/constraints/baseservices"
+	// 	value := to_what
+	// 	opt := discovery.Options{}
+	// 	discovery.Set(key, value, opt)
+	// default:
+	// 	fmt.Println("Unrecognized parameter ", what)
+	// }
+
+}
+
+// func checkValidServices(services []string, list []string) (bool, []string) {
+// 	check := true
+// 	notValid := []string{}
+// 	for _, s1 := range services {
+// 		valid := false
+// 		for _, s2 := range list {
+// 			valid = valid || (s1 == s2)
+// 		}
+// 		if valid == false {
+// 			notValid = append(notValid, s1)
+// 		}
+// 		check = check && valid
+// 	}
+
+// 	return check, notValid
+// }
+
+func (m *Manager) start(cmd string) {
+	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
+	if len(args) < 2 {
+		fmt.Println("not enough arguments to 'start' command")
+		return
+	}
+
+	if !m.isClusterSet() {
+		return
+	}
+
+	var err error
+	nodes := cluster.ListNodes(m.Cluster, false)
+	if args[1] == "all" {
+		for name, addr := range nodes {
+			err = network.SendStartCommand(addr)
+			if err != nil {
+				fmt.Println("Error sending start command to node ", name)
+			}
+		}
+	} else {
+		for _, node := range args[1:] {
+			if addr, ok := nodes[node]; ok {
+				err = network.SendStartCommand(addr)
+				if err != nil {
+					fmt.Println("Error sending start command to node ", node)
+				}
+			} else {
+				fmt.Println("Cannot get address of node ", node)
+			}
+		}
+	}
+
+}
+
 func unknown(cmd string) {
 	fmt.Printf("Unknown command %q.\n", cmd)
+}
+
+func (m *Manager) isClusterSet() bool {
+	isSet := m.Cluster != ""
+	if !isSet {
+		fmt.Println("Cluster not set.")
+	}
+	return isSet
 }

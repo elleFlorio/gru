@@ -4,14 +4,14 @@ import (
 	"github.com/elleFlorio/gru/autonomic"
 )
 
-var config GruAgentConfig
+var agent GruAgentConfig
 
 func Initialize(agentConfig GruAgentConfig) {
-	config = agentConfig
+	agent = agentConfig
 }
 
-func Config() GruAgentConfig {
-	return config
+func GetAgent() GruAgentConfig {
+	return agent
 }
 
 func Run() {
@@ -20,7 +20,7 @@ func Run() {
 
 func startAutonomicManager() {
 	autonomic.Initialize(
-		config.Autonomic.LoopTimeInterval,
-		config.Autonomic.MaxFriends)
+		agent.Autonomic.LoopTimeInterval,
+		agent.Autonomic.MaxFriends)
 	autonomic.RunLoop()
 }

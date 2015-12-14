@@ -104,19 +104,8 @@ func getConfig(configPath string, config interface{}) {
 	}
 }
 
-func nameExist(nodeName string, clusterName string) bool {
-	names := cluster.ListNodes(clusterName, false)
-	log.Debugln("Nodes list: ", names)
-	for _, name := range names {
-		if name == nodeName {
-			return true
-		}
-	}
-	return false
-}
-
 func initializeStorage() {
-	_, err := storage.New(agent.Config().Storage.StorageService)
+	_, err := storage.New(agent.GetAgent().Storage.StorageService)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"status":  "warning",
@@ -129,7 +118,7 @@ func initializeStorage() {
 }
 
 func initializeMetricSerivice() {
-	_, err := metric.New(agent.Config().Metric.MetricService, agent.Config().Metric.Configuration)
+	_, err := metric.New(agent.GetAgent().Metric.MetricService, agent.GetAgent().Metric.Configuration)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"status":  "warning",
@@ -142,7 +131,7 @@ func initializeMetricSerivice() {
 }
 
 func initializeContainerEngine() {
-	err := container.Connect(agent.Config().Docker.DaemonUrl, agent.Config().Docker.DaemonTimeout)
+	err := container.Connect(agent.GetAgent().Docker.DaemonUrl, agent.GetAgent().Docker.DaemonTimeout)
 	if err != nil {
 		log.WithField("err", err).Fatalln("Error initializing container engine")
 	}
@@ -160,6 +149,17 @@ func initializeNode(nodeName string, clusterName string) {
 	}
 	log.Debugln("Node name: ", nodeName)
 	node.CreateNode(nodeName)
+}
+
+func nameExist(nodeName string, clusterName string) bool {
+	names := cluster.ListNodes(clusterName, false)
+	log.Debugln("Nodes list: ", names)
+	for name, _ := range names {
+		if name == nodeName {
+			return true
+		}
+	}
+	return false
 }
 
 func registerToCluster(name string) {
