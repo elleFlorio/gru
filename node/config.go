@@ -1,12 +1,17 @@
 package node
 
 type Node struct {
-	UUID        string      `json:"uuid"`
-	Name        string      `json:"name"`
-	Address     string      `json:"address"`
-	Active      bool        `json:"active"`
-	Constraints Constraints `json:"constraints"`
-	Resources   Resources   `json:resources`
+	Configuration Config      `json:"configuration"`
+	Constraints   Constraints `json:"constraints"`
+	Resources     Resources   `json:resources`
+	Active        bool        `json:"active"`
+}
+
+type Config struct {
+	UUID    string `json:"uuid"`
+	Name    string `json:"name"`
+	Address string `json:"address"`
+	Cluster string `json:"cluster"`
 }
 
 // Is this still necessary?

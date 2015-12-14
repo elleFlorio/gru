@@ -150,7 +150,7 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 			cpu = 0
 		} else {
 			// "100 * cpu" should produce values in [0, 100]
-			cpu = (instDelta / sysDelta) * float64(node.Config().Resources.TotalCpus)
+			cpu = (instDelta / sysDelta) * float64(node.GetNode().Resources.TotalCpus)
 		}
 		sum += cpu
 	}
@@ -204,7 +204,7 @@ func computeServiceMemory(name string, stats *GruStats) {
 
 func computeInstaceMemPerc(instMem []float64, limit string) float64 {
 	var err error
-	totalMemory := node.Config().Resources.TotalMemory
+	totalMemory := node.GetNode().Resources.TotalMemory
 	sum := 0.0
 	avg := 0.0
 	limitBytes := totalMemory

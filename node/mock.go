@@ -5,6 +5,12 @@ import (
 )
 
 func CreateMockNode() Node {
+	mockConfiguration := Config{
+		Name:    "topolino",
+		UUID:    "abcdefghi",
+		Address: "http://localhost:8080",
+	}
+
 	mockConstraints := Constraints{
 		CpuMin: 0.2,
 		CpuMax: 0.8,
@@ -18,9 +24,10 @@ func CreateMockNode() Node {
 	}
 
 	mockNode := Node{
-		UUID:        "abcdefghi",
-		Constraints: mockConstraints,
-		Resources:   mockResources,
+		Configuration: mockConfiguration,
+		Constraints:   mockConstraints,
+		Resources:     mockResources,
+		Active:        false,
 	}
 
 	return mockNode
@@ -28,7 +35,9 @@ func CreateMockNode() Node {
 
 func createMockConfigFileNode() string {
 	mockConfigFileNode := `{
-		"Name":"mockNode",
+		"Configuration":{
+			"Name":"mockNode",
+			},
 		"Constraints":{
 			"CpuMax":0.8,
 			"CpuMin":0.2

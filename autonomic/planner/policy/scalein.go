@@ -28,7 +28,7 @@ func (p *ScaleIn) Weight(name string, analytics analyzer.GruAnalytics) float64 {
 		return 0.0
 	}
 
-	baseServices := node.Config().Constraints.BaseServices
+	baseServices := node.GetNode().Constraints.BaseServices
 	if (inst_pen+inst_run) <= 1 && contains(baseServices, name) {
 		return 0.0
 	}

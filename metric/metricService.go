@@ -76,7 +76,7 @@ func Metrics() GruMetric {
 func UpdateMetrics() {
 	var err error
 	metrics = newMetrics()
-	metrics.Node.UUID = node.Config().UUID
+	metrics.Node.UUID = node.GetNode().Configuration.UUID
 
 	for _, name := range service.List() {
 		srv, _ := service.GetServiceByName(name)

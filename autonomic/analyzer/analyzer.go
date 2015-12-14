@@ -63,10 +63,10 @@ func updateNodeResources() {
 	}
 
 	log.WithFields(log.Fields{
-		"totalcpu": node.Config().Resources.TotalCpus,
-		"usedcpu":  node.Config().Resources.UsedCpu,
-		"totalmem": node.Config().Resources.TotalMemory,
-		"usedmem":  node.Config().Resources.UsedMemory,
+		"totalcpu": node.GetNode().Resources.TotalCpus,
+		"usedcpu":  node.GetNode().Resources.UsedCpu,
+		"totalmem": node.GetNode().Resources.TotalMemory,
+		"usedmem":  node.GetNode().Resources.UsedMemory,
 	}).Debugln("Updated node resources")
 }
 
@@ -143,10 +143,10 @@ func computeLoad(maxRt float64, avgRt float64) float64 {
 func resourcesAvailable(name string) float64 {
 	var err error
 
-	nodeMem := node.Config().Resources.TotalMemory
-	nodeCpu := node.Config().Resources.TotalCpus
-	nodeUsedMem := node.Config().Resources.UsedMemory
-	nodeUsedCpu := node.Config().Resources.UsedCpu
+	nodeMem := node.GetNode().Resources.TotalMemory
+	nodeCpu := node.GetNode().Resources.TotalCpus
+	nodeUsedMem := node.GetNode().Resources.UsedMemory
+	nodeUsedCpu := node.GetNode().Resources.UsedCpu
 
 	srv, _ := service.GetServiceByName(name)
 	srvCpu := getNumberOfCpuFromString(srv.Configuration.CpusetCpus)
@@ -217,10 +217,10 @@ func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
 }
 
 func systemResourcesAvailable() float64 {
-	totalCpu := float64(node.Config().Resources.TotalCpus)
-	totalMemory := float64(node.Config().Resources.TotalMemory)
-	usedCpu := float64(node.Config().Resources.UsedCpu)
-	usedMemory := float64(node.Config().Resources.UsedMemory)
+	totalCpu := float64(node.GetNode().Resources.TotalCpus)
+	totalMemory := float64(node.GetNode().Resources.TotalMemory)
+	usedCpu := float64(node.GetNode().Resources.UsedCpu)
+	usedMemory := float64(node.GetNode().Resources.UsedMemory)
 
 	cpuRatio := usedCpu / totalCpu
 	memRatio := usedMemory / totalMemory

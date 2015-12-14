@@ -1,8 +1,6 @@
 package node
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"strings"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
@@ -13,24 +11,7 @@ import (
 	"github.com/elleFlorio/gru/utils"
 )
 
-var config Node
-
-func LoadNodeConfig(filename string) error {
-	config.UUID, _ = utils.GenerateUUID()
-
-	tmp, err := ioutil.ReadFile(filename)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error reading node configuration file")
-		return err
-	}
-	err = json.Unmarshal(tmp, &config)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error unmarshaling node configuration file")
-		return err
-	}
-
-	return nil
-}
+var node Node
 
 func CreateNode(name string) {
 	node_UUID, err := utils.GenerateUUID()
@@ -39,11 +20,10 @@ func CreateNode(name string) {
 	}
 	node_address := "http://" + network.Config().IpAddress + ":" + network.Config().Port
 
-	config = Node{
-		UUID:    node_UUID,
-		Name:    name,
-		Address: node_address,
-		Active:  false,
+	config := Config{node_UUID, name, node_address, ""}
+	node = Node{
+		Configuration: config,
+		Active:        false,
 	}
 
 	computeTotalResources()
@@ -55,12 +35,8 @@ func computeTotalResources() {
 		log.WithField("err", err).Errorln("Error reading total resources")
 		return
 	}
-	config.Resources.TotalCpus = info.NCPU
-	config.Resources.TotalMemory = info.MemTotal
-}
-
-func ActivateNode() {
-	config.Active = true
+	node.Resources.TotalCpus = info.NCPU
+	node.Resources.TotalMemory = info.MemTotal
 }
 
 func UsedCpus() (int64, error) {
@@ -82,7 +58,7 @@ func UsedCpus() (int64, error) {
 		}
 	}
 
-	config.Resources.UsedCpu = cpus
+	node.Resources.UsedCpu = cpus
 
 	return cpus, nil
 }
@@ -104,15 +80,19 @@ func UsedMemory() (int64, error) {
 		memory += cData.Config.Memory
 	}
 
-	config.Resources.UsedMemory = memory
+	node.Resources.UsedMemory = memory
 
 	return memory, nil
 }
 
-func Config() Node {
-	return config
+func GetNode() Node {
+	return node
 }
 
-func UpdateNodeConfig(newNode Node) {
-	config = newNode
+func ToggleActiveNode() {
+	node.Active = !node.Active
+}
+
+func UpdateNode(newNode Node) {
+	node = newNode
 }

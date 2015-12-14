@@ -9,7 +9,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/executor"
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
-	"github.com/elleFlorio/gru/cluster"
+	"github.com/elleFlorio/gru/friends"
 	"github.com/elleFlorio/gru/metric"
 )
 
@@ -34,7 +34,7 @@ func RunLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			err := cluster.UpdateFriendsData(manager.MaxFrineds)
+			err := friends.UpdateFriendsData(manager.MaxFrineds)
 			if err != nil {
 				log.WithField("err", err).Debugln("Cannot update friends data")
 			}
