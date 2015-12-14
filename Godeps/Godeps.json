@@ -63,6 +63,10 @@
 			"Rev": "b4044121a7425712565d73a2074304309e7ca2c7"
 		},
 		{
+			"ImportPath": "github.com/peterh/liner",
+			"Rev": "4d47685ab2fd2dbb46c66b831344d558bc4be5b9"
+		},
+		{
 			"ImportPath": "github.com/samalba/dockerclient",
 			"Rev": "12570e600d71374233e5056ba315f657ced496c7"
 		},

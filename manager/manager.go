@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"text/tabwriter"
 
-	"github.com/peterh/liner"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/peterh/liner"
 
 	"github.com/elleFlorio/gru/cluster"
 	"github.com/elleFlorio/gru/discovery"
