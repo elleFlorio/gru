@@ -11,13 +11,25 @@ const c_COMMAND_ROUTE = "/gru/v1/commands"
 type Command struct {
 	Name   string
 	Target string
+	Object interface{}
 }
 
-func SendStartCommand(target string) error {
-	cmd := Command{"start", "agent"}
-	err := sendCommand(target, cmd)
+func SendStartCommand(dest string) error {
+	cmd := Command{"start", "agent", nil}
+	err := sendCommand(dest, cmd)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error sending command to target ", target)
+		log.WithField("err", err).Errorln("Error sending command to destination ", dest)
+		return err
+	}
+
+	return nil
+}
+
+func SendUpdateCommand(dest string, target string, obj interface{}) error {
+	cmd := Command{"update", target, obj}
+	err := sendCommand(dest, cmd)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error sending command to destination ", dest)
 		return err
 	}
 

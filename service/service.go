@@ -2,64 +2,38 @@ package service
 
 import (
 	"errors"
+
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+
+	cfg "github.com/elleFlorio/gru/configuration"
 )
 
 const c_INFINITE = 1000000000
 
 var (
-	services         []Service
 	ErrNoSuchService = errors.New("Service does not exists")
 )
 
-// func LoadServices(path string) error {
-// 	folder, err := ioutil.ReadDir(path)
-// 	if err != nil {
-// 		log.Errorln("Error opening services folder", err.Error())
-// 		return err
-// 	}
-
-// 	for _, file := range folder {
-// 		var service Service
-// 		filep := path + string(filepath.Separator) + file.Name()
-// 		log.Debugln("reading file ", filep)
-// 		tmp, _ := ioutil.ReadFile(filep)
-// 		err = json.Unmarshal(tmp, &service)
-// 		if err != nil {
-// 			log.WithFields(log.Fields{
-// 				"file": file.Name(),
-// 				"err":  err,
-// 			}).Errorln("Error unmarshaling service file")
-// 		} else {
-// 			checkService(&service)
-// 			services = append(services, service)
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-func Initialize(list []Service) {
-	for i := 0; i < len(list); i++ {
-		checkService(&list[i])
+func CheckServices(services []cfg.Service) {
+	for i := 0; i < len(services); i++ {
+		checkService(&services[i])
 	}
-	services = list
 }
 
-func checkService(service *Service) {
+func checkService(service *cfg.Service) {
 	name := service.Name
 	checkConstraints(name, &service.Constraints)
-	checkConfiguration(name, &service.Configuration)
+	checkConfiguration(name, &service.Docker)
 }
 
-func checkConstraints(name string, cnstrnts *Constraints) {
+func checkConstraints(name string, cnstrnts *cfg.ServiceConstraints) {
 	if cnstrnts.MaxRespTime == 0 {
 		log.WithField("service", name).Warnln("Max Response Time is 0. Setting it to 'infinite'")
 		cnstrnts.MaxRespTime = c_INFINITE
 	}
 }
 
-func checkConfiguration(name string, conf *Config) {
+func checkConfiguration(name string, conf *cfg.ServiceDocker) {
 	if conf.Memory == "" {
 		log.WithField("service", name).Warnln("Memory limit not set. Service will use all the memory available")
 	}
@@ -71,6 +45,7 @@ func checkConfiguration(name string, conf *Config) {
 
 func List() []string {
 	names := []string{}
+	services := cfg.GetServices()
 
 	for _, service := range services {
 		names = append(names, service.Name)
@@ -79,31 +54,29 @@ func List() []string {
 	return names
 }
 
-func GetServices() []Service {
-	return services
-}
+func GetServiceByType(sType string) []cfg.Service {
+	byType := make([]cfg.Service, 0)
+	services := cfg.GetServices()
 
-func GetServiceByType(sType string) []Service {
-	byType := make([]Service, 0)
-
-	for _, service := range services {
-		if service.Type == sType {
-			byType = append(byType, service)
+	for i := 0; i < len(services); i++ {
+		if services[i].Type == sType {
+			byType = append(byType, services[i])
 		}
 	}
 
 	return byType
 }
 
-func GetServiceByName(sName string) (*Service, error) {
+func GetServiceByName(sName string) (*cfg.Service, error) {
 	return getServiceBy("Name", sName)
 }
 
-func GetServiceByImage(sImg string) (*Service, error) {
+func GetServiceByImage(sImg string) (*cfg.Service, error) {
 	return getServiceBy("Image", sImg)
 }
 
-func getServiceBy(field string, value string) (*Service, error) {
+func getServiceBy(field string, value string) (*cfg.Service, error) {
+	services := cfg.GetServices()
 	for i := 0; i < len(services); i++ {
 		switch field {
 		case "Name":
@@ -118,33 +91,4 @@ func getServiceBy(field string, value string) (*Service, error) {
 	}
 
 	return nil, ErrNoSuchService
-}
-
-func AddServices(newServices []Service) {
-	services = append(services, newServices...)
-}
-
-func RemoveServices(rmServices []string) {
-	indexes := make([]int, len(rmServices), len(rmServices))
-
-	for i, rmService := range rmServices {
-		for j, service := range services {
-			if service.Name == rmService {
-				indexes[i] = j
-			}
-		}
-	}
-
-	for _, index := range indexes {
-		services = append(services[:index], services[index+1:]...)
-	}
-}
-
-func UpdateServices(newServices []Service) {
-	CleanServices()
-	services = newServices
-}
-
-func CleanServices() {
-	services = make([]Service, 0)
 }

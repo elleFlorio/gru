@@ -1,6 +1,7 @@
 package metric
 
 import (
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -25,7 +26,7 @@ func createInfluxMockConfig() map[string]interface{} {
 }
 
 func CreateMockMetrics() GruMetric {
-	service.UpdateServices(service.CreateMockServices())
+	cfg.SetServices(service.CreateMockServices())
 	mockMetrics := newMetrics()
 	return mockMetrics
 }

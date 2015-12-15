@@ -8,7 +8,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
-	"github.com/elleFlorio/gru/node"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -76,7 +76,7 @@ func Metrics() GruMetric {
 func UpdateMetrics() {
 	var err error
 	metrics = newMetrics()
-	metrics.Node.UUID = node.GetNode().Configuration.UUID
+	metrics.Node.UUID = cfg.GetNodeConfig().UUID
 
 	for _, name := range service.List() {
 		srv, _ := service.GetServiceByName(name)

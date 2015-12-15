@@ -3,7 +3,7 @@ package monitor
 import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
 
-	"github.com/elleFlorio/gru/service"
+	cfg "github.com/elleFlorio/gru/configuration"
 )
 
 type GruStats struct {
@@ -13,11 +13,11 @@ type GruStats struct {
 }
 
 type ServiceStats struct {
-	Instances service.InstanceStatus `json:"instances"`
-	Events    EventStats             `json:"events"`
-	Cpu       CpuStats               `json:"cpu"`
-	Memory    MemoryStats            `json:memory`
-	Metrics   MetricStats            `json:metrics`
+	Instances cfg.ServiceStatus `json:"instances"`
+	Events    EventStats        `json:"events"`
+	Cpu       CpuStats          `json:"cpu"`
+	Memory    MemoryStats       `json:memory`
+	Metrics   MetricStats       `json:metrics`
 }
 
 type EventStats struct {
@@ -45,8 +45,8 @@ type InstanceStats struct {
 }
 
 type SystemStats struct {
-	Instances service.InstanceStatus `json:"instances"`
-	Cpu       float64                `json:"cpu"`
+	Instances cfg.ServiceStatus `json:"instances"`
+	Cpu       float64           `json:"cpu"`
 }
 
 type statsHistory struct {

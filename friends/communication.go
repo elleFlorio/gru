@@ -7,9 +7,9 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/cluster"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/network"
-	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/storage"
 )
 
@@ -79,7 +79,7 @@ func chooseRandomFriends(peers map[string]string, n int) (map[string]string, err
 	friendsKeys := make([]string, 0, n)
 	indexes := rand.Perm(nPeers)[:n]
 	for _, index := range indexes {
-		if peersKeys[index] != node.GetNode().Configuration.Name {
+		if peersKeys[index] != cfg.GetNodeConfig().Name {
 			friendsKeys = append(friendsKeys, peersKeys[index])
 		}
 	}

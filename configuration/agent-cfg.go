@@ -1,6 +1,6 @@
-package agent
+package configuration
 
-type GruAgentConfig struct {
+type Agent struct {
 	Docker    DockerConfig    `json:"docker"`
 	Autonomic AutonomicConfig `json:"autonomic"`
 	Storage   StorageConfig   `json:"storage"`

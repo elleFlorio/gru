@@ -9,6 +9,7 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/monitor"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
@@ -63,10 +64,10 @@ func updateNodeResources() {
 	}
 
 	log.WithFields(log.Fields{
-		"totalcpu": node.GetNode().Resources.TotalCpus,
-		"usedcpu":  node.GetNode().Resources.UsedCpu,
-		"totalmem": node.GetNode().Resources.TotalMemory,
-		"usedmem":  node.GetNode().Resources.UsedMemory,
+		"totalcpu": cfg.GetNodeResources().TotalCpus,
+		"usedcpu":  cfg.GetNodeResources().UsedCpu,
+		"totalmem": cfg.GetNodeResources().TotalMemory,
+		"usedmem":  cfg.GetNodeResources().UsedMemory,
 	}).Debugln("Updated node resources")
 }
 
@@ -143,21 +144,21 @@ func computeLoad(maxRt float64, avgRt float64) float64 {
 func resourcesAvailable(name string) float64 {
 	var err error
 
-	nodeMem := node.GetNode().Resources.TotalMemory
-	nodeCpu := node.GetNode().Resources.TotalCpus
-	nodeUsedMem := node.GetNode().Resources.UsedMemory
-	nodeUsedCpu := node.GetNode().Resources.UsedCpu
+	nodeMem := cfg.GetNodeResources().TotalMemory
+	nodeCpu := cfg.GetNodeResources().TotalCpus
+	nodeUsedMem := cfg.GetNodeResources().UsedMemory
+	nodeUsedCpu := cfg.GetNodeResources().UsedCpu
 
 	srv, _ := service.GetServiceByName(name)
-	srvCpu := getNumberOfCpuFromString(srv.Configuration.CpusetCpus)
+	srvCpu := getNumberOfCpuFromString(srv.Docker.CpusetCpus)
 	log.WithFields(log.Fields{
 		"service": name,
 		"cpus":    srvCpu,
 	}).Debugln("Service cpu resources")
 
 	var srvMem int64
-	if srv.Configuration.Memory != "" {
-		srvMem, err = utils.RAMInBytes(srv.Configuration.Memory)
+	if srv.Docker.Memory != "" {
+		srvMem, err = utils.RAMInBytes(srv.Docker.Memory)
 		if err != nil {
 			log.WithField("err", err).Warnln("Cannot convert service RAM in Bytes.")
 			return 0.0
@@ -217,10 +218,10 @@ func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
 }
 
 func systemResourcesAvailable() float64 {
-	totalCpu := float64(node.GetNode().Resources.TotalCpus)
-	totalMemory := float64(node.GetNode().Resources.TotalMemory)
-	usedCpu := float64(node.GetNode().Resources.UsedCpu)
-	usedMemory := float64(node.GetNode().Resources.UsedMemory)
+	totalCpu := float64(cfg.GetNodeResources().TotalCpus)
+	totalMemory := float64(cfg.GetNodeResources().TotalMemory)
+	usedCpu := float64(cfg.GetNodeResources().UsedCpu)
+	usedMemory := float64(cfg.GetNodeResources().UsedMemory)
 
 	cpuRatio := usedCpu / totalCpu
 	memRatio := usedMemory / totalMemory
@@ -320,7 +321,7 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 				// I don't want to merge instance status. This may
 				// cause some problems of synchronization with
 				// other peers
-				active[0].Instances = service.InstanceStatus{}
+				active[0].Instances = cfg.ServiceStatus{}
 			}
 			avg[name] = active[0]
 		}

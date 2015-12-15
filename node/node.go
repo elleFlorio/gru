@@ -5,13 +5,12 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/network"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/utils"
 )
-
-var node Node
 
 func CreateNode(name string) {
 	node_UUID, err := utils.GenerateUUID()
@@ -19,12 +18,12 @@ func CreateNode(name string) {
 		log.WithField("err", err).Errorln("Error generating node UUID")
 	}
 	node_address := "http://" + network.Config().IpAddress + ":" + network.Config().Port
-
-	config := Config{node_UUID, name, node_address, ""}
-	node = Node{
+	config := cfg.NodeConfig{node_UUID, name, node_address, "", ""}
+	node := cfg.Node{
 		Configuration: config,
 		Active:        false,
 	}
+	cfg.SetNode(node)
 
 	computeTotalResources()
 }
@@ -35,8 +34,8 @@ func computeTotalResources() {
 		log.WithField("err", err).Errorln("Error reading total resources")
 		return
 	}
-	node.Resources.TotalCpus = info.NCPU
-	node.Resources.TotalMemory = info.MemTotal
+	cfg.GetNodeResources().TotalCpus = info.NCPU
+	cfg.GetNodeResources().TotalMemory = info.MemTotal
 }
 
 func UsedCpus() (int64, error) {
@@ -58,7 +57,7 @@ func UsedCpus() (int64, error) {
 		}
 	}
 
-	node.Resources.UsedCpu = cpus
+	cfg.GetNodeResources().UsedCpu = cpus
 
 	return cpus, nil
 }
@@ -80,19 +79,7 @@ func UsedMemory() (int64, error) {
 		memory += cData.Config.Memory
 	}
 
-	node.Resources.UsedMemory = memory
+	cfg.GetNodeResources().UsedMemory = memory
 
 	return memory, nil
-}
-
-func GetNode() Node {
-	return node
-}
-
-func ToggleActiveNode() {
-	node.Active = !node.Active
-}
-
-func UpdateNode(newNode Node) {
-	node = newNode
 }

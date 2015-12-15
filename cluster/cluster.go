@@ -1,65 +1,58 @@
 package cluster
 
 import (
-	"encoding/json"
 	"errors"
-	"strconv"
 	"strings"
 	"time"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/discovery"
-	"github.com/elleFlorio/gru/node"
 )
 
 // etcd
-const c_GRU_PATH = "/gru/"
-const c_NODES_FOLDER = "nodes/"
-const c_CONFIG_FOLDER = "config/"
-const c_SERVICES_FOLDER = "services/"
+const c_GRU_REMOTE = "/gru/"
+const c_NODES_REMOTE = "nodes/"
+const c_CONFIG_REMOTE = "config/"
+const c_SERVICES_REMOTE = "services/"
 const c_TTL = 5
 
 type Cluster struct {
-	UUID        string
-	Name        string
-	ClusterPath string
-	NodePath    string
+	UUID   string
+	Name   string
+	Remote string
 }
 
 var (
 	myCluster Cluster
 
-	ErrNoClusterId          error = errors.New("Cannot find cluster ID")
-	ErrNoCluster            error = errors.New("Node belongs to no cluster")
-	ErrInvalidFriendsNumber error = errors.New("Friends number should be > 0")
-	ErrInvalidDataType      error = errors.New("Invalid data type to retrieve")
-	ErrNoPeers              error = errors.New("There are no peers to reach")
-	ErrNoFriends            error = errors.New("There are no friends to reach")
+	ErrNoClusterId error = errors.New("Cannot find cluster ID")
+	ErrNoCluster   error = errors.New("Node belongs to no cluster")
 )
 
 func RegisterCluster(name string, id string) {
 	var err error
-	err = discovery.Register(c_GRU_PATH+name+"/uuid", id)
+	err = discovery.Register(c_GRU_REMOTE+name+"/uuid", id)
 	if err != nil {
 		log.Errorln("Error registering cluster")
 	}
 	log.Debugln("Created cluster forder: ", name)
 
 	opt := discovery.Options{"Dir": true}
-	err = discovery.Set(c_GRU_PATH+name+"/"+c_NODES_FOLDER, "", opt)
+	err = discovery.Set(c_GRU_REMOTE+name+"/"+c_NODES_REMOTE, "", opt)
 	if err != nil {
 		log.Errorln("Error creating nodes folder")
 	}
 	log.Debugln("Created nodes folder")
 
-	err = discovery.Set(c_GRU_PATH+name+"/"+c_SERVICES_FOLDER, "", opt)
+	err = discovery.Set(c_GRU_REMOTE+name+"/"+c_SERVICES_REMOTE, "", opt)
 	if err != nil {
 		log.Errorln("Error creating services folder")
 	}
 	log.Debugln("Created services folder")
 
-	err = discovery.Set(c_GRU_PATH+name+"/"+c_CONFIG_FOLDER, "empty", discovery.Options{})
+	err = discovery.Set(c_GRU_REMOTE+name+"/"+c_CONFIG_REMOTE, "empty", discovery.Options{})
 	if err != nil {
 		log.Errorln("Error creating config key")
 	}
@@ -67,19 +60,23 @@ func RegisterCluster(name string, id string) {
 }
 
 func JoinCluster(name string) error {
-	key := c_GRU_PATH + name + "/uuid"
+	key := c_GRU_REMOTE + name + "/uuid"
 	data, err := discovery.Get(key, discovery.Options{})
 	if err != nil {
 		log.WithField("err", err).Errorln("Error getting cluster uuid")
 		return err
 	}
+
 	if id, ok := data[key]; ok {
-		initCluster(name, id, c_GRU_PATH+name, c_GRU_PATH+name+"/"+c_NODES_FOLDER+node.GetNode().Configuration.Name)
+		initMyCluster(name, id, c_GRU_REMOTE+name)
+
 		err := createNodeFolder()
 		if err != nil {
 			return err
 		}
+
 		go keepAlive(c_TTL)
+
 	} else {
 		return ErrNoClusterId
 	}
@@ -87,12 +84,11 @@ func JoinCluster(name string) error {
 	return nil
 }
 
-func initCluster(name string, id string, clusterPath string, nodePath string) {
+func initMyCluster(name string, id string, remote string) {
 	myCluster = Cluster{
 		id,
 		name,
-		clusterPath,
-		nodePath,
+		remote,
 	}
 }
 
@@ -102,7 +98,12 @@ func createNodeFolder() error {
 		"TTL": time.Second * time.Duration(c_TTL),
 		"Dir": true,
 	}
-	err = discovery.Set(myCluster.NodePath, "", opt)
+
+	config := cfg.GetNodeConfig()
+	remote := c_GRU_REMOTE + myCluster.Name + "/" + c_NODES_REMOTE + config.Name
+	config.Remote = remote
+
+	err = discovery.Set(remote, "", opt)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error creating node folder")
 		return err
@@ -130,9 +131,12 @@ func updateNodeFolder(ttl int) error {
 		"Dir":       true,
 		"PrevExist": true,
 	}
-	err := discovery.Set(myCluster.NodePath, "", opt)
-	WriteNodeConfig(myCluster.NodePath, node.GetNode().Configuration)
-	WriteNodeActive(myCluster.NodePath, node.GetNode().Active)
+	remote := cfg.GetNodeConfig().Remote
+	err := discovery.Set(remote, "", opt)
+	cfg.WriteNodeConfig(remote, cfg.GetNode().Configuration)
+	cfg.WriteNodeConstraints(remote, cfg.GetNode().Constraints)
+	cfg.WriteNodeResources(remote, cfg.GetNode().Resources)
+	cfg.WriteNodeActive(remote, cfg.GetNode().Active)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error updating node folder")
 		return err
@@ -150,7 +154,7 @@ func GetMyCluster() (Cluster, error) {
 }
 
 func ListClusters() map[string]string {
-	resp, err := discovery.Get(c_GRU_PATH, discovery.Options{})
+	resp, err := discovery.Get(c_GRU_REMOTE, discovery.Options{})
 	if err != nil {
 		log.WithField("err", err).Errorln("Error listing clusters")
 		return map[string]string{}
@@ -158,20 +162,16 @@ func ListClusters() map[string]string {
 	clusters := []string{}
 	for k, _ := range resp {
 		tokens := strings.Split(k, "/")
-		if len(tokens) != 3 {
-			// No clusters
-			return map[string]string{}
-		}
 		clusters = append(clusters, tokens[2])
 	}
 
 	clustersUuid := make(map[string]string, len(clusters))
 	for _, name := range clusters {
-		resp, err := discovery.Get(c_GRU_PATH+name+"/uuid", discovery.Options{})
+		resp, err := discovery.Get(c_GRU_REMOTE+name+"/uuid", discovery.Options{})
 		if err != nil {
 			log.Error("Error getting UUID of cluster ", name)
 		}
-		clustersUuid[name] = resp[c_GRU_PATH+name+"/uuid"]
+		clustersUuid[name] = resp[c_GRU_REMOTE+name+"/uuid"]
 	}
 
 	return clustersUuid
@@ -179,51 +179,29 @@ func ListClusters() map[string]string {
 }
 
 func ListNodes(clusterName string, onlyActive bool) map[string]string {
-	log.Debugln("Listing nodes")
-	nodesPath := c_GRU_PATH + clusterName + "/nodes"
-
-	resp, err := discovery.Get(nodesPath, discovery.Options{})
-	if err != nil {
-		log.WithField("err", err).Errorln("Error listing nodes in cluster ", clusterName)
-		return map[string]string{}
-	}
-
-	nameAddress := make(map[string]string, len(resp))
-	for nodePath, _ := range resp {
-		log.Debugln("Reading configuration of node ", nodePath)
-		config := &node.Config{}
-		ReadNodeConfig(nodePath, config)
-		if onlyActive {
-			log.Debugln("Checking if node is active")
-			if ReadNodeActive(nodePath) {
-				nameAddress[config.Name] = config.Address
-			}
-		} else {
-			nameAddress[config.Name] = config.Address
-		}
+	nodes := GetNodes(clusterName, onlyActive)
+	nameAddress := make(map[string]string, len(nodes))
+	for _, node := range nodes {
+		nameAddress[node.Configuration.Name] = node.Configuration.Address
 	}
 
 	return nameAddress
 }
 
-func GetNodes(clusterName string, onlyActive bool) []node.Node {
-	nodes := []node.Node{}
-	nodesPath := c_GRU_PATH + clusterName + "/nodes"
-	resp, err := discovery.Get(nodesPath, discovery.Options{"Recursive": true})
-	if err != nil {
-		log.WithField("err", err).Errorln("Error listing nodes in cluster ", clusterName)
-		return nodes
-	}
+func GetNodes(clusterName string, onlyActive bool) []cfg.Node {
+	remote := c_GRU_REMOTE + clusterName + "/nodes"
+	nodes := cfg.ReadNodes(remote)
 
-	for nodePath, _ := range resp {
-		n := ReadNode(nodePath)
-		if onlyActive {
-			if n.Active {
-				nodes = append(nodes, n)
+	if onlyActive {
+		active := []cfg.Node{}
+		for _, node := range nodes {
+			if node.Active {
+				active = append(active, node)
 			}
-		} else {
-			nodes = append(nodes, n)
 		}
+		log.Debugln("Active nodes: ", active)
+
+		return active
 	}
 
 	log.Debugln("Nodes: ", nodes)
@@ -231,147 +209,22 @@ func GetNodes(clusterName string, onlyActive bool) []node.Node {
 	return nodes
 }
 
-func ListServices(clusterName string) []string {
-	servicesPath := c_GRU_PATH + clusterName + "/services"
-	resp, err := discovery.Get(servicesPath, discovery.Options{})
-	if err != nil {
-		log.WithField("err", err).Errorln("Error listing services in cluster ", clusterName)
-		return []string{}
-	}
-
-	services := []string{}
-	for k, _ := range resp {
-		path := strings.Split(k, "/")
-		name := path[len(path)-1]
-		services = append(services, name)
-	}
-
-	return services
+func GetNode(clusterName string, nodeName string) cfg.Node {
+	remote := c_GRU_REMOTE + clusterName + "/nodes/" + nodeName
+	return cfg.ReadNode(remote)
 }
 
-func WriteNode(nodeData node.Node) {
-	WriteNodeConfig(myCluster.NodePath, nodeData.Configuration)
-	WriteNodeConstraints(myCluster.NodePath, nodeData.Constraints)
-	WriteNodeResources(myCluster.NodePath, nodeData.Resources)
-	WriteNodeActive(myCluster.NodePath, nodeData.Active)
+func ListServices(clusterName string) map[string]string {
+	services := GetServices(clusterName)
+	list := make(map[string]string, len(services))
+	for _, srv := range services {
+		list[srv.Name] = srv.Image
+	}
+
+	return list
 }
 
-func WriteNodeConfig(nodePath string, nodeConfig node.Config) {
-	configPath := nodePath + "/config"
-	err := writeData(configPath, nodeConfig)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error writing node configuration")
-	}
-}
-
-func WriteNodeConstraints(nodePath string, nodeConstraints node.Constraints) {
-	constraintsPath := nodePath + "/constraints"
-	err := writeData(constraintsPath, nodeConstraints)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error writing node constraints")
-	}
-}
-
-func WriteNodeResources(nodePath string, nodeResources node.Resources) {
-	resourcesPath := nodePath + "/resources"
-	err := writeData(resourcesPath, nodeResources)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error writing node resources")
-	}
-}
-
-func WriteNodeActive(nodePath string, active bool) {
-	activePath := nodePath + "/active"
-	var value string
-	if active {
-		value = "true"
-	} else {
-		value = "false"
-	}
-	err := discovery.Set(activePath, value, discovery.Options{})
-	if err != nil {
-		log.WithField("err", err).Errorln("Error writing node active")
-	}
-
-}
-
-func writeData(path string, value interface{}) error {
-	var err error
-	data, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	err = discovery.Set(path, string(data), discovery.Options{})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func ReadNode(nodePath string) node.Node {
-	config := node.Config{}
-	constraints := node.Constraints{}
-	resources := node.Resources{}
-	ReadNodeConfig(nodePath, &config)
-	ReadNodeConstraints(nodePath, &constraints)
-	ReadNodeResources(nodePath, &resources)
-	active := ReadNodeActive(nodePath)
-
-	return node.Node{config, constraints, resources, active}
-}
-
-func ReadNodeConfig(nodePath string, config *node.Config) {
-	configPath := nodePath + "/config"
-	err := readData(configPath, config)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error reading node configuration")
-	}
-}
-
-func ReadNodeConstraints(nodePath string, constraints *node.Constraints) {
-	constraintsPath := nodePath + "/constraints"
-	err := readData(constraintsPath, constraints)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error reading node constraints")
-	}
-}
-
-func ReadNodeResources(nodePath string, resources *node.Resources) {
-	resourcesPath := nodePath + "/resources"
-	err := readData(resourcesPath, resources)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error reading node resources")
-	}
-}
-
-func ReadNodeActive(nodePath string) bool {
-	activePath := nodePath + "/active"
-	resp, err := discovery.Get(activePath, discovery.Options{})
-	if err != nil {
-		log.WithField("err", err).Errorln("Error reading node active")
-		return false
-	}
-	active, err := strconv.ParseBool(resp[activePath])
-	if err != nil {
-		log.WithField("err", err).Errorln("Error parsing node active")
-		return false
-	}
-
-	return active
-}
-
-func readData(path string, dest interface{}) error {
-	var err error
-	resp, err := discovery.Get(path, discovery.Options{})
-	if err != nil {
-		return err
-	}
-	data := resp[path]
-	err = json.Unmarshal([]byte(data), dest)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func GetServices(clusterName string) []cfg.Service {
+	remote := c_GRU_REMOTE + clusterName + "/services"
+	return cfg.ReadServices(remote)
 }

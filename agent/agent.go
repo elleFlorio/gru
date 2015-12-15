@@ -2,17 +2,8 @@ package agent
 
 import (
 	"github.com/elleFlorio/gru/autonomic"
+	cfg "github.com/elleFlorio/gru/configuration"
 )
-
-var agent GruAgentConfig
-
-func Initialize(agentConfig GruAgentConfig) {
-	agent = agentConfig
-}
-
-func GetAgent() GruAgentConfig {
-	return agent
-}
 
 func Run() {
 	startAutonomicManager()
@@ -20,7 +11,8 @@ func Run() {
 
 func startAutonomicManager() {
 	autonomic.Initialize(
-		agent.Autonomic.LoopTimeInterval,
-		agent.Autonomic.MaxFriends)
+		cfg.GetAgentAutonomic().LoopTimeInterval,
+		cfg.GetAgentAutonomic().MaxFriends,
+	)
 	autonomic.RunLoop()
 }

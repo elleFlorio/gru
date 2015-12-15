@@ -10,13 +10,13 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/agent"
-	"github.com/elleFlorio/gru/cluster"
-	"github.com/elleFlorio/gru/node"
+	cfg "github.com/elleFlorio/gru/configuration"
 )
 
 type Command struct {
 	Name      string
 	Target    string
+	Object    interface{}
 	Result    string
 	Timestamp time.Time
 }
@@ -68,6 +68,8 @@ func executeCommand(cmd Command) {
 	switch cmd.Name {
 	case "start":
 		startCommand(cmd)
+	case "update":
+		updateCommand(cmd)
 	default:
 		log.Errorln("Unrecognized command name: ", cmd.Name)
 	}
@@ -83,7 +85,7 @@ func startCommand(cmd Command) {
 }
 
 func startAgent() {
-	if !node.GetNode().Active {
+	if !cfg.GetNode().Active {
 		go runAgent()
 	} else {
 		log.Warnln("Node already active")
@@ -98,20 +100,33 @@ func runAgent() {
 
 func activateNode() {
 	log.Debugln("Activating node")
-	myCluster, err := cluster.GetMyCluster()
-	if err != nil {
-		log.WithField("err", err).Errorln("Error getting my cluster")
-	}
-	node.ToggleActiveNode()
-	cluster.WriteNodeActive(myCluster.NodePath, true)
+	cfg.ToggleActiveNode()
+	cfg.WriteNodeActive(cfg.GetNodeConfig().Remote, true)
 }
 
 func deactivateNode() {
 	log.Debugln("Deactivating node")
-	myCluster, err := cluster.GetMyCluster()
-	if err != nil {
-		log.WithField("err", err).Errorln("Error getting my cluster")
+	cfg.ToggleActiveNode()
+	cfg.WriteNodeActive(cfg.GetNodeConfig().Remote, false)
+}
+
+func updateCommand(cmd Command) {
+	log.Debugln("Updating ", cmd.Target)
+	switch cmd.Target {
+	case "node-base-services":
+		data := cmd.Object.([]interface{})
+		upd := []string{}
+		for _, item := range data {
+			upd = append(upd, item.(string))
+		}
+		constraints := cfg.GetNodeConstraints()
+		constraints.BaseServices = upd
+		cfg.WriteNodeConstraints(cfg.GetNodeConfig().Remote, *constraints)
+	case "service":
+		//TODO
+	default:
+		log.WithField("target", cmd.Target).Errorln("Unrecognized target for command update")
 	}
-	node.ToggleActiveNode()
-	cluster.WriteNodeActive(myCluster.NodePath, false)
+
+	log.Debugf("Updated %s with value %v", cmd.Target, cmd.Object)
 }

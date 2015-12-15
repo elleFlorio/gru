@@ -6,12 +6,12 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	"github.com/elleFlorio/gru/service"
+	cfg "github.com/elleFlorio/gru/configuration"
 )
 
 // /gru/v1/services
 func GetInfoServices(w http.ResponseWriter, r *http.Request) {
-	services := service.GetServices()
+	services := cfg.GetServices()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)

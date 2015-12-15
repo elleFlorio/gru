@@ -5,8 +5,8 @@ import (
 
 	"github.com/elleFlorio/gru/autonomic/executor/action"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/service"
 )
 
 func Run(plan *strategy.GruPlan) {
@@ -21,14 +21,14 @@ func Run(plan *strategy.GruPlan) {
 	}
 }
 
-func buildConfig(srv *service.Service) action.GruActionConfig {
+func buildConfig(srv *cfg.Service) action.GruActionConfig {
 	actConfig := action.GruActionConfig{}
 	actConfig.Service = srv.Name
 	actConfig.Instances = srv.Instances
-	actConfig.HostConfig = action.CreateHostConfig(srv.Configuration)
-	actConfig.ContainerConfig = action.CreateContainerConfig(srv.Configuration)
+	actConfig.HostConfig = action.CreateHostConfig(srv.Docker)
+	actConfig.ContainerConfig = action.CreateContainerConfig(srv.Docker)
 	actConfig.ContainerConfig.Image = srv.Image
-	actConfig.Parameters.StopTimeout = srv.Configuration.StopTimeout
+	actConfig.Parameters.StopTimeout = srv.Docker.StopTimeout
 
 	return actConfig
 }

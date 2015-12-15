@@ -1,15 +1,15 @@
-package service
+package configuration
 
 type Service struct {
-	Name          string         `json:"name"`
-	Type          string         `json:"type"`
-	Image         string         `json:"image"`
-	Instances     InstanceStatus `json:"instances"`
-	Constraints   Constraints    `json:"constraints"`
-	Configuration Config         `json:"configuration"`
+	Name        string             `json:"name"`
+	Type        string             `json:"type"`
+	Image       string             `json:"image"`
+	Instances   ServiceStatus      `json:"instances"`
+	Constraints ServiceConstraints `json:"constraints"`
+	Docker      ServiceDocker      `json:"configuration"`
 }
 
-type InstanceStatus struct {
+type ServiceStatus struct {
 	All     []string `json:"all"`
 	Running []string `json:"running"`
 	Pending []string `json:"pending"`
@@ -18,11 +18,11 @@ type InstanceStatus struct {
 }
 
 // TODO this needs a review
-type Constraints struct {
+type ServiceConstraints struct {
 	MaxRespTime float64 `json:"maxresptime"`
 }
 
-type Config struct {
+type ServiceDocker struct {
 	Cmd          []string                 `json:"cmd"`
 	Volumes      map[string]struct{}      `json:"volumes"`
 	Entrypoint   []string                 `json:"entrypoint"`

@@ -13,11 +13,11 @@ import (
 	"github.com/elleFlorio/gru/metric"
 )
 
-var manager AutonomicConfig
+var timeInterval, maxFriends int
 
 func Initialize(loopTimeInterval int, nFriends int) {
-	manager.LoopTimeInterval = loopTimeInterval
-	manager.MaxFrineds = nFriends
+	timeInterval = loopTimeInterval
+	maxFriends = nFriends
 }
 
 func RunLoop() {
@@ -28,13 +28,13 @@ func RunLoop() {
 	planner.SetPlannerStrategy("probabilistic")
 
 	// Set the ticker for the periodic execution
-	ticker := time.NewTicker(time.Duration(manager.LoopTimeInterval) * time.Second)
+	ticker := time.NewTicker(time.Duration(timeInterval) * time.Second)
 
 	log.Infoln("Running autonomic loop")
 	for {
 		select {
 		case <-ticker.C:
-			err := friends.UpdateFriendsData(manager.MaxFrineds)
+			err := friends.UpdateFriendsData(maxFriends)
 			if err != nil {
 				log.WithField("err", err).Debugln("Cannot update friends data")
 			}

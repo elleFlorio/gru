@@ -1,13 +1,13 @@
 package strategy
 
 import (
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/service"
 )
 
 type GruPlan struct {
 	Policy  string
 	Weight  float64
-	Target  *service.Service
+	Target  *cfg.Service
 	Actions enum.Actions
 }

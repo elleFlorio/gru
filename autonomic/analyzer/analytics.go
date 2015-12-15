@@ -1,7 +1,7 @@
 package analyzer
 
 import (
-	"github.com/elleFlorio/gru/service"
+	cfg "github.com/elleFlorio/gru/configuration"
 )
 
 type GruAnalytics struct {
@@ -12,10 +12,10 @@ type GruAnalytics struct {
 }
 
 type ServiceAnalytics struct {
-	Load      float64                `json:"load"`
-	Resources ResourcesAnalytics     `json:"resources"`
-	Instances service.InstanceStatus `json:"instances"`
-	Health    float64                `json:"health"`
+	Load      float64            `json:"load"`
+	Resources ResourcesAnalytics `json:"resources"`
+	Instances cfg.ServiceStatus  `json:"instances"`
+	Health    float64            `json:"health"`
 }
 
 type ResourcesAnalytics struct {
@@ -25,10 +25,10 @@ type ResourcesAnalytics struct {
 }
 
 type SystemAnalytics struct {
-	Services  []string               `json:"services"`
-	Resources ResourcesAnalytics     `json:"resources"`
-	Instances service.InstanceStatus `json:"instances"`
-	Health    float64                `json:"health"`
+	Services  []string           `json:"services"`
+	Resources ResourcesAnalytics `json:"resources"`
+	Instances cfg.ServiceStatus  `json:"instances"`
+	Health    float64            `json:"health"`
 }
 
 type ClusterAnalytics struct {

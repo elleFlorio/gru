@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"github.com/elleFlorio/gru/autonomic/monitor"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -11,7 +12,7 @@ func CreateMockAnalytics() GruAnalytics {
 		Service: make(map[string]ServiceAnalytics),
 	}
 	mockServices := service.CreateMockServices()
-	service.UpdateServices(mockServices)
+	cfg.SetServices(mockServices)
 	mockStats := monitor.CreateMockStats()
 
 	analyzeServices(&mockAnalytics, mockStats)

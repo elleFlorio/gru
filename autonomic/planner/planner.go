@@ -9,6 +9,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
@@ -59,7 +60,7 @@ func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
 		noServicePlan := strategy.GruPlan{
 			"noaction",
 			1.0,
-			&service.Service{Name: "noService"},
+			&cfg.Service{Name: "noService"},
 			[]enum.Action{enum.NOACTION},
 		}
 		plans = append(plans, noServicePlan)
@@ -90,7 +91,7 @@ func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
 	plan_na := strategy.GruPlan{
 		"noaction",
 		weight_na,
-		&service.Service{Name: "NoService"},
+		&cfg.Service{Name: "NoService"},
 		[]enum.Action{enum.NOACTION},
 	}
 	log.WithFields(log.Fields{

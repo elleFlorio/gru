@@ -7,20 +7,6 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 )
 
-func TestLoadServices(t *testing.T) {
-	defer CleanServices()
-
-	tmpdir := CreateMockFiles()
-	defer os.RemoveAll(tmpdir)
-
-	err := LoadServices(tmpdir)
-	assert.NoError(t, err, "Loading should presente no errors")
-	if assert.Len(t, services, NumberOfServiceFiles(), "Number of loaded services is wrong") {
-		names := [2]string{services[0].Name, services[1].Name}
-		assert.Contains(t, names, "service1", "The name of a service should be 'service1'")
-	}
-}
-
 func TestGetServiceByType(t *testing.T) {
 	defer CleanServices()
 	services = CreateMockServices()

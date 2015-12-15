@@ -1,27 +1,28 @@
-package node
+package configuration
 
 type Node struct {
-	Configuration Config      `json:"configuration"`
-	Constraints   Constraints `json:"constraints"`
-	Resources     Resources   `json:resources`
-	Active        bool        `json:"active"`
+	Configuration NodeConfig      `json:"configuration"`
+	Constraints   NodeConstraints `json:"constraints"`
+	Resources     NodeResources   `json:resources`
+	Active        bool            `json:"active"`
 }
 
-type Config struct {
+type NodeConfig struct {
 	UUID    string `json:"uuid"`
 	Name    string `json:"name"`
 	Address string `json:"address"`
 	Cluster string `json:"cluster"`
+	Remote  string `json:"remote"`
 }
 
 // Is this still necessary?
-type Constraints struct {
+type NodeConstraints struct {
 	CpuMin       float64  `json:"cpumin"`
 	CpuMax       float64  `json:"cpumax"`
 	BaseServices []string `json:"baseservices"`
 }
 
-type Resources struct {
+type NodeResources struct {
 	TotalMemory int64 `json:"totalmemory"`
 	TotalCpus   int64 `json:"totalcpus"`
 	UsedMemory  int64 `json:"usedmemory"`

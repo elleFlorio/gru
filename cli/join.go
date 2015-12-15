@@ -1,28 +1,26 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/codegangsta/cli"
 
-	"github.com/elleFlorio/gru/agent"
 	"github.com/elleFlorio/gru/api"
 	"github.com/elleFlorio/gru/cluster"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/discovery"
 	"github.com/elleFlorio/gru/metric"
 	"github.com/elleFlorio/gru/network"
 	"github.com/elleFlorio/gru/node"
-	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
 )
 
-const c_GRU_PATH = "/gru/"
-const c_CONFIG_PATH = "config"
-const c_CONFIG_SERVICES = "services/"
+const c_GRU_REMOTE = "/gru/"
+const c_CONFIG_REMOTE = "config/"
+const c_SERVICES_REMOTE = "services/"
 
 func join(c *cli.Context) {
 	var clusterName string
@@ -71,41 +69,20 @@ func initializeDiscovery(name string, address string) {
 }
 
 func initializeAgent(clusterName string) {
-	configPath := c_GRU_PATH + clusterName + "/" + c_CONFIG_PATH
-	agentConfig := agent.GruAgentConfig{}
-	getConfig(configPath, &agentConfig)
-	agent.Initialize(agentConfig)
+	configPath := c_GRU_REMOTE + clusterName + "/config"
+	agentConfig := cfg.Agent{}
+	cfg.ReadAgentConfig(configPath, &agentConfig)
+	cfg.SetAgent(agentConfig)
 }
+
 func initializeServices(clusterName string) {
-	services := []service.Service{}
-	list := cluster.ListServices(clusterName)
-	for _, name := range list {
-		servicePath := c_GRU_PATH + clusterName + "/" + c_CONFIG_SERVICES + name
-		serviceConfig := service.Service{}
-		getConfig(servicePath, &serviceConfig)
-		services = append(services, serviceConfig)
-	}
-
-	service.Initialize(services)
-}
-
-func getConfig(configPath string, config interface{}) {
-	var err error
-
-	resp, err := discovery.Get(configPath, discovery.Options{})
-	if err != nil {
-		log.WithField("err", err).Fatalln("Error getting configuration")
-	}
-
-	conf_str := resp[configPath]
-	err = json.Unmarshal([]byte(conf_str), config)
-	if err != nil {
-		log.WithField("err", err).Fatalln("Error unmarshaling configuration")
-	}
+	remote := c_GRU_REMOTE + clusterName + "/services"
+	services := cfg.ReadServices(remote)
+	cfg.SetServices(services)
 }
 
 func initializeStorage() {
-	_, err := storage.New(agent.GetAgent().Storage.StorageService)
+	_, err := storage.New(cfg.GetAgentStorage().StorageService)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"status":  "warning",
@@ -118,7 +95,7 @@ func initializeStorage() {
 }
 
 func initializeMetricSerivice() {
-	_, err := metric.New(agent.GetAgent().Metric.MetricService, agent.GetAgent().Metric.Configuration)
+	_, err := metric.New(cfg.GetAgentMetric().MetricService, cfg.GetAgentMetric().Configuration)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"status":  "warning",
@@ -131,7 +108,7 @@ func initializeMetricSerivice() {
 }
 
 func initializeContainerEngine() {
-	err := container.Connect(agent.GetAgent().Docker.DaemonUrl, agent.GetAgent().Docker.DaemonTimeout)
+	err := container.Connect(cfg.GetAgentDocker().DaemonUrl, cfg.GetAgentDocker().DaemonTimeout)
 	if err != nil {
 		log.WithField("err", err).Fatalln("Error initializing container engine")
 	}

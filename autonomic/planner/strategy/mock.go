@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"math/rand"
 
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func CreateMockPlan(p string, w float64, s service.Service, a enum.Actions) GruPlan {
+func CreateMockPlan(p string, w float64, s cfg.Service, a enum.Actions) GruPlan {
 	return GruPlan{p, w, &s, a}
 }
 
-func StoreMockPlan(p string, w float64, s service.Service, a enum.Actions) {
+func StoreMockPlan(p string, w float64, s cfg.Service, a enum.Actions) {
 	plan := CreateMockPlan(p, w, s, a)
 	data, _ := convertPlanToData(plan)
 	storage.StoreLocalData(data, enum.PLANS)
@@ -36,7 +36,7 @@ func CreateRandomPlans(n int) []GruPlan {
 		value := randUniform(0, 1)
 		p := "p"
 		w := value
-		s := service.Service{Name: randStringBytes(5)}
+		s := cfg.Service{Name: randStringBytes(5)}
 		a := []enum.Action{enum.START}
 		if value > 0.5 {
 			a = []enum.Action{enum.STOP}

@@ -3,7 +3,7 @@ package monitor
 import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
 
-	"github.com/elleFlorio/gru/service"
+	cfg "github.com/elleFlorio/gru/configuration"
 )
 
 const maxHistory = 6
@@ -34,7 +34,7 @@ func CreateMockStats() GruStats {
 		Stop:  []string{"instance1_0"},
 		Start: []string{"instance1_4"},
 	}
-	instances1 := service.InstanceStatus{
+	instances1 := cfg.ServiceStatus{
 		All:     all1,
 		Running: running1,
 		Pending: pending1,
@@ -62,7 +62,7 @@ func CreateMockStats() GruStats {
 
 	all2 := []string{"instance2_1"}
 	running2 := []string{"instance2_1"}
-	instances2 := service.InstanceStatus{
+	instances2 := cfg.ServiceStatus{
 		All:     all2,
 		Running: running2,
 	}
@@ -119,7 +119,7 @@ func CreateMockStats() GruStats {
 	pendingSys := []string{"instance1_3", "instance1_4"}
 	stoppedSys := []string{"instance1_0"}
 	pausedSys := []string{}
-	instancesSys := service.InstanceStatus{
+	instancesSys := cfg.ServiceStatus{
 		All:     allSys,
 		Running: runningSys,
 		Pending: pendingSys,

@@ -9,8 +9,8 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/node"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
@@ -150,7 +150,7 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 			cpu = 0
 		} else {
 			// "100 * cpu" should produce values in [0, 100]
-			cpu = (instDelta / sysDelta) * float64(node.GetNode().Resources.TotalCpus)
+			cpu = (instDelta / sysDelta) * float64(cfg.GetNode().Resources.TotalCpus)
 		}
 		sum += cpu
 	}
@@ -161,7 +161,7 @@ func computeServiceMemory(name string, stats *GruStats) {
 	sum := 0.0
 	avg := 0.0
 	srv, _ := service.GetServiceByName(name)
-	memLimit := srv.Configuration.Memory
+	memLimit := srv.Docker.Memory
 	srvStats := stats.Service[name]
 
 	if len(srvStats.Instances.Running) > 0 {
@@ -204,7 +204,7 @@ func computeServiceMemory(name string, stats *GruStats) {
 
 func computeInstaceMemPerc(instMem []float64, limit string) float64 {
 	var err error
-	totalMemory := node.GetNode().Resources.TotalMemory
+	totalMemory := cfg.GetNode().Resources.TotalMemory
 	sum := 0.0
 	avg := 0.0
 	limitBytes := totalMemory
@@ -272,7 +272,7 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		copy(pending_dst, status_src.Pending)
 		copy(stopped_dst, status_src.Stopped)
 		copy(paused_dst, status_src.Paused)
-		status_dst := service.InstanceStatus{
+		status_dst := cfg.ServiceStatus{
 			all_dst,
 			runnig_dst,
 			pending_dst,
@@ -324,7 +324,7 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 	copy(sys_pending_dst, sys_status_src.Pending)
 	copy(sys_stopped_dst, sys_status_src.Stopped)
 	copy(sys_paused_dst, sys_status_src.Paused)
-	sys_status_dst := service.InstanceStatus{
+	sys_status_dst := cfg.ServiceStatus{
 		sys_all_dst,
 		sys_runnig_dst,
 		sys_pending_dst,

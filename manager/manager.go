@@ -110,7 +110,9 @@ func (m *Manager) ParseCommand(cmd string) bool {
 		case "list":
 			m.list(cmd)
 		case "set":
-			//TODO
+			m.set(cmd)
+		case "show":
+			m.show(cmd)
 		case "start":
 			m.start(cmd)
 		default:
@@ -142,6 +144,12 @@ func (m *Manager) list(cmd string) {
 		}
 		names = cluster.ListNodes(m.Cluster, false)
 		fmt.Fprintf(w, "NAME\tADDRESS\n")
+	case "services":
+		if !m.isClusterSet() {
+			return
+		}
+		names = cluster.ListServices(m.Cluster)
+		fmt.Fprintf(w, "NAME\tIMAGE\n")
 	default:
 		fmt.Println("Unrecognized identifier. Please specify clusters/nodes")
 		return
@@ -165,57 +173,65 @@ func (m *Manager) use(cmd string) {
 }
 
 func (m *Manager) set(cmd string) {
-	// args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
-	// who := args[1]
-	// what := args[2]
-	// to_what := args[3:]
+	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
+	who := args[1]
+	what := args[2]
+	to_what := args[3:]
 
-	// if m.Cluster == "" {
-	// 	fmt.Println("Cluster not set. Please set it with 'use' command")
-	// 	return
-	// }
-	// nodes := cluster.ListNodes(m.Cluster, false)
-	// services := cluster.ListServices(m.Cluster)
+	if !m.isClusterSet() {
+		return
+	}
+	nodes := cluster.ListNodes(m.Cluster, false)
+	services := cluster.ListServices(m.Cluster)
 
-	// switch what {
-	// case "base-services":
-	// 	if address, ok := nodes[who]; !ok {
-	// 		fmt.Println("Unrecognized node ", who)
-	// 	}
-	// 	ok, notValid := checkValidServices(to_what, services)
-	// 	if !ok {
-	// 		fmt.Println("Services are not valid:")
-	// 		for _, name := range notValid {
-	// 			fmt.Println(name)
-	// 		}
-	// 		return
-	// 	}
-	// 	key := c_GRU_PATH + m.Cluster + "/" + c_NODES_PATH + who + "/constraints/baseservices"
-	// 	value := to_what
-	// 	opt := discovery.Options{}
-	// 	discovery.Set(key, value, opt)
-	// default:
-	// 	fmt.Println("Unrecognized parameter ", what)
-	// }
+	switch what {
+	case "base-services":
+		if _, ok := nodes[who]; !ok {
+			fmt.Println("Unrecognized node ", who)
+		}
+		address := nodes[who]
+		names := make([]string, 0, len(services))
+		for k, _ := range services {
+			names = append(names, k)
+		}
+		ok, notValid := checkValidServices(to_what, names)
+		if !ok {
+			fmt.Println("Services are not valid:")
+			for _, name := range notValid {
+				fmt.Println(name)
+			}
+			return
+		}
+		err := network.SendUpdateCommand(address, "node-base-services", to_what)
+		if err != nil {
+			fmt.Println("Error sending update command to node ", who)
+		}
+	case "cpumin":
+		fmt.Println("TODO")
+	case "cpumax":
+		fmt.Println("TODO")
+	default:
+		fmt.Println("Unrecognized parameter ", what)
+	}
 
 }
 
-// func checkValidServices(services []string, list []string) (bool, []string) {
-// 	check := true
-// 	notValid := []string{}
-// 	for _, s1 := range services {
-// 		valid := false
-// 		for _, s2 := range list {
-// 			valid = valid || (s1 == s2)
-// 		}
-// 		if valid == false {
-// 			notValid = append(notValid, s1)
-// 		}
-// 		check = check && valid
-// 	}
+func checkValidServices(services []string, list []string) (bool, []string) {
+	check := true
+	notValid := []string{}
+	for _, s1 := range services {
+		valid := false
+		for _, s2 := range list {
+			valid = valid || (s1 == s2)
+		}
+		if valid == false {
+			notValid = append(notValid, s1)
+		}
+		check = check && valid
+	}
 
-// 	return check, notValid
-// }
+	return check, notValid
+}
 
 func (m *Manager) start(cmd string) {
 	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
@@ -248,6 +264,52 @@ func (m *Manager) start(cmd string) {
 				fmt.Println("Cannot get address of node ", node)
 			}
 		}
+	}
+
+}
+
+func (m *Manager) show(cmd string) {
+	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
+	if len(args) < 4 {
+		fmt.Println("not enough arguments to 'show' command")
+		return
+	}
+
+	where := args[1]
+	who := args[2]
+	what := args[3]
+
+	switch where {
+	case "cluster":
+		fmt.Println("TODO")
+	case "service":
+		fmt.Println("TODO")
+	case "node":
+		showNode(m.Cluster, who, what)
+	}
+}
+
+func showNode(clusterName string, nodeName string, what string) {
+	nodes := cluster.ListNodes(clusterName, false)
+	if _, ok := nodes[nodeName]; !ok {
+		fmt.Println("Unrecognized node ", nodeName)
+	}
+	node := cluster.GetNode(clusterName, nodeName)
+	switch what {
+	case "config":
+		config := node.Configuration
+		fmt.Printf("NAME\tUUID\tADDRESS\tCLUSTER\n")
+		fmt.Printf("%s\t%s\t%s\t%s\n", config.Name, config.UUID, config.Address, config.Cluster)
+	case "constraints":
+		constraints := node.Constraints
+		fmt.Printf("BASE-SERVICES\tCPU-MIN\tCPU-MAX\n")
+		fmt.Printf("%v\t%f\t%f\n", constraints.BaseServices, constraints.CpuMin, constraints.CpuMax)
+	case "resources":
+		resources := node.Resources
+		fmt.Printf("CORES\tMEMORY\n")
+		fmt.Printf("%d\t%d\n", resources.TotalCpus, resources.TotalMemory)
+	default:
+		fmt.Println("Unrecognized node property ", what)
 	}
 
 }
