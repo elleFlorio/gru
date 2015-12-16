@@ -102,7 +102,7 @@ func getFriendsData(friends map[string]string) error {
 		}
 		err = storage.StoreData(friend, friendData, enum.ANALYTICS)
 		if err != nil {
-			log.WithField("err", err).Debugln("Error storing friend stats")
+			log.WithField("err", err).Debugln("Error storing friends data")
 		}
 	}
 

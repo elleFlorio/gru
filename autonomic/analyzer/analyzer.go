@@ -35,7 +35,7 @@ func Run(stats monitor.GruStats) GruAnalytics {
 	defer log.WithField("status", "done").Debugln("Gru Analyzer")
 
 	if len(stats.Service) == 0 {
-		log.WithField("err", "No services stats").Errorln("Cannot compute analytics.")
+		log.WithField("err", "No services stats").Warnln("Cannot compute analytics.")
 	} else {
 		updateNodeResources()
 		analyzeServices(&gruAnalytics, stats)
@@ -413,7 +413,7 @@ func GetAnalyzerData() (GruAnalytics, error) {
 	analytics := GruAnalytics{}
 	dataAnalyics, err := storage.GetData(enum.CLUSTER.ToString(), enum.ANALYTICS)
 	if err != nil {
-		log.WithField("err", err).Errorln("Cannot retrieve analytics data.")
+		log.WithField("err", err).Warnln("Cannot retrieve analytics data")
 	} else {
 		analytics, err = convertDataToAnalytics(dataAnalyics)
 	}
@@ -425,8 +425,9 @@ func convertDataToAnalytics(data []byte) (GruAnalytics, error) {
 	analytics := GruAnalytics{}
 	err := json.Unmarshal(data, &analytics)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error unmarshaling analytics data")
+		log.WithField("err", err).Warnln("Error converting data to analytics")
+		return GruAnalytics{}, err
 	}
 
-	return analytics, err
+	return analytics, nil
 }

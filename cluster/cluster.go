@@ -95,15 +95,20 @@ func initMyCluster(name string, id string, remote string) {
 func createNodeFolder() error {
 	var err error
 	opt := discovery.Options{
-		"TTL": time.Second * time.Duration(c_TTL),
+		"TTL": time.Second * time.Duration(c_TTL+1),
 		"Dir": true,
 	}
 
 	config := cfg.GetNodeConfig()
+	config.Cluster = myCluster.Name
 	remote := c_GRU_REMOTE + myCluster.Name + "/" + c_NODES_REMOTE + config.Name
 	config.Remote = remote
 
 	err = discovery.Set(remote, "", opt)
+	cfg.WriteNodeConfig(remote, cfg.GetNode().Configuration)
+	cfg.WriteNodeConstraints(remote, cfg.GetNode().Constraints)
+	cfg.WriteNodeResources(remote, cfg.GetNode().Resources)
+	cfg.WriteNodeActive(remote, cfg.GetNode().Active)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error creating node folder")
 		return err
@@ -117,7 +122,7 @@ func keepAlive(ttl int) {
 	for {
 		select {
 		case <-ticker.C:
-			err := updateNodeFolder(ttl)
+			err := updateNodeFolder(ttl + 1)
 			if err != nil {
 				log.Errorln("Error keeping the node alive")
 			}
@@ -227,4 +232,14 @@ func ListServices(clusterName string) map[string]string {
 func GetServices(clusterName string) []cfg.Service {
 	remote := c_GRU_REMOTE + clusterName + "/services"
 	return cfg.ReadServices(remote)
+}
+
+func GetService(clusterName string, serviceName string) cfg.Service {
+	remote := c_GRU_REMOTE + clusterName + "/" + c_SERVICES_REMOTE + serviceName
+	return cfg.ReadService(remote)
+}
+
+func UpdateService(clusterName string, serviceName string, data cfg.Service) {
+	remote := c_GRU_REMOTE + clusterName + "/" + c_SERVICES_REMOTE + serviceName
+	cfg.WriteService(remote, data)
 }

@@ -13,6 +13,7 @@ var (
 	mutex_a                  = sync.RWMutex{}
 	mutex_p                  = sync.RWMutex{}
 	ErrInvalidDataType error = errors.New("Invalid data type")
+	ErrNoData          error = errors.New("No such data")
 )
 
 type internal struct {
@@ -54,23 +55,28 @@ func (p *internal) StoreData(key string, data []byte, dataType enum.Datatype) er
 
 func (p *internal) GetData(key string, dataType enum.Datatype) ([]byte, error) {
 	var data []byte
+	var ok bool
 	switch dataType {
 	case enum.STATS:
 		mutex_s.RLock()
-		data = p.statsData[key]
+		data, ok = p.statsData[key]
 		mutex_s.RUnlock()
 	case enum.ANALYTICS:
 		mutex_a.RLock()
-		data = p.analyticsData[key]
+		data, ok = p.analyticsData[key]
 		mutex_a.RUnlock()
 	case enum.PLANS:
 		mutex_p.RLock()
-		data = p.plansData[key]
+		data, ok = p.plansData[key]
 		mutex_p.RUnlock()
 	}
 	runtime.Gosched()
 
-	return data, nil
+	if ok {
+		return data, nil
+	}
+
+	return data, ErrNoData
 }
 
 func (p *internal) GetAllData(dataType enum.Datatype) (map[string][]byte, error) {

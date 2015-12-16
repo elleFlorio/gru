@@ -11,6 +11,7 @@ import (
 
 	"github.com/elleFlorio/gru/agent"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/service"
 )
 
 type Command struct {
@@ -73,6 +74,11 @@ func executeCommand(cmd Command) {
 	default:
 		log.Errorln("Unrecognized command name: ", cmd.Name)
 	}
+
+	log.WithFields(log.Fields{
+		"cmd":    cmd.Name,
+		"target": cmd.Target,
+	}).Debugln("Executed command")
 }
 
 func startCommand(cmd Command) {
@@ -122,11 +128,22 @@ func updateCommand(cmd Command) {
 		constraints := cfg.GetNodeConstraints()
 		constraints.BaseServices = upd
 		cfg.WriteNodeConstraints(cfg.GetNodeConfig().Remote, *constraints)
-	case "service":
-		//TODO
+	case "node-cpumin":
+		upd := cmd.Object.(float64)
+		constraints := cfg.GetNodeConstraints()
+		constraints.CpuMin = upd
+		cfg.WriteNodeConstraints(cfg.GetNodeConfig().Remote, *constraints)
+	case "node-cpumax":
+		upd := cmd.Object.(float64)
+		constraints := cfg.GetNodeConstraints()
+		constraints.CpuMax = upd
+		cfg.WriteNodeConstraints(cfg.GetNodeConfig().Remote, *constraints)
+	case "service-mrt":
+		name := cmd.Object.(string)
+		srv, _ := service.GetServiceByName(name)
+		upd := cfg.ReadService(srv.Remote)
+		srv.Constraints.MaxRespTime = upd.Constraints.MaxRespTime
 	default:
 		log.WithField("target", cmd.Target).Errorln("Unrecognized target for command update")
 	}
-
-	log.Debugf("Updated %s with value %v", cmd.Target, cmd.Object)
 }

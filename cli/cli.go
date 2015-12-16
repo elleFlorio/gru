@@ -40,19 +40,15 @@ func Run() {
 
 	app.Commands = []cli.Command{
 		{
-			Name:   "start",
-			Usage:  "Start the GRU agent",
-			Action: start,
-		},
-		{
 			Name:   "create",
 			Usage:  "Create a GRU cluster",
 			Action: create,
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "etcdserver, e",
-					Value: "http://localhost:4001",
-					Usage: fmt.Sprintf("url of etcd server. Default is 'http://localhost:4001'"),
+					Name: "etcdserver, e",
+					//Value:  "http://localhost:4001",
+					Usage:  fmt.Sprintf("url of etcd server. Default is 'http://localhost:4001'"),
+					EnvVar: "GRU_ETCD",
 				},
 			},
 		},
@@ -62,9 +58,10 @@ func Run() {
 			Action: join,
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "etcdserver, e",
-					Value: "http://localhost:4001",
-					Usage: fmt.Sprintf("url of etcd server. Default is 'http://localhost:4001'"),
+					Name: "etcdserver, e",
+					//Value:  "http://localhost:4001",
+					Usage:  fmt.Sprintf("url of etcd server. Default is 'http://localhost:4001'"),
+					EnvVar: "GRU_ETCD",
 				},
 				cli.StringFlag{
 					Name:  "name, n",
@@ -72,14 +69,16 @@ func Run() {
 					Usage: fmt.Sprintf("Name of the node. Default is an awesome random-generated name"),
 				},
 				cli.StringFlag{
-					Name:  "address, a",
-					Value: "",
-					Usage: fmt.Sprintf("Address of the node. If not provided is taken automatically from the host"),
+					Name:   "address, a",
+					Value:  "",
+					Usage:  fmt.Sprintf("Address of the node. If not provided is taken automatically from the host"),
+					EnvVar: "GRU_ADDR",
 				},
 				cli.StringFlag{
-					Name:  "port, p",
-					Value: "8080",
-					Usage: fmt.Sprintf("Port for the rest api server. Default is 8080"),
+					Name:   "port, p",
+					Value:  "8080",
+					Usage:  fmt.Sprintf("Port for the rest api server. Default is 8080"),
+					EnvVar: "GRU_PORT",
 				},
 			},
 		},

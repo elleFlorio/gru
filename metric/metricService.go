@@ -93,7 +93,7 @@ func UpdateMetrics() {
 
 		stats, err := monitor.GetMonitorData()
 		if err != nil {
-			log.WithField("err", err).Errorln("Cannot update stats metrics")
+			log.WithField("err", err).Warnln("Cannot update stats metrics")
 		} else {
 			if srv_stats, ok := stats.Service[name]; ok {
 				srv_metrics.Stats.CpuAvg = srv_stats.Cpu.Avg
@@ -104,13 +104,13 @@ func UpdateMetrics() {
 				metrics.Node.Cpu = stats.System.Cpu
 				metrics.Node.Memory = 0.0 // TODO
 			} else {
-				log.Debugln("Cannot find stats metrics for service ", name)
+				log.Warnln("Cannot find stats metrics for service ", name)
 			}
 		}
 
 		analytics, err := analyzer.GetAnalyzerData()
 		if err != nil {
-			log.WithField("err", err).Errorln("Cannot update analytics metrics")
+			log.WithField("err", err).Warnln("Cannot update analytics metrics")
 		} else {
 			if srv_analytisc, ok := analytics.Service[name]; ok {
 				srv_metrics.Analytics.Cpu = srv_analytisc.Resources.Cpu
@@ -128,7 +128,7 @@ func UpdateMetrics() {
 
 	plans, err := planner.GetPlannerData()
 	if err != nil {
-		log.WithField("err", err).Errorln("Cannot update plans metrics")
+		log.WithField("err", err).Warnln("Cannot update plans metrics")
 	} else {
 		metrics.Plan.Policy = plans.Policy
 		metrics.Plan.Target = plans.Target.Name

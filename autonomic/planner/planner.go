@@ -37,7 +37,7 @@ func Run(analytics analyzer.GruAnalytics) *strategy.GruPlan {
 	var thePlan *strategy.GruPlan
 
 	if len(analytics.Service) == 0 {
-		log.WithField("err", "No services analytics").Errorln("Cannot compute plans.")
+		log.WithField("err", "No services analytics").Warnln("Cannot compute plans.")
 	} else {
 		plans := buildPlans(analytics)
 		thePlan = currentStrategy.MakeDecision(plans)
@@ -138,7 +138,7 @@ func GetPlannerData() (strategy.GruPlan, error) {
 	plan := strategy.GruPlan{}
 	dataPlan, err := storage.GetLocalData(enum.PLANS)
 	if err != nil {
-		log.WithField("err", err).Errorln("Cannot retrieve plan data.")
+		log.WithField("err", err).Warnln("Cannot retrieve plan data")
 	} else {
 		plan, err = convertDataToPlan(dataPlan)
 	}
@@ -151,7 +151,8 @@ func convertDataToPlan(data []byte) (strategy.GruPlan, error) {
 	err := json.Unmarshal(data, &plan)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error unmarshaling plan data")
+		return strategy.GruPlan{}, err
 	}
 
-	return plan, err
+	return plan, nil
 }

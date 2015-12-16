@@ -83,6 +83,7 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 	points = append(points, nodePoint)
 
 	for _, service := range metrics.Service {
+		log.WithField("service", service.Name).Debugln("Computing influx metrics of service")
 		statusPoint, err := createInfluxInstanceStatus(nodeUUID, service)
 		if err != nil {
 			log.WithField("err", err).Errorln("Error creating instance status metrics for Service ", service.Name)

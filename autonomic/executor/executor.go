@@ -14,7 +14,7 @@ func Run(plan *strategy.GruPlan) {
 	defer log.WithField("status", "done").Debugln("Gru Executor")
 
 	if plan == nil {
-		log.WithField("err", "No plan to execute").Errorln("Cannot execute actions")
+		log.WithField("err", "No plan to execute").Warnln("Cannot execute actions")
 	} else {
 		config := buildConfig(plan.Target)
 		executeActions(plan.Actions, config)

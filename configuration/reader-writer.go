@@ -55,6 +55,13 @@ func WriteNodeActive(remote string, active bool) {
 
 }
 
+func WriteService(remote string, data Service) {
+	err := writeData(remote, data)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error writing service")
+	}
+}
+
 func writeData(remote string, src interface{}) error {
 	var err error
 	data, err := json.Marshal(src)
@@ -71,7 +78,8 @@ func writeData(remote string, src interface{}) error {
 }
 
 func ReadNodes(remote string) []Node {
-	resp, err := discovery.Get(remote, discovery.Options{"Recursive": true})
+	log.WithField("remote", remote).Debugln("Reading nodes from remote")
+	resp, err := discovery.Get(remote, discovery.Options{})
 	if err != nil {
 		log.WithField("err", err).Errorln("Error reading nodes from ", remote)
 		return []Node{}
@@ -87,6 +95,7 @@ func ReadNodes(remote string) []Node {
 }
 
 func ReadNode(remote string) Node {
+	log.WithField("remote", remote).Debugln("Reading node from remote")
 	config := NodeConfig{}
 	constraints := NodeConstraints{}
 	resources := NodeResources{}
@@ -139,7 +148,7 @@ func ReadNodeActive(remote string) bool {
 }
 
 func ReadServices(remote string) []Service {
-	resp, err := discovery.Get(remote, discovery.Options{"Recursive": true})
+	resp, err := discovery.Get(remote, discovery.Options{})
 	if err != nil {
 		log.WithField("err", err).Errorln("Error reading services from ", remote)
 		return []Service{}
@@ -147,19 +156,21 @@ func ReadServices(remote string) []Service {
 
 	services := []Service{}
 	for servicePath, _ := range resp {
-		srv := Service{}
-		ReadService(servicePath, &srv)
+		srv := ReadService(servicePath)
 		services = append(services, srv)
 	}
 
 	return services
 }
 
-func ReadService(remote string, srv *Service) {
-	err := readData(remote, srv)
+func ReadService(remote string) Service {
+	srv := Service{}
+	err := readData(remote, &srv)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error reading service")
 	}
+
+	return srv
 }
 
 func ReadAgentConfig(remote string, config *Agent) {

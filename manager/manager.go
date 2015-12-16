@@ -1,11 +1,15 @@
 package manager
 
+// This wa inspired by the command line client of influxdb:
+// https://github.com/influxdb/influxdb/blob/master/cmd/influx/cli/cli.go
+
 import (
 	"fmt"
 	"os"
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"text/tabwriter"
@@ -61,6 +65,12 @@ func (m *Manager) Run() {
 		}
 	}
 
+	fmt.Println("")
+	fmt.Println("###################################################")
+	fmt.Println("**           GRU COMMAND LINE MANAGER            **")
+	fmt.Println("** developed by Luca Florio (github: elleFlorio) **")
+	fmt.Println("###################################################")
+	fmt.Println("")
 	for {
 		select {
 		case <-m.osSignals:
@@ -103,7 +113,6 @@ func (m *Manager) ParseCommand(cmd string) bool {
 	if len(tokens) > 0 {
 		switch tokens[0] {
 		case "exit":
-			// signal the program to exit
 			close(m.Quit)
 		case "use":
 			m.use(cmd)
@@ -124,12 +133,23 @@ func (m *Manager) ParseCommand(cmd string) bool {
 	return false
 }
 
+func (m *Manager) use(cmd string) {
+	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
+	if len(args) != 2 {
+		fmt.Printf("Could not parse cluster name from %q.\n", cmd)
+		return
+	}
+	d := args[1]
+	m.Cluster = d
+	fmt.Printf("Using cluster %s\n", d)
+}
+
 func (m *Manager) list(cmd string) {
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
 	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
 	if len(args) != 2 {
-		fmt.Printf("Please specify clusters/nodes in command %q.\n", cmd)
+		fmt.Printf("Not enough arguments %q.\n", cmd)
 		return
 	}
 
@@ -161,35 +181,48 @@ func (m *Manager) list(cmd string) {
 	w.Flush()
 }
 
-func (m *Manager) use(cmd string) {
-	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
-	if len(args) != 2 {
-		fmt.Printf("Could not parse cluster name from %q.\n", cmd)
-		return
-	}
-	d := args[1]
-	m.Cluster = d
-	fmt.Printf("Using cluster %s\n", d)
-}
-
 func (m *Manager) set(cmd string) {
 	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
-	who := args[1]
-	what := args[2]
-	to_what := args[3:]
+	where := args[1]
+	who := args[2]
+	what := args[3]
+	to_what := args[4:]
 
 	if !m.isClusterSet() {
 		return
 	}
-	nodes := cluster.ListNodes(m.Cluster, false)
-	services := cluster.ListServices(m.Cluster)
+
+	switch where {
+	case "node":
+		setNode(m.Cluster, who, what, to_what)
+	case "service":
+		setService(m.Cluster, who, what, to_what)
+	default:
+		fmt.Println("Unrecognized identifier. Please specify node/service")
+	}
+
+}
+
+func setNode(clusterName string, who string, what string, to_what []string) {
+	nodes := cluster.ListNodes(clusterName, false)
+	dest := []string{}
+
+	if who == "all" {
+		for _, address := range nodes {
+			dest = append(dest, address)
+		}
+	} else {
+		if address, ok := nodes[who]; !ok {
+			fmt.Println("Unrecognized node ", who)
+			return
+		} else {
+			dest = append(dest, address)
+		}
+	}
 
 	switch what {
 	case "base-services":
-		if _, ok := nodes[who]; !ok {
-			fmt.Println("Unrecognized node ", who)
-		}
-		address := nodes[who]
+		services := cluster.ListServices(clusterName)
 		names := make([]string, 0, len(services))
 		for k, _ := range services {
 			names = append(names, k)
@@ -202,18 +235,81 @@ func (m *Manager) set(cmd string) {
 			}
 			return
 		}
-		err := network.SendUpdateCommand(address, "node-base-services", to_what)
-		if err != nil {
-			fmt.Println("Error sending update command to node ", who)
+		for _, address := range dest {
+			err := network.SendUpdateCommand(address, "node-base-services", to_what)
+			if err != nil {
+				fmt.Println("Error sending update command to ", address)
+			}
 		}
 	case "cpumin":
-		fmt.Println("TODO")
+		cpumin := to_what[0]
+		if ok, value := checkValidCpuValue(cpumin); ok {
+			for _, address := range dest {
+				err := network.SendUpdateCommand(address, "node-cpumin", value)
+				if err != nil {
+					fmt.Println("Error sending update command to ", address)
+				}
+			}
+		} else {
+			fmt.Println("CPU value not valid: it should be a float between 0.0 and 1.0")
+		}
 	case "cpumax":
-		fmt.Println("TODO")
+		cpumax := to_what[0]
+		if ok, value := checkValidCpuValue(cpumax); ok {
+			for _, address := range dest {
+				err := network.SendUpdateCommand(address, "node-cpumax", value)
+				if err != nil {
+					fmt.Println("Error sending update command to ", address)
+				}
+			}
+		} else {
+			fmt.Println("CPU value not valid: it should be a float between 0.0 and 1.0")
+		}
 	default:
 		fmt.Println("Unrecognized parameter ", what)
 	}
+}
 
+func checkValidCpuValue(cpuval string) (bool, float64) {
+	value, err := strconv.ParseFloat(cpuval, 64)
+	if err != nil {
+		return false, 0.0
+	}
+	if value < 0.0 || value > 1.0 {
+		return false, 0.0
+	}
+
+	return true, value
+}
+
+func setService(clusterName string, who string, what string, to_what []string) {
+	nodes := cluster.ListNodes(clusterName, false)
+	names := []string{}
+	for name, _ := range cluster.ListServices(clusterName) {
+		names = append(names, name)
+	}
+
+	ok, _ := checkValidServices([]string{who}, names)
+	if !ok {
+		fmt.Println("Unrecognized service ", who)
+		return
+	}
+	service := cluster.GetService(clusterName, who)
+	switch what {
+	case "mrt":
+		mrt := to_what[0]
+		if ok, value := checkValidMRT(mrt); ok {
+			service.Constraints.MaxRespTime = value
+			cluster.UpdateService(clusterName, who, service)
+			for _, address := range nodes {
+				network.SendUpdateCommand(address, "service-mrt", who)
+			}
+		} else {
+			fmt.Println("MRT value not valid. It should be a positive float value")
+		}
+	default:
+		fmt.Println("Unrecognized parameter ", what)
+	}
 }
 
 func checkValidServices(services []string, list []string) (bool, []string) {
@@ -231,6 +327,19 @@ func checkValidServices(services []string, list []string) (bool, []string) {
 	}
 
 	return check, notValid
+}
+
+func checkValidMRT(mrt string) (bool, float64) {
+	value, err := strconv.ParseFloat(mrt, 64)
+	if err != nil {
+		return false, 0.0
+	}
+
+	if value < 0 {
+		return false, 0.0
+	}
+
+	return true, value
 }
 
 func (m *Manager) start(cmd string) {
@@ -285,37 +394,97 @@ func (m *Manager) show(cmd string) {
 	case "service":
 		fmt.Println("TODO")
 	case "node":
+		if !m.isClusterSet() {
+			return
+		}
 		showNode(m.Cluster, who, what)
 	}
 }
 
 func showNode(clusterName string, nodeName string, what string) {
-	nodes := cluster.ListNodes(clusterName, false)
-	if _, ok := nodes[nodeName]; !ok {
-		fmt.Println("Unrecognized node ", nodeName)
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
+	nodes := cluster.GetNodes(clusterName, false)
+	if nodeName != "all" {
+		nodes := cluster.ListNodes(clusterName, false)
+		if _, ok := nodes[nodeName]; !ok {
+			fmt.Println("Unrecognized node ", nodeName)
+			return
+		}
 	}
-	node := cluster.GetNode(clusterName, nodeName)
+
 	switch what {
 	case "config":
-		config := node.Configuration
-		fmt.Printf("NAME\tUUID\tADDRESS\tCLUSTER\n")
-		fmt.Printf("%s\t%s\t%s\t%s\n", config.Name, config.UUID, config.Address, config.Cluster)
+		fmt.Fprintf(w, "NAME\tUUID\tADDRESS\tCLUSTER\tREMOTE\n")
+		for _, node := range nodes {
+			config := node.Configuration
+			if nodeName != "all" {
+				if node.Configuration.Name == nodeName {
+					fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+						config.Name,
+						config.UUID,
+						config.Address,
+						config.Cluster,
+						config.Remote,
+					)
+				}
+			} else {
+				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+					config.Name,
+					config.UUID,
+					config.Address,
+					config.Cluster,
+					config.Remote,
+				)
+			}
+		}
 	case "constraints":
-		constraints := node.Constraints
-		fmt.Printf("BASE-SERVICES\tCPU-MIN\tCPU-MAX\n")
-		fmt.Printf("%v\t%f\t%f\n", constraints.BaseServices, constraints.CpuMin, constraints.CpuMax)
+		fmt.Fprintf(w, "NAME\tBASE-SERVICES\tCPU-MIN\tCPU-MAX\n")
+		for _, node := range nodes {
+			constraints := node.Constraints
+			if nodeName != "all" {
+				if node.Configuration.Name == nodeName {
+					fmt.Fprintf(w, "%s\t%v\t%f\t%f\n",
+						node.Configuration.Name,
+						constraints.BaseServices,
+						constraints.CpuMin,
+						constraints.CpuMax,
+					)
+				}
+			} else {
+				fmt.Fprintf(w, "%s\t%v\t%f\t%f\n",
+					node.Configuration.Name,
+					constraints.BaseServices,
+					constraints.CpuMin,
+					constraints.CpuMax,
+				)
+			}
+		}
 	case "resources":
-		resources := node.Resources
-		fmt.Printf("CORES\tMEMORY\n")
-		fmt.Printf("%d\t%d\n", resources.TotalCpus, resources.TotalMemory)
+		fmt.Fprintf(w, "NAME\tCORES\tMEMORY\n")
+		for _, node := range nodes {
+			resources := node.Resources
+			if nodeName != "all" {
+				if node.Configuration.Name == nodeName {
+					fmt.Fprintf(w, "%s\t%d\t%d\n",
+						node.Configuration.Name,
+						resources.TotalCpus,
+						resources.TotalMemory,
+					)
+				}
+			} else {
+				fmt.Fprintf(w, "%s\t%d\t%d\n",
+					node.Configuration.Name,
+					resources.TotalCpus,
+					resources.TotalMemory,
+				)
+			}
+		}
 	default:
 		fmt.Println("Unrecognized node property ", what)
 	}
 
-}
-
-func unknown(cmd string) {
-	fmt.Printf("Unknown command %q.\n", cmd)
+	w.Flush()
 }
 
 func (m *Manager) isClusterSet() bool {
@@ -324,4 +493,8 @@ func (m *Manager) isClusterSet() bool {
 		fmt.Println("Cluster not set.")
 	}
 	return isSet
+}
+
+func unknown(cmd string) {
+	fmt.Printf("Unknown command %q.\n", cmd)
 }
