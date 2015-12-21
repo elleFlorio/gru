@@ -45,23 +45,21 @@ func Run() {
 			Action: create,
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name: "etcdserver, e",
-					//Value:  "http://localhost:4001",
-					Usage:  fmt.Sprintf("url of etcd server. Default is 'http://localhost:4001'"),
-					EnvVar: "GRU_ETCD",
+					Name:   "etcdserver, e",
+					Usage:  fmt.Sprintf("url of etcd server"),
+					EnvVar: "ETCD_ADDR",
 				},
 			},
 		},
 		{
 			Name:   "join",
-			Usage:  "join a GRU cluster. Need as argument the ID of the cluster.",
+			Usage:  "join a GRU cluster. Need as argument the name of the cluster.",
 			Action: join,
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name: "etcdserver, e",
-					//Value:  "http://localhost:4001",
-					Usage:  fmt.Sprintf("url of etcd server. Default is 'http://localhost:4001'"),
-					EnvVar: "GRU_ETCD",
+					Name:   "etcdserver, e",
+					Usage:  fmt.Sprintf("url of etcd server"),
+					EnvVar: "ETCD_ADDR",
 				},
 				cli.StringFlag{
 					Name:  "name, n",
@@ -72,7 +70,7 @@ func Run() {
 					Name:   "address, a",
 					Value:  "",
 					Usage:  fmt.Sprintf("Address of the node. If not provided is taken automatically from the host"),
-					EnvVar: "GRU_ADDR",
+					EnvVar: "HostIP",
 				},
 				cli.StringFlag{
 					Name:   "port, p",
@@ -88,9 +86,9 @@ func Run() {
 			Action: manage,
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "etcdserver, e",
-					Value: "http://localhost:4001",
-					Usage: fmt.Sprintf("url of etcd server. Default is 'http://localhost:4001'"),
+					Name:   "etcdserver, e",
+					Usage:  fmt.Sprintf("url of etcd server"),
+					EnvVar: "ETCD_ADDR",
 				},
 			},
 		},
