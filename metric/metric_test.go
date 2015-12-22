@@ -8,6 +8,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
@@ -37,7 +38,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestUpdateMetrics(t *testing.T) {
-	service.UpdateServices(service.CreateMockServices())
+	cfg.SetServices(service.CreateMockServices())
 
 	UpdateMetrics()
 	assert.Equal(t, 0.0, Metrics().Service["service1"].Stats.CpuTot)

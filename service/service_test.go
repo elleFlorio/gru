@@ -1,15 +1,16 @@
 package service
 
 import (
-	"os"
 	"testing"
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+
+	cfg "github.com/elleFlorio/gru/configuration"
 )
 
 func TestGetServiceByType(t *testing.T) {
-	defer CleanServices()
-	services = CreateMockServices()
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
 
 	ws := GetServiceByType("webserver")
 	if assert.Len(t, ws, 2, "there should be 2 services with type webserver") {
@@ -28,8 +29,8 @@ func TestGetServiceByType(t *testing.T) {
 }
 
 func TestGetServiceByName(t *testing.T) {
-	defer CleanServices()
-	services = CreateMockServices()
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
 
 	s1, err := GetServiceByName("service2")
 	assert.Equal(t, "service2", s1.Name, "service name should be service1")
@@ -39,8 +40,8 @@ func TestGetServiceByName(t *testing.T) {
 }
 
 func TestGetServiceByImage(t *testing.T) {
-	defer CleanServices()
-	services = CreateMockServices()
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
 
 	img1, err := GetServiceByImage("test/mysql")
 	assert.Equal(t, "test/mysql", img1.Image, "service image should be test/tomcat")
@@ -50,41 +51,41 @@ func TestGetServiceByImage(t *testing.T) {
 }
 
 func TestAddServices(t *testing.T) {
-	defer CleanServices()
-	services = CreateMockServices()
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
 
-	newService := Service{
+	newService := cfg.Service{
 		Name:  "newService",
 		Type:  "mockService",
 		Image: "noImage",
 	}
-	newServices := []Service{newService}
+	newServices := []cfg.Service{newService}
 
-	AddServices(newServices)
-	assert.Contains(t, services, newService, "services should contain the added service")
+	cfg.AddServices(newServices)
+	assert.Contains(t, cfg.GetServices(), newService, "services should contain the added service")
 }
 
 func TestRemoveServices(t *testing.T) {
-	defer CleanServices()
-	services = CreateMockServices()
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
 	rmService := "service2"
 	rmServices := []string{rmService}
 
-	RemoveServices(rmServices)
+	cfg.RemoveServices(rmServices)
 	assert.NotContains(t, List(), rmService, "services should not contain removed service 'service2'")
 }
 
 func TestUpdateServices(t *testing.T) {
-	defer CleanServices()
-	services = CreateMockServices()
-	newService := Service{
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
+	newService := cfg.Service{
 		Name:  "newService",
 		Type:  "mockService",
 		Image: "noImage",
 	}
-	newServices := []Service{newService}
+	newServices := []cfg.Service{newService}
 
-	UpdateServices(newServices)
-	assert.Len(t, services, 1, "services should have lenght = 1 after the update")
+	cfg.SetServices(newServices)
+	assert.Len(t, cfg.GetServices(), 1, "services should have lenght = 1 after the update")
 	assert.Contains(t, List(), "newService", "services should contain service 'newService' after the update")
 }

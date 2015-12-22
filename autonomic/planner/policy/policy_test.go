@@ -6,9 +6,8 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/node"
-	"github.com/elleFlorio/gru/service"
 )
 
 var plc map[string]GruPolicy
@@ -48,9 +47,9 @@ func TestList(t *testing.T) {
 }
 
 func TestWeight(t *testing.T) {
-	service.UpdateServices(createServices())
+	cfg.SetServices(createServices())
 	analytics := createAnalytics()
-	node.UpdateNodeConfig(createNode())
+	cfg.SetNode(createNode())
 
 	assert.InEpsilon(t, 0.0, plc["scalein"].Weight("service1", analytics), c_EPSILON)
 	assert.InEpsilon(t, 0.16, plc["scalein"].Weight("service2", analytics), c_EPSILON)
@@ -62,23 +61,23 @@ func TestWeight(t *testing.T) {
 	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service4", analytics), c_EPSILON)
 }
 
-func createServices() []service.Service {
-	srv1 := service.Service{}
+func createServices() []cfg.Service {
+	srv1 := cfg.Service{}
 	srv1.Name = "service1"
 	srv1.Instances.Running = []string{"instance1_1"}
 
-	srv2 := service.Service{}
+	srv2 := cfg.Service{}
 	srv2.Name = "service2"
 	srv2.Instances.Running = []string{"instance2_1"}
 	srv2.Instances.Pending = []string{"instance2_2"}
 
-	srv3 := service.Service{}
+	srv3 := cfg.Service{}
 	srv3.Name = "service3"
 
-	srv4 := service.Service{}
+	srv4 := cfg.Service{}
 	srv4.Name = "service4"
 
-	services := []service.Service{srv1, srv2, srv3, srv4}
+	services := []cfg.Service{srv1, srv2, srv3, srv4}
 
 	return services
 }
@@ -114,8 +113,8 @@ func createAnalytics() analyzer.GruAnalytics {
 	return analytics
 }
 
-func createNode() node.Node {
-	n := node.Node{}
+func createNode() cfg.Node {
+	n := cfg.Node{}
 	n.Constraints.BaseServices = []string{"service3"}
 	return n
 }

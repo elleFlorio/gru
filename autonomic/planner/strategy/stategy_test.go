@@ -5,8 +5,8 @@ import (
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/service"
 )
 
 func TestNew(t *testing.T) {
@@ -34,7 +34,7 @@ func TestList(t *testing.T) {
 func TestMakeDecision(t *testing.T) {
 	var plan *GruPlan
 
-	s := service.Service{}
+	s := cfg.Service{}
 	a := []enum.Action{enum.START}
 
 	plans := []GruPlan{

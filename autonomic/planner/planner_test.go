@@ -8,6 +8,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
@@ -30,7 +31,7 @@ func TestSetPlannerStrategy(t *testing.T) {
 
 func TestBuildPlans(t *testing.T) {
 	srvcs := service.CreateMockServices()
-	service.UpdateServices(srvcs)
+	cfg.SetServices(srvcs)
 	analytics := analyzer.GruAnalytics{}
 	plans := buildPlans(analytics)
 	assert.Len(t, plans, 1)
@@ -49,14 +50,14 @@ func TestSavePlan(t *testing.T) {
 }
 
 func TestConvertPlanToData(t *testing.T) {
-	plan := strategy.CreateMockPlan("scaleout", 0.0, service.Service{}, enum.Actions{enum.START})
+	plan := strategy.CreateMockPlan("scaleout", 0.0, cfg.Service{}, enum.Actions{enum.START})
 
 	_, err := convertPlanToData(plan)
 	assert.NoError(t, err)
 }
 
 func TestConvertDataToPlan(t *testing.T) {
-	plan := strategy.CreateMockPlan("scaleout", 0.0, service.Service{}, enum.Actions{enum.START})
+	plan := strategy.CreateMockPlan("scaleout", 0.0, cfg.Service{}, enum.Actions{enum.START})
 	data_ok, err := convertPlanToData(plan)
 	data_bad := []byte{}
 
@@ -74,14 +75,14 @@ func TestGetPlannerData(t *testing.T) {
 	_, err = GetPlannerData()
 	assert.Error(t, err)
 
-	strategy.StoreMockPlan("policy", 0.8, service.Service{}, enum.Actions{})
+	strategy.StoreMockPlan("policy", 0.8, cfg.Service{}, enum.Actions{})
 	_, err = GetPlannerData()
 	assert.NoError(t, err)
 }
 
 func TestRun(t *testing.T) {
 	srvcs := service.CreateMockServices()
-	service.UpdateServices(srvcs)
+	cfg.SetServices(srvcs)
 	assert.Nil(t, Run(analyzer.GruAnalytics{}))
 
 	analytics := analyzer.CreateMockAnalytics()

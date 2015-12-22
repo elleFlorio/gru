@@ -7,9 +7,8 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	"github.com/elleFlorio/gru/autonomic/monitor"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/node"
-	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
 )
@@ -49,89 +48,89 @@ func TestComputeServiceResources(t *testing.T) {
 	s_error := createService(name, cpu1, "error")
 
 	//error
-	node.UpdateNodeConfig(n_empty)
-	service.UpdateServices([]service.Service{s_error})
+	cfg.SetNode(n_empty)
+	cfg.SetServices([]cfg.Service{s_error})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
 
 	// Node is full, all labels should be red
-	node.UpdateNodeConfig(n_full)
-	service.UpdateServices([]service.Service{s_over})
+	cfg.SetNode(n_full)
+	cfg.SetServices([]cfg.Service{s_over})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_bigger})
+	cfg.SetServices([]cfg.Service{s_bigger})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_big})
+	cfg.SetServices([]cfg.Service{s_big})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_medium})
+	cfg.SetServices([]cfg.Service{s_medium})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_low})
+	cfg.SetServices([]cfg.Service{s_low})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_lower})
+	cfg.SetServices([]cfg.Service{s_lower})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
 
-	node.UpdateNodeConfig(n_half_full)
-	service.UpdateServices([]service.Service{s_over})
+	cfg.SetNode(n_half_full)
+	cfg.SetServices([]cfg.Service{s_over})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_bigger})
+	cfg.SetServices([]cfg.Service{s_bigger})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_big})
+	cfg.SetServices([]cfg.Service{s_big})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_medium})
+	cfg.SetServices([]cfg.Service{s_medium})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_low})
+	cfg.SetServices([]cfg.Service{s_low})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_lower})
+	cfg.SetServices([]cfg.Service{s_lower})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
 
-	node.UpdateNodeConfig(n_half_empty)
-	service.UpdateServices([]service.Service{s_over})
+	cfg.SetNode(n_half_empty)
+	cfg.SetServices([]cfg.Service{s_over})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_bigger})
+	cfg.SetServices([]cfg.Service{s_bigger})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_big})
+	cfg.SetServices([]cfg.Service{s_big})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_medium})
+	cfg.SetServices([]cfg.Service{s_medium})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_low})
+	cfg.SetServices([]cfg.Service{s_low})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_lower})
+	cfg.SetServices([]cfg.Service{s_lower})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
 
-	node.UpdateNodeConfig(n_empty)
-	service.UpdateServices([]service.Service{s_over})
+	cfg.SetNode(n_empty)
+	cfg.SetServices([]cfg.Service{s_over})
 	assert.Equal(t, 0.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_bigger})
+	cfg.SetServices([]cfg.Service{s_bigger})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_big})
+	cfg.SetServices([]cfg.Service{s_big})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_medium})
+	cfg.SetServices([]cfg.Service{s_medium})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_low})
+	cfg.SetServices([]cfg.Service{s_low})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
-	service.UpdateServices([]service.Service{s_lower})
+	cfg.SetServices([]cfg.Service{s_lower})
 	assert.Equal(t, 1.0, resourcesAvailable(name))
 }
 
 // CpuSet or CpuShares?
-func createService(name string, cpu string, mem string) service.Service {
-	srvConfig := service.Config{
+func createService(name string, cpu string, mem string) cfg.Service {
+	srvConfig := cfg.ServiceDocker{
 		CpusetCpus: cpu,
 		Memory:     mem,
 	}
 
-	srv := service.Service{
-		Name:          name,
-		Configuration: srvConfig,
+	srv := cfg.Service{
+		Name:   name,
+		Docker: srvConfig,
 	}
 
 	return srv
 }
 
-func createNode(totCpu int64, totMem string, usedCpu int64, usedMem string) node.Node {
+func createNode(totCpu int64, totMem string, usedCpu int64, usedMem string) cfg.Node {
 	totMemB, _ := utils.RAMInBytes(totMem)
 	usedMemB, _ := utils.RAMInBytes(usedMem)
 
-	resources := node.Resources{totMemB, totCpu, usedMemB, usedCpu}
-	nd := node.Node{Resources: resources}
+	resources := cfg.NodeResources{totMemB, totCpu, usedMemB, usedCpu}
+	nd := cfg.Node{Resources: resources}
 
 	return nd
 }
@@ -141,14 +140,14 @@ func TestAnalyzeServices(t *testing.T) {
 		Service: make(map[string]ServiceAnalytics),
 	}
 
-	services := []service.Service{
+	services := []cfg.Service{
 		createService("service1", "0,1,2,3", "4G"),
 		createService("service2", "0", "2G"),
 	}
-	service.UpdateServices(services)
+	cfg.SetServices(services)
 
 	nd := createNode(6, "8G", 0, "0G")
-	node.UpdateNodeConfig(nd)
+	cfg.SetNode(nd)
 
 	stats := monitor.CreateMockStats()
 	analyzeServices(&analytics, stats)
@@ -166,15 +165,15 @@ func TestComputeSystemResources(t *testing.T) {
 	n_half_empty := createNode(6, "8G", 2, "2G")
 	n_empty := createNode(6, "8G", 0, "0G")
 
-	node.UpdateNodeConfig(n_full)
+	cfg.SetNode(n_full)
 	assert.Equal(t, 0.0, systemResourcesAvailable())
-	node.UpdateNodeConfig(n_half_full)
+	cfg.SetNode(n_half_full)
 	assert.InEpsilon(t, 0.3, systemResourcesAvailable(), c_EPSILON)
-	node.UpdateNodeConfig(n_half)
+	cfg.SetNode(n_half)
 	assert.InEpsilon(t, 0.5, systemResourcesAvailable(), c_EPSILON)
-	node.UpdateNodeConfig(n_half_empty)
+	cfg.SetNode(n_half_empty)
 	assert.InEpsilon(t, 0.7, systemResourcesAvailable(), c_EPSILON)
-	node.UpdateNodeConfig(n_empty)
+	cfg.SetNode(n_empty)
 	assert.InEpsilon(t, 1.0, systemResourcesAvailable(), c_EPSILON)
 }
 
@@ -240,7 +239,7 @@ func TestGetPeerAnalytics(t *testing.T) {
 }
 
 func TestComputeServicesAvg(t *testing.T) {
-	service.UpdateServices(createServicesWithNames([]string{"s1", "s2", "s3", "s4"}))
+	cfg.SetServices(createServicesWithNames([]string{"s1", "s2", "s3", "s4"}))
 	analytics := createLocal()
 	peers := createPeers()
 
@@ -288,10 +287,10 @@ func TestComputeServicesAvg(t *testing.T) {
 
 }
 
-func createServicesWithNames(names []string) []service.Service {
-	srvcs := []service.Service{}
+func createServicesWithNames(names []string) []cfg.Service {
+	srvcs := []cfg.Service{}
 	for _, name := range names {
-		srv := service.Service{
+		srv := cfg.Service{
 			Name: name,
 		}
 		srvcs = append(srvcs, srv)
@@ -369,7 +368,7 @@ func createPeers() []GruAnalytics {
 	return []GruAnalytics{p1, p2}
 }
 
-func createInstaceStatus(nInstRun int, nInstPend int, nInstStop int, nInstPaus int) service.InstanceStatus {
+func createInstaceStatus(nInstRun int, nInstPend int, nInstStop int, nInstPaus int) cfg.ServiceStatus {
 	nInstAll := nInstRun + nInstPend + nInstStop + nInstPaus
 
 	inst_all := createRandomInstanceNames(nInstAll, 5)
@@ -378,7 +377,7 @@ func createInstaceStatus(nInstRun int, nInstPend int, nInstStop int, nInstPaus i
 	inst_stp := createRandomInstanceNames(nInstStop, 5)
 	inst_pau := createRandomInstanceNames(nInstPaus, 5)
 
-	instStat := service.InstanceStatus{
+	instStat := cfg.ServiceStatus{
 		inst_all,
 		inst_run,
 		inst_pen,
@@ -406,7 +405,7 @@ func randStringBytes(n int) string {
 }
 
 func createServiceAnalytics(load float64, cpu float64, mem float64,
-	health float64, instStatus service.InstanceStatus) ServiceAnalytics {
+	health float64, instStatus cfg.ServiceStatus) ServiceAnalytics {
 
 	srvA := ServiceAnalytics{
 		Load: load,
@@ -422,9 +421,9 @@ func createServiceAnalytics(load float64, cpu float64, mem float64,
 }
 
 func createSystemAnalytics(services []string, cpu float64,
-	mem float64, health float64, instStatus ...service.InstanceStatus) SystemAnalytics {
+	mem float64, health float64, instStatus ...cfg.ServiceStatus) SystemAnalytics {
 
-	sysInstSt := service.InstanceStatus{}
+	sysInstSt := cfg.ServiceStatus{}
 	for _, st := range instStatus {
 		sysInstSt.All = append(sysInstSt.All, st.All...)
 		sysInstSt.Pending = append(sysInstSt.Pending, st.Pending...)

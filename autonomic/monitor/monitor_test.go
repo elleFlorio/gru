@@ -6,7 +6,7 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
-	"github.com/elleFlorio/gru/node"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
@@ -15,12 +15,12 @@ func init() {
 	//Initialize storage
 	storage.New("internal")
 	metric.Manager().Start()
-	n := node.Node{
-		Resources: node.Resources{
+	n := cfg.Node{
+		Resources: cfg.NodeResources{
 			TotalCpus: 1,
 		},
 	}
-	node.UpdateNodeConfig(n)
+	cfg.SetNode(n)
 }
 
 func TestUpdateRunningInstances(t *testing.T) {
@@ -237,7 +237,7 @@ func TestGetMonitorData(t *testing.T) {
 func TestRun(t *testing.T) {
 	gruStats = CreateMockStats()
 	history = CreateMockHistory()
-	service.UpdateServices(service.CreateMockServices())
+	cfg.SetServices(service.CreateMockServices())
 
 	assert.NotEmpty(t, Run())
 }

@@ -5,11 +5,11 @@ import (
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
-	"github.com/elleFlorio/gru/service"
+	cfg "github.com/elleFlorio/gru/configuration"
 )
 
-func createServConfig() service.Config {
-	cfg := service.Config{}
+func createServConfig() cfg.ServiceDocker {
+	cfg := cfg.ServiceDocker{}
 	cfg.Cmd = []string{"a", "b"}
 	cfg.CpusetCpus = "0"
 	cfg.CpuShares = 512
@@ -22,14 +22,14 @@ func createServConfig() service.Config {
 	return cfg
 }
 
-func createMockBindings() map[string][]service.PortBinding {
-	bindings := make(map[string][]service.PortBinding)
-	bind_1 := service.PortBinding{"a", "b"}
-	bind_2 := service.PortBinding{"c", "d"}
-	bind_3 := service.PortBinding{"e", "f"}
+func createMockBindings() map[string][]cfg.PortBinding {
+	bindings := make(map[string][]cfg.PortBinding)
+	bind_1 := cfg.PortBinding{"a", "b"}
+	bind_2 := cfg.PortBinding{"c", "d"}
+	bind_3 := cfg.PortBinding{"e", "f"}
 
-	bindings["a"] = []service.PortBinding{bind_1, bind_2}
-	bindings["b"] = []service.PortBinding{bind_3}
+	bindings["a"] = []cfg.PortBinding{bind_1, bind_2}
+	bindings["b"] = []cfg.PortBinding{bind_3}
 
 	return bindings
 }
