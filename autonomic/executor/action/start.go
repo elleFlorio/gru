@@ -5,6 +5,7 @@ import (
 
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/enum"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/utils"
 )
 
@@ -37,6 +38,9 @@ func (p *Start) Run(config GruActionConfig) error {
 		}).Debugln("Starting a stopped container")
 		toStart = stopped[0]
 		err = container.Docker().Client.StartContainer(toStart, config.HostConfig)
+		if err != nil {
+			res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
+		}
 		return err
 	}
 
@@ -46,6 +50,9 @@ func (p *Start) Run(config GruActionConfig) error {
 	}).Debugln("No stopped/paused container to start: creating new one")
 	toStart, err = createNewContainer(config)
 	err = container.Docker().Client.StartContainer(toStart, config.HostConfig)
+	if err != nil {
+		res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
+	}
 
 	return err
 }

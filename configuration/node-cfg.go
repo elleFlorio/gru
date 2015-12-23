@@ -23,8 +23,6 @@ type NodeConstraints struct {
 }
 
 type NodeResources struct {
-	TotalMemory int64 `json:"totalmemory"`
 	TotalCpus   int64 `json:"totalcpus"`
-	UsedMemory  int64 `json:"usedmemory"`
-	UsedCpu     int64 `json:"usedcpu"`
+	TotalMemory int64 `json:"totalmemory"`
 }

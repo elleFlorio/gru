@@ -5,6 +5,7 @@ import (
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/enum"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -31,6 +32,14 @@ func (p *ScaleOut) Weight(name string, analytics analyzer.GruAnalytics) float64 
 	if srvAnalytics.Resources.Available < 1.0 {
 		return 0.0
 	}
+
+	srvCores := srv.Docker.CpusetCpus
+	if srvCores != "" {
+		if !res.CheckSpecificCoresAvailable(srvCores) {
+			return 0.0
+		}
+	}
+
 	// LOAD
 	load := srvAnalytics.Load
 	value_load := math.Max(load, c_THRESHOLD_SCALEOUT_LOAD)

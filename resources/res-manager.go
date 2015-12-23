@@ -11,19 +11,25 @@ import (
 
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/utils"
 )
 
 var (
-	resources Resource
-	mutex_cpu = sync.RWMutex{}
+	resources     Resource
+	instanceCores map[string]string
 
-	ErrTooManyCores    = errors.New("Number of requested cores exceed the total number of available ones")
+	mutex_cpu      = sync.RWMutex{}
+	mutex_instance = sync.RWMutex{}
+
+	ErrTooManyCores    = errors.New("Number of requested cores exceeds the total number of available ones")
 	ErrWrongCoreNumber = errors.New("The number of the specified core is not correct")
 )
 
 func init() {
 	resources = Resource{}
 	resources.CPU.Cores = make(map[int]bool)
+
+	instanceCores = make(map[string]string)
 }
 
 func Initialize() {
@@ -43,6 +49,33 @@ func computeTotalResources() {
 	for i := 0; i < int(resources.CPU.Total); i++ {
 		resources.CPU.Cores[i] = true
 	}
+}
+
+func CleanResources() {
+	defer runtime.Gosched()
+
+	resources.CPU.Used = 0
+	resources.Memory.Used = 0
+
+	mutex_cpu.Lock()
+	resources.CPU.Cores = make(map[int]bool)
+	mutex_cpu.Unlock()
+
+	mutex_instance.Lock()
+	instanceCores = make(map[string]string)
+	mutex_instance.Unlock()
+}
+
+func GetResources() *Resource {
+	return &resources
+}
+
+func GetInstanceCores(id string) string {
+	if cores, ok := instanceCores[id]; ok {
+		return cores
+	}
+
+	return ""
 }
 
 func ComputeUsedResources() {
@@ -107,6 +140,55 @@ func ComputeUsedMemory() (int64, error) {
 	return memory, nil
 }
 
+func AvailableResourcesCPU() float64 {
+	return 1.0 - (float64(resources.CPU.Used) / float64(resources.CPU.Total))
+}
+
+func AvailableResourcesMemory() float64 {
+	return 1.0 - (float64(resources.Memory.Used) / float64(resources.Memory.Total))
+}
+
+func AvailableResources() float64 {
+	return (AvailableResourcesCPU() + AvailableResourcesMemory()) / 2
+}
+
+func AvailableResourcesService(name string) float64 {
+	var err error
+
+	nodeCpu := resources.CPU.Total
+	nodeUsedCpu := resources.CPU.Used
+	nodeMem := resources.Memory.Total
+	nodeUsedMem := resources.Memory.Used
+
+	srv, _ := service.GetServiceByName(name)
+	srvCpu := srv.Docker.CPUnumber
+	log.WithFields(log.Fields{
+		"service": name,
+		"cpus":    srvCpu,
+	}).Debugln("Service cpu resources")
+
+	var srvMem int64
+	if srv.Docker.Memory != "" {
+		srvMem, err = utils.RAMInBytes(srv.Docker.Memory)
+		if err != nil {
+			log.WithField("err", err).Warnln("Cannot convert service RAM in Bytes.")
+			return 0.0
+		}
+	} else {
+		srvMem = 0
+	}
+
+	if nodeCpu < int64(srvCpu) || nodeMem < int64(srvMem) {
+		return 0.0
+	}
+
+	if (nodeCpu-nodeUsedCpu) < int64(srvCpu) || (nodeMem-nodeUsedMem) < int64(srvMem) {
+		return 0.0
+	}
+
+	return 1.0
+}
+
 func CheckCoresAvailable(number int) bool {
 	defer runtime.Gosched()
 
@@ -122,7 +204,35 @@ func CheckCoresAvailable(number int) bool {
 	return freeCores >= number
 }
 
-func CheckAndSetCores(number int) (string, bool) {
+func GetCoresAvailable(number int) (string, bool) {
+	defer runtime.Gosched()
+
+	cores_str := make([]string, 0, number)
+	mutex_cpu.RLock()
+	for i := 0; i < len(resources.CPU.Cores); i++ {
+		if resources.CPU.Cores[i] == true {
+			cores_str = append(cores_str, strconv.Itoa(i))
+		}
+
+		if len(cores_str) >= number {
+			break
+		}
+	}
+
+	if len(cores_str) < number {
+		log.Errorln("Error getting available cores: number of free cores < ", number)
+		mutex_cpu.RUnlock()
+		return "", false
+	}
+
+	mutex_cpu.RUnlock()
+
+	cores := strings.Join(cores_str, ",")
+	return cores, true
+}
+
+//DEPRECATED
+func CheckAndSetCores(number int, id string) (string, bool) {
 	defer runtime.Gosched()
 
 	cores_int := make([]int, 0, number)
@@ -139,6 +249,7 @@ func CheckAndSetCores(number int) (string, bool) {
 	}
 
 	if len(cores_int) < number {
+		log.Errorln("Error assigning cores: number of free cores < ", number)
 		mutex_cpu.Unlock()
 		return "", false
 	}
@@ -149,7 +260,13 @@ func CheckAndSetCores(number int) (string, bool) {
 	}
 	mutex_cpu.Unlock()
 
-	return strings.Join(cores_str, ","), true
+	// Record assigned cores to instance
+	cores := strings.Join(cores_str, ",")
+	mutex_instance.Lock()
+	instanceCores[id] = cores
+	mutex_instance.Unlock()
+
+	return cores, true
 }
 
 func CheckSpecificCoresAvailable(cpusetcpus string) bool {
@@ -173,7 +290,7 @@ func CheckSpecificCoresAvailable(cpusetcpus string) bool {
 	return available
 }
 
-func CheckAndSetSpecificCores(cpusetcpus string) bool {
+func CheckAndSetSpecificCores(cpusetcpus string, id string) bool {
 	defer runtime.Gosched()
 
 	request, err := getCoresNumber(cpusetcpus)
@@ -193,21 +310,38 @@ func CheckAndSetSpecificCores(cpusetcpus string) bool {
 	}
 
 	for _, req := range request {
-		resources.CPU.Cores[req] = true
+		resources.CPU.Cores[req] = false
 	}
 	mutex_cpu.Unlock()
+
+	// Record assigned cores to instance
+	mutex_instance.Lock()
+	instanceCores[id] = cpusetcpus
+	mutex_instance.Unlock()
 
 	return true
 }
 
-func FreeCores(cores string) {
+func FreeInstanceCores(id string) bool {
 	defer runtime.Gosched()
-	toFree, _ := getCoresNumber(cores)
-	mutex_cpu.Lock()
-	for _, core := range toFree {
-		resources.CPU.Cores[core] = true
+	if cores, ok := instanceCores[id]; ok {
+		toFree, _ := getCoresNumber(cores)
+		mutex_cpu.Lock()
+		for _, core := range toFree {
+			resources.CPU.Cores[core] = true
+		}
+		mutex_cpu.Unlock()
+
+		mutex_instance.Lock()
+		delete(instanceCores, id)
+		mutex_instance.Unlock()
+
+		return true
 	}
-	mutex_cpu.Unlock()
+
+	log.Errorln("Error freeing cores: unrecognized instance ", id)
+
+	return false
 }
 
 func getCoresNumber(cores string) ([]int, error) {

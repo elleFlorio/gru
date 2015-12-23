@@ -14,6 +14,7 @@ import (
 	"github.com/elleFlorio/gru/metric"
 	"github.com/elleFlorio/gru/network"
 	"github.com/elleFlorio/gru/node"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
 )
@@ -46,6 +47,7 @@ func join(c *cli.Context) {
 	initializeMetricSerivice()
 	initializeContainerEngine()
 	// Resources
+	initializeResources()
 	initializeNode(nodeName, clusterName)
 	// Join Cluster
 	registerToCluster(clusterName)
@@ -115,6 +117,10 @@ func initializeContainerEngine() {
 	log.WithField("docker", "ok").Infoln("Container engine initialized")
 }
 
+func initializeResources() {
+	res.Initialize()
+}
+
 func initializeNode(nodeName string, clusterName string) {
 	if nodeName == "random_name" {
 		nodeName = utils.GetRandomName(0)
@@ -125,7 +131,7 @@ func initializeNode(nodeName string, clusterName string) {
 		counter++
 	}
 	log.Debugln("Node name: ", nodeName)
-	node.CreateNode(nodeName)
+	node.CreateNode(nodeName, res.GetResources())
 }
 
 func nameExist(nodeName string, clusterName string) bool {

@@ -9,6 +9,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
 )
@@ -25,92 +26,28 @@ func init() {
 	storage.New("internal")
 }
 
-//TODO this is not so straithforward
-func TestComputeServiceResources(t *testing.T) {
-	cpu8 := "0,1,2,3,4,5,6,7"
-	cpu6 := "0,1,2,3,4,5"
-	cpu4 := "0,1,2,3"
-	cpu2 := "0,1"
-	cpu1 := "0"
+func TestAnalyzeServices(t *testing.T) {
+	analytics := GruAnalytics{
+		Service: make(map[string]ServiceAnalytics),
+	}
 
-	n_full := createNode(6, "8G", 6, "8G")
-	n_half_full := createNode(6, "8G", 4, "4G")
-	n_half_empty := createNode(6, "8G", 2, "2G")
-	n_empty := createNode(6, "8G", 0, "0G")
+	services := []cfg.Service{
+		createService("service1", "0,1,2,3", "4G"),
+		createService("service2", "0", "2G"),
+	}
+	cfg.SetServices(services)
 
-	name := "test"
-	s_over := createService(name, cpu8, "16G")
-	s_bigger := createService(name, cpu6, "8G")
-	s_big := createService(name, cpu4, "4G")
-	s_medium := createService(name, cpu2, "4G")
-	s_low := createService(name, cpu2, "2G")
-	s_lower := createService(name, cpu1, "1G")
-	s_error := createService(name, cpu1, "error")
+	setResources(6, "8G", 0, "0G")
 
-	//error
-	cfg.SetNode(n_empty)
-	cfg.SetServices([]cfg.Service{s_error})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
+	stats := monitor.CreateMockStats()
+	analyzeServices(&analytics, stats)
 
-	// Node is full, all labels should be red
-	cfg.SetNode(n_full)
-	cfg.SetServices([]cfg.Service{s_over})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_bigger})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_big})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_medium})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_low})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_lower})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-
-	cfg.SetNode(n_half_full)
-	cfg.SetServices([]cfg.Service{s_over})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_bigger})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_big})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_medium})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_low})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_lower})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-
-	cfg.SetNode(n_half_empty)
-	cfg.SetServices([]cfg.Service{s_over})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_bigger})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_big})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_medium})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_low})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_lower})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-
-	cfg.SetNode(n_empty)
-	cfg.SetServices([]cfg.Service{s_over})
-	assert.Equal(t, 0.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_bigger})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_big})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_medium})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_low})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
-	cfg.SetServices([]cfg.Service{s_lower})
-	assert.Equal(t, 1.0, resourcesAvailable(name))
+	assert.Len(t,
+		analytics.Service["service1"].Instances.Running,
+		len(stats.Service["service1"].Instances.Running),
+	)
 }
 
-// CpuSet or CpuShares?
 func createService(name string, cpu string, mem string) cfg.Service {
 	srvConfig := cfg.ServiceDocker{
 		CpusetCpus: cpu,
@@ -125,56 +62,14 @@ func createService(name string, cpu string, mem string) cfg.Service {
 	return srv
 }
 
-func createNode(totCpu int64, totMem string, usedCpu int64, usedMem string) cfg.Node {
+func setResources(totCpu int64, totMem string, usedCpu int64, usedMem string) {
 	totMemB, _ := utils.RAMInBytes(totMem)
 	usedMemB, _ := utils.RAMInBytes(usedMem)
-
-	resources := cfg.NodeResources{totMemB, totCpu, usedMemB, usedCpu}
-	nd := cfg.Node{Resources: resources}
-
-	return nd
-}
-
-func TestAnalyzeServices(t *testing.T) {
-	analytics := GruAnalytics{
-		Service: make(map[string]ServiceAnalytics),
-	}
-
-	services := []cfg.Service{
-		createService("service1", "0,1,2,3", "4G"),
-		createService("service2", "0", "2G"),
-	}
-	cfg.SetServices(services)
-
-	nd := createNode(6, "8G", 0, "0G")
-	cfg.SetNode(nd)
-
-	stats := monitor.CreateMockStats()
-	analyzeServices(&analytics, stats)
-
-	assert.Len(t,
-		analytics.Service["service1"].Instances.Running,
-		len(stats.Service["service1"].Instances.Running),
-	)
-}
-
-func TestComputeSystemResources(t *testing.T) {
-	n_full := createNode(6, "8G", 6, "8G")
-	n_half_full := createNode(6, "8G", 4, "6G")
-	n_half := createNode(6, "8G", 3, "4G")
-	n_half_empty := createNode(6, "8G", 2, "2G")
-	n_empty := createNode(6, "8G", 0, "0G")
-
-	cfg.SetNode(n_full)
-	assert.Equal(t, 0.0, systemResourcesAvailable())
-	cfg.SetNode(n_half_full)
-	assert.InEpsilon(t, 0.3, systemResourcesAvailable(), c_EPSILON)
-	cfg.SetNode(n_half)
-	assert.InEpsilon(t, 0.5, systemResourcesAvailable(), c_EPSILON)
-	cfg.SetNode(n_half_empty)
-	assert.InEpsilon(t, 0.7, systemResourcesAvailable(), c_EPSILON)
-	cfg.SetNode(n_empty)
-	assert.InEpsilon(t, 1.0, systemResourcesAvailable(), c_EPSILON)
+	resources := res.GetResources()
+	resources.Memory.Total = totMemB
+	resources.Memory.Used = usedMemB
+	resources.CPU.Total = totCpu
+	resources.CPU.Used = usedCpu
 }
 
 func TestAnalyzeSystem(t *testing.T) {

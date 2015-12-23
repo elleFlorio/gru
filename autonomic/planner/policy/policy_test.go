@@ -8,6 +8,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
+	res "github.com/elleFlorio/gru/resources"
 )
 
 var plc map[string]GruPolicy
@@ -19,6 +20,9 @@ func init() {
 		"scalein":  &ScaleIn{},
 		"scaleout": &ScaleOut{},
 	}
+
+	res.GetResources().CPU.Total = 4
+	res.GetResources().Memory.Total = 4 * 1024 * 1024 * 1024
 }
 
 func TestGetPolicies(t *testing.T) {

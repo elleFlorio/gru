@@ -7,6 +7,7 @@ import (
 
 	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
 	"github.com/elleFlorio/gru/container"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -232,6 +233,8 @@ func removeResource(id string, stats *GruStats, hist *statsHistory) {
 	delete(stats.Instance, id)
 
 	delete(hist.instance, id)
+
+	res.FreeInstanceCores(id)
 
 	log.WithFields(log.Fields{
 		"service": srvName,

@@ -17,10 +17,8 @@ func CreateMockNode() cfg.Node {
 	}
 
 	mockResources := cfg.NodeResources{
-		TotalMemory: int64(8 * 1024 * 1024 * 1024),
 		TotalCpus:   int64(4),
-		UsedMemory:  int64(0),
-		UsedCpu:     int64(0),
+		TotalMemory: int64(8 * 1024 * 1024 * 1024),
 	}
 
 	mockNode := cfg.Node{

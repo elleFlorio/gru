@@ -4,17 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/node"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
-	"github.com/elleFlorio/gru/utils"
 )
 
 const overcommitratio float64 = 0.0
@@ -54,20 +52,13 @@ func Run(stats monitor.GruStats) GruAnalytics {
 }
 
 func updateNodeResources() {
-	_, err := node.UsedCpus()
-	if err != nil {
-		log.WithField("err", err).Errorln("Error computing node used CPU")
-	}
-	_, err = node.UsedMemory()
-	if err != nil {
-		log.WithField("err", err).Errorln("Error computing node used memory")
-	}
+	res.ComputeUsedResources()
 
 	log.WithFields(log.Fields{
-		"totalcpu": cfg.GetNodeResources().TotalCpus,
-		"usedcpu":  cfg.GetNodeResources().UsedCpu,
-		"totalmem": cfg.GetNodeResources().TotalMemory,
-		"usedmem":  cfg.GetNodeResources().UsedMemory,
+		"totalcpu": res.GetResources().CPU.Total,
+		"usedcpu":  res.GetResources().CPU.Used,
+		"totalmem": res.GetResources().Memory.Total,
+		"usedmem":  res.GetResources().Memory.Used,
 	}).Debugln("Updated node resources")
 }
 
@@ -76,7 +67,7 @@ func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
 		load := analyzeServiceLoad(name, value.Metrics.ResponseTime)
 		cpu := value.Cpu.Tot
 		mem := value.Memory.Tot
-		resAvailable := resourcesAvailable(name)
+		resAvailable := res.AvailableResourcesService(name)
 		instances := value.Instances
 
 		health := 1 - ((load + mem + cpu - resAvailable) / 4) //I don't like this...
@@ -141,51 +132,6 @@ func computeLoad(maxRt float64, avgRt float64) float64 {
 	return loadValue
 }
 
-func resourcesAvailable(name string) float64 {
-	var err error
-
-	nodeMem := cfg.GetNodeResources().TotalMemory
-	nodeCpu := cfg.GetNodeResources().TotalCpus
-	nodeUsedMem := cfg.GetNodeResources().UsedMemory
-	nodeUsedCpu := cfg.GetNodeResources().UsedCpu
-
-	srv, _ := service.GetServiceByName(name)
-	srvCpu := getNumberOfCpuFromString(srv.Docker.CpusetCpus)
-	log.WithFields(log.Fields{
-		"service": name,
-		"cpus":    srvCpu,
-	}).Debugln("Service cpu resources")
-
-	var srvMem int64
-	if srv.Docker.Memory != "" {
-		srvMem, err = utils.RAMInBytes(srv.Docker.Memory)
-		if err != nil {
-			log.WithField("err", err).Warnln("Cannot convert service RAM in Bytes.")
-			return 0.0
-		}
-	} else {
-		srvMem = 0
-	}
-
-	if nodeCpu < int64(srvCpu) || nodeMem < int64(srvMem) {
-		return 0.0
-	}
-
-	if (nodeCpu-nodeUsedCpu) < int64(srvCpu) || (nodeMem-nodeUsedMem) < int64(srvMem) {
-		return 0.0
-	}
-
-	return 1.0
-}
-
-func getNumberOfCpuFromString(cpuset string) int64 {
-	if cpuset == "" {
-		return 0
-	}
-
-	return int64(len(strings.Split(cpuset, ",")))
-}
-
 func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
 	sysSrvs := []string{}
 	for name, _ := range stats.Service {
@@ -196,15 +142,15 @@ func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
 	cpu := stats.System.Cpu
 	//TODO compute system mem!!!
 	mem := temp
-	res := systemResourcesAvailable()
+	resources := res.AvailableResources()
 	instances := stats.System.Instances
 
-	health := 1 - ((cpu + mem - res) / 3) //Ok, maybe this is a bit... "mah"...
+	health := 1 - ((cpu + mem - resources) / 3) //Ok, maybe this is a bit... "mah"...
 
 	sysRes := ResourcesAnalytics{
 		cpu,
 		mem,
-		res,
+		resources,
 	}
 
 	SystemAnalytics := SystemAnalytics{
@@ -215,19 +161,6 @@ func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
 	}
 
 	gruAnalytics.System = SystemAnalytics
-}
-
-func systemResourcesAvailable() float64 {
-	totalCpu := float64(cfg.GetNodeResources().TotalCpus)
-	totalMemory := float64(cfg.GetNodeResources().TotalMemory)
-	usedCpu := float64(cfg.GetNodeResources().UsedCpu)
-	usedMemory := float64(cfg.GetNodeResources().UsedMemory)
-
-	cpuRatio := usedCpu / totalCpu
-	memRatio := usedMemory / totalMemory
-	avgRatio := (cpuRatio + memRatio) / 2
-
-	return (1 - avgRatio)
 }
 
 func computeNodeHealth(analytics *GruAnalytics) {

@@ -5,6 +5,7 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 
 	cfg "github.com/elleFlorio/gru/configuration"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/utils"
 )
 
@@ -25,7 +26,13 @@ func CreateHostConfig(sConf cfg.ServiceDocker) *dockerclient.HostConfig {
 	hostConfig := dockerclient.HostConfig{}
 
 	hostConfig.CpuShares = sConf.CpuShares
-	hostConfig.CpusetCpus = sConf.CpusetCpus
+	if sConf.CpusetCpus == "" {
+		if assigned, ok := res.GetCoresAvailable(sConf.CPUnumber); ok {
+			hostConfig.CpusetCpus = assigned
+		} else {
+			log.Errorln("Error setting cpusetcpus in hostconfig")
+		}
+	}
 	hostConfig.Links = sConf.Links
 	hostConfig.PortBindings = createPortBindings(sConf.PortBindings)
 
