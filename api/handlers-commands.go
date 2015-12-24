@@ -10,6 +10,8 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/agent"
+	ch "github.com/elleFlorio/gru/channels"
+	com "github.com/elleFlorio/gru/communication"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/service"
 )
@@ -84,7 +86,11 @@ func executeCommand(cmd Command) {
 func startCommand(cmd Command) {
 	switch cmd.Target {
 	case "agent":
+		startCommunication()
 		startAgent()
+	case "service":
+		name := cmd.Object.(string)
+		startService(name)
 	default:
 		log.WithField("target", cmd.Target).Errorln("Unrecognized target for command start")
 	}
@@ -114,6 +120,22 @@ func deactivateNode() {
 	log.Debugln("Deactivating node")
 	cfg.ToggleActiveNode()
 	cfg.WriteNodeActive(cfg.GetNodeConfig().Remote, false)
+}
+
+func startCommunication() {
+	com.Start(
+		cfg.GetAgentCommunication().MaxFriends,
+		cfg.GetAgentCommunication().LoopTimeInterval,
+	)
+}
+
+func startService(name string) {
+	log.WithField("name", name).Debugln("Starting service")
+	toStart, err := service.GetServiceByName(name)
+	if err != nil {
+		log.WithField("name", name).Debugln("Error starting service")
+	}
+	ch.SendActionStartMessage(toStart)
 }
 
 func updateCommand(cmd Command) {

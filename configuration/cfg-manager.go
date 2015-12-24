@@ -3,6 +3,7 @@ package configuration
 const (
 	c_AGENT_DOCKER    = "docker"
 	c_AGENT_AUTONOMIC = "autonomic"
+	c_AGENT_COM       = "communication"
 	c_AGENT_STORAGE   = "storage"
 	c_AGENT_METRIC    = "metric"
 
@@ -34,6 +35,10 @@ func GetAgentAutonomic() *AutonomicConfig {
 	return getAgentSubConfig(c_AGENT_AUTONOMIC).(*AutonomicConfig)
 }
 
+func GetAgentCommunication() *CommunicationConfig {
+	return getAgentSubConfig(c_AGENT_COM).(*CommunicationConfig)
+}
+
 func GetAgentStorage() *StorageConfig {
 	return getAgentSubConfig(c_AGENT_STORAGE).(*StorageConfig)
 }
@@ -48,6 +53,8 @@ func getAgentSubConfig(subCfg string) interface{} {
 		return &agent.Docker
 	case c_AGENT_AUTONOMIC:
 		return &agent.Autonomic
+	case c_AGENT_COM:
+		return &agent.Communication
 	case c_AGENT_STORAGE:
 		return &agent.Storage
 	case c_AGENT_METRIC:

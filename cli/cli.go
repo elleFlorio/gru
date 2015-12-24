@@ -74,8 +74,8 @@ func Run() {
 				},
 				cli.StringFlag{
 					Name:   "port, p",
-					Value:  "8080",
-					Usage:  fmt.Sprintf("Port for the rest api server. Default is 8080"),
+					Value:  "5000",
+					Usage:  fmt.Sprintf("Port for the rest api server. Default is 5000"),
 					EnvVar: "GRU_PORT",
 				},
 			},

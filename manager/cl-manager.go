@@ -344,7 +344,7 @@ func checkValidMRT(mrt string) (bool, float64) {
 
 func (m *Manager) start(cmd string) {
 	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
-	if len(args) < 2 {
+	if len(args) < 3 {
 		fmt.Println("not enough arguments to 'start' command")
 		return
 	}
@@ -353,28 +353,64 @@ func (m *Manager) start(cmd string) {
 		return
 	}
 
+	who := args[1]
+
+	switch who {
+	case "agent":
+		m.startAgent(args[2:])
+	case "service":
+		m.startService(args[2], args[3:])
+	default:
+		fmt.Println("Unrecognized target ", who)
+	}
+}
+
+func (m *Manager) startAgent(where []string) {
 	var err error
 	nodes := cluster.ListNodes(m.Cluster, false)
-	if args[1] == "all" {
+	if where[0] == "all" {
 		for name, addr := range nodes {
-			err = network.SendStartCommand(addr)
+			err = network.SendStartAgentCommand(addr)
 			if err != nil {
-				fmt.Println("Error sending start command to node ", name)
+				fmt.Println("Error sending start agent command to node ", name)
 			}
 		}
 	} else {
-		for _, node := range args[1:] {
+		for _, node := range where {
 			if addr, ok := nodes[node]; ok {
-				err = network.SendStartCommand(addr)
+				err = network.SendStartAgentCommand(addr)
 				if err != nil {
-					fmt.Println("Error sending start command to node ", node)
+					fmt.Println("Error sending start agent command to node ", node)
 				}
 			} else {
 				fmt.Println("Cannot get address of node ", node)
 			}
 		}
 	}
+}
 
+func (m *Manager) startService(what string, where []string) {
+	var err error
+	nodes := cluster.ListNodes(m.Cluster, false)
+	if where[0] == "all" {
+		for name, addr := range nodes {
+			err = network.SendStartServiceCommand(addr, what)
+			if err != nil {
+				fmt.Println("Error sending start service command to node ", name)
+			}
+		}
+	} else {
+		for _, node := range where {
+			if addr, ok := nodes[node]; ok {
+				err = network.SendStartServiceCommand(addr, what)
+				if err != nil {
+					fmt.Println("Error sending start service command to node ", node)
+				}
+			} else {
+				fmt.Println("Cannot get address of node ", node)
+			}
+		}
+	}
 }
 
 func (m *Manager) show(cmd string) {

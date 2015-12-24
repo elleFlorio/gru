@@ -6,6 +6,7 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/codegangsta/cli"
 
+	"github.com/elleFlorio/gru/agent"
 	"github.com/elleFlorio/gru/api"
 	"github.com/elleFlorio/gru/cluster"
 	cfg "github.com/elleFlorio/gru/configuration"
@@ -51,6 +52,7 @@ func join(c *cli.Context) {
 	initializeNode(nodeName, clusterName)
 	// Join Cluster
 	registerToCluster(clusterName)
+	agent.StartMonitoring()
 	defer api.StartServer(port)
 
 	fmt.Printf("Joined cluster %s.\nWaiting for commands...\n", clusterName)
@@ -75,6 +77,7 @@ func initializeAgent(clusterName string) {
 	agentConfig := cfg.Agent{}
 	cfg.ReadAgentConfig(configPath, &agentConfig)
 	cfg.SetAgent(agentConfig)
+	agent.Initialize()
 }
 
 func initializeServices(clusterName string) {

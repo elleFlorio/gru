@@ -5,14 +5,22 @@ import (
 	cfg "github.com/elleFlorio/gru/configuration"
 )
 
+func Initialize() {
+	autonomic.Initialize(
+		cfg.GetAgentAutonomic().PlannerStrategy,
+	)
+}
+
+func StartMonitoring() {
+	autonomic.Start()
+}
+
 func Run() {
 	startAutonomicManager()
 }
 
 func startAutonomicManager() {
-	autonomic.Initialize(
+	autonomic.RunLoop(
 		cfg.GetAgentAutonomic().LoopTimeInterval,
-		cfg.GetAgentAutonomic().MaxFriends,
 	)
-	autonomic.RunLoop()
 }

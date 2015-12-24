@@ -1,6 +1,8 @@
 package action
 
 import (
+	"os"
+
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 
@@ -64,6 +66,7 @@ func createPortBindings(portBindings map[string][]cfg.PortBinding) map[string][]
 func CreateContainerConfig(sConf cfg.ServiceDocker) *dockerclient.ContainerConfig {
 	containerConfig := dockerclient.ContainerConfig{}
 	containerConfig.Memory = getMemInBytes(sConf.Memory)
+	containerConfig.Env = getEnvVars(sConf.Env)
 	containerConfig.Cmd = sConf.Cmd
 	containerConfig.Volumes = sConf.Volumes
 	containerConfig.Entrypoint = sConf.Entrypoint
@@ -89,4 +92,19 @@ func getMemInBytes(memory string) int64 {
 	}
 
 	return memInBytes
+}
+
+func getEnvVars(vars map[string]string) []string {
+	envVars := make([]string, 0, len(vars))
+	for name, value := range vars {
+		if value == "" {
+			value = os.Getenv(name)
+			if value == "" {
+				log.WithField("var", name).Warnln("Cannot get value of env variable")
+			}
+		}
+		envVars = append(envVars, name+"="+value)
+	}
+
+	return envVars
 }

@@ -1,10 +1,11 @@
 package configuration
 
 type Agent struct {
-	Docker    DockerConfig    `json:"docker"`
-	Autonomic AutonomicConfig `json:"autonomic"`
-	Storage   StorageConfig   `json:"storage"`
-	Metric    MetricConfig    `json:"metric"`
+	Docker        DockerConfig        `json:"docker"`
+	Autonomic     AutonomicConfig     `json:"autonomic"`
+	Communication CommunicationConfig `json:"communication"`
+	Storage       StorageConfig       `json:"storage"`
+	Metric        MetricConfig        `json:"metric"`
 }
 
 type DockerConfig struct {
@@ -13,6 +14,11 @@ type DockerConfig struct {
 }
 
 type AutonomicConfig struct {
+	LoopTimeInterval int    `json:"looptimeinterval"`
+	PlannerStrategy  string `json:"plannerstrategy"`
+}
+
+type CommunicationConfig struct {
 	LoopTimeInterval int `json:"looptimeinterval"`
 	MaxFriends       int `json:"maxfriends"`
 }

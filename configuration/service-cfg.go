@@ -24,6 +24,7 @@ type ServiceConstraints struct {
 }
 
 type ServiceDocker struct {
+	Env          map[string]string        `json:"env"`
 	Cmd          []string                 `json:"cmd"`
 	Volumes      map[string]struct{}      `json:"volumes"`
 	Entrypoint   []string                 `json:"entrypoint"`

@@ -5,9 +5,26 @@ import (
 
 	"github.com/elleFlorio/gru/autonomic/executor/action"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	ch "github.com/elleFlorio/gru/channels"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
 )
+
+func ListenToActionMessages() {
+	go listen()
+}
+
+func listen() {
+	ch_action := ch.GetActionChannel()
+	for {
+		select {
+		case msg := <-ch_action:
+			log.Debugln("Received action message")
+			config := buildConfig(msg.Target)
+			executeActions(msg.Actions, config)
+		}
+	}
+}
 
 func Run(plan *strategy.GruPlan) {
 	log.WithField("status", "init").Debugln("Gru Executor")

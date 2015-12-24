@@ -9,36 +9,36 @@ import (
 	"github.com/elleFlorio/gru/autonomic/executor"
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
-	"github.com/elleFlorio/gru/friends"
 	"github.com/elleFlorio/gru/metric"
 )
 
-var timeInterval, maxFriends int
+var (
+	ch_err  chan error
+	ch_stop chan struct{}
+)
 
-func Initialize(loopTimeInterval int, nFriends int) {
-	timeInterval = loopTimeInterval
-	maxFriends = nFriends
+func init() {
+	ch_err = make(chan error)
+	ch_stop = make(chan struct{})
 }
 
-func RunLoop() {
-	c_err := make(chan error)
-	c_stop := make(chan struct{})
-
-	monitor.Start(c_err, c_stop)
+func Initialize(plannerStrategy string) {
 	planner.SetPlannerStrategy("probabilistic")
+}
 
+func Start() {
+	monitor.Start(ch_err, ch_stop)
+	executor.ListenToActionMessages()
+}
+
+func RunLoop(loopTimeInterval int) {
 	// Set the ticker for the periodic execution
-	ticker := time.NewTicker(time.Duration(timeInterval) * time.Second)
+	ticker := time.NewTicker(time.Duration(loopTimeInterval) * time.Second)
 
 	log.Infoln("Running autonomic loop")
 	for {
 		select {
 		case <-ticker.C:
-			err := friends.UpdateFriendsData(maxFriends)
-			if err != nil {
-				log.WithField("err", err).Debugln("Cannot update friends data")
-			}
-
 			stats := monitor.Run()
 			analytics := analyzer.Run(stats)
 			plan := planner.Run(analytics)
@@ -48,9 +48,9 @@ func RunLoop() {
 
 			log.Infoln("-------------------------")
 
-		case <-c_err:
+		case <-ch_err:
 			log.Errorln("Error running autonomic loop")
-		case <-c_stop:
+		case <-ch_stop:
 			ticker.Stop()
 		}
 	}

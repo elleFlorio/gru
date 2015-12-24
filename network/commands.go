@@ -14,8 +14,19 @@ type Command struct {
 	Object interface{}
 }
 
-func SendStartCommand(dest string) error {
+func SendStartAgentCommand(dest string) error {
 	cmd := Command{"start", "agent", nil}
+	err := sendCommand(dest, cmd)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error sending command to destination ", dest)
+		return err
+	}
+
+	return nil
+}
+
+func SendStartServiceCommand(dest string, name string) error {
+	cmd := Command{"start", "service", name}
 	err := sendCommand(dest, cmd)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error sending command to destination ", dest)
