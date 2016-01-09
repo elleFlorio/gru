@@ -7,9 +7,27 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/node"
+	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
 )
+
+func TestClearFriendsData(t *testing.T) {
+	var err error
+	storage.New("internal")
+	data := []byte{}
+	storage.StoreLocalData(data, enum.ANALYTICS)
+	storage.StoreClusterData(data, enum.ANALYTICS)
+	storage.StoreData("node1", data, enum.ANALYTICS)
+	storage.StoreData("node2", data, enum.ANALYTICS)
+	storage.StoreData("node3", data, enum.ANALYTICS)
+
+	err = clearFriendsData()
+	assert.NoError(t, err)
+	stored, _ := storage.GetAllData(enum.ANALYTICS)
+	assert.Equal(t, 2, len(stored))
+}
 
 func TestChooseRandomFriends(t *testing.T) {
 	cfg.SetNode(node.CreateMockNode())

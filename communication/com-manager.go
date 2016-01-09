@@ -42,8 +42,12 @@ func start(nFriends int, timeInterval int) {
 }
 
 func updateFriendsData(nFriends int) error {
+	var err error
 	log.Debugln("Updating friends data")
-	storage.DeleteAllData(enum.ANALYTICS)
+	err = clearFriendsData()
+	if err != nil {
+		return err
+	}
 
 	peers := getAllPeers()
 	log.WithField("peers", len(peers)).Debugln("Number of peers")
@@ -60,6 +64,23 @@ func updateFriendsData(nFriends int) error {
 	err = getFriendsData(friends)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func clearFriendsData() error {
+	allData, err := storage.GetAllData(enum.ANALYTICS)
+	if err != nil {
+		log.Errorln("Error cleaning up friends data")
+		return err
+	}
+
+	for key, _ := range allData {
+		if key != enum.CLUSTER.ToString() && key != enum.LOCAL.ToString() {
+			log.WithField("friend", key).Debugln("cleared friend data")
+			storage.DeleteData(key, enum.ANALYTICS)
+		}
 	}
 
 	return nil
