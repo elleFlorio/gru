@@ -97,11 +97,6 @@ func exploreNode(node *client.Node, result map[string]string) map[string]string 
 		}
 	} else {
 		result[node.Key] = node.Value
-		log.WithFields(log.Fields{
-			"key":   node.Key,
-			"value": node.Value,
-		}).Debugln("Node entry")
-
 	}
 	return result
 }
