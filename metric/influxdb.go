@@ -73,7 +73,7 @@ func (db *influxdb) StoreMetrics(metrics GruMetric) error {
 func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 	var err error
 	points := []*client.Point{}
-	nodeUUID := metrics.Node.UUID
+	nodeName := metrics.Node.Name
 
 	nodePoint, err := createInfluxNode(metrics.Node)
 	if err != nil {
@@ -84,35 +84,35 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 
 	for _, service := range metrics.Service {
 		log.WithField("service", service.Name).Debugln("Computing influx metrics of service")
-		statusPoint, err := createInfluxInstanceStatus(nodeUUID, service)
+		statusPoint, err := createInfluxInstanceStatus(nodeName, service)
 		if err != nil {
 			log.WithField("err", err).Errorln("Error creating instance status metrics for Service ", service.Name)
 			return points, err
 		}
 		points = append(points, statusPoint)
 
-		cpuPoint, err := createInfluxCpuService(nodeUUID, service)
+		cpuPoint, err := createInfluxCpuService(nodeName, service)
 		if err != nil {
 			log.WithField("err", err).Errorln("Error creating cpu metrics for Service ", service.Name)
 			return points, err
 		}
 		points = append(points, cpuPoint)
 
-		memPoint, err := createInfluxMemService(nodeUUID, service)
+		memPoint, err := createInfluxMemService(nodeName, service)
 		if err != nil {
 			log.WithField("err", err).Errorln("Error creating memory metrics for Service ", service.Name)
 			return points, err
 		}
 		points = append(points, memPoint)
 
-		loadPoint, err := createInfluxLoadService(nodeUUID, service)
+		loadPoint, err := createInfluxLoadService(nodeName, service)
 		if err != nil {
 			log.WithField("err", err).Errorln("Error creating load metrics for Service ", service.Name)
 			return points, err
 		}
 		points = append(points, loadPoint)
 
-		healthPoint, err := createInfluxHealthService(nodeUUID, service)
+		healthPoint, err := createInfluxHealthService(nodeName, service)
 		if err != nil {
 			log.WithField("err", err).Errorln("Error creating health metrics for Service ", service.Name)
 			return points, err
@@ -121,7 +121,7 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 
 	}
 
-	planPoint, err := createInfluxPlans(nodeUUID, metrics.Plan)
+	planPoint, err := createInfluxPlans(nodeName, metrics.Plan)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error creating policy metrics")
 		return points, err
@@ -134,6 +134,7 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 func createInfluxNode(node NodeMetrics) (*client.Point, error) {
 	tags := map[string]string{
 		"node": node.UUID,
+		"name": node.Name,
 	}
 	fields := map[string]interface{}{
 		"cpu":    node.Cpu,
@@ -151,9 +152,9 @@ func createInfluxNode(node NodeMetrics) (*client.Point, error) {
 	return point, nil
 }
 
-func createInfluxInstanceStatus(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+func createInfluxInstanceStatus(nodeName string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
-		"node":          nodeUUID,
+		"node":          nodeName,
 		"service_name":  service.Name,
 		"service_type":  service.Type,
 		"service_image": service.Image,
@@ -176,9 +177,9 @@ func createInfluxInstanceStatus(nodeUUID string, service ServiceMetric) (*client
 	return point, nil
 }
 
-func createInfluxCpuService(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+func createInfluxCpuService(nodeName string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
-		"node":          nodeUUID,
+		"node":          nodeName,
 		"service_name":  service.Name,
 		"service_type":  service.Type,
 		"service_image": service.Image,
@@ -199,9 +200,9 @@ func createInfluxCpuService(nodeUUID string, service ServiceMetric) (*client.Poi
 	return point, nil
 }
 
-func createInfluxMemService(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+func createInfluxMemService(nodeName string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
-		"node":          nodeUUID,
+		"node":          nodeName,
 		"service_name":  service.Name,
 		"service_type":  service.Type,
 		"service_image": service.Image,
@@ -222,9 +223,9 @@ func createInfluxMemService(nodeUUID string, service ServiceMetric) (*client.Poi
 	return point, nil
 }
 
-func createInfluxLoadService(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+func createInfluxLoadService(nodeName string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
-		"node":          nodeUUID,
+		"node":          nodeName,
 		"service_name":  service.Name,
 		"service_type":  service.Type,
 		"service_image": service.Image,
@@ -243,9 +244,9 @@ func createInfluxLoadService(nodeUUID string, service ServiceMetric) (*client.Po
 	return point, nil
 }
 
-func createInfluxHealthService(nodeUUID string, service ServiceMetric) (*client.Point, error) {
+func createInfluxHealthService(nodeName string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
-		"node":          nodeUUID,
+		"node":          nodeName,
 		"service_name":  service.Name,
 		"service_type":  service.Type,
 		"service_image": service.Image,
@@ -264,9 +265,9 @@ func createInfluxHealthService(nodeUUID string, service ServiceMetric) (*client.
 	return point, nil
 }
 
-func createInfluxPlans(nodeUUID string, plans PlansMetric) (*client.Point, error) {
+func createInfluxPlans(nodeName string, plans PlansMetric) (*client.Point, error) {
 	tags := map[string]string{
-		"node":   nodeUUID,
+		"node":   nodeName,
 		"policy": plans.Policy,
 	}
 	fields := map[string]interface{}{

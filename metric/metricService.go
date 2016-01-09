@@ -77,6 +77,7 @@ func UpdateMetrics() {
 	var err error
 	metrics = newMetrics()
 	metrics.Node.UUID = cfg.GetNodeConfig().UUID
+	metrics.Node.Name = cfg.GetNodeConfig().Name
 
 	for _, name := range service.List() {
 		srv, _ := service.GetServiceByName(name)
@@ -139,7 +140,7 @@ func UpdateMetrics() {
 
 func newMetrics() GruMetric {
 	new_metrics := GruMetric{Service: make(map[string]ServiceMetric)}
-	node_new := NodeMetrics{"", 0.0, 0.0, 1.0}
+	node_new := NodeMetrics{"", "", 0.0, 0.0, 1.0}
 	new_metrics.Node = node_new
 	for _, name := range service.List() {
 		service_new := ServiceMetric{}

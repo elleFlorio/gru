@@ -8,6 +8,7 @@ type GruMetric struct {
 
 type NodeMetrics struct {
 	UUID   string
+	Name   string
 	Cpu    float64
 	Memory float64
 	Health float64
