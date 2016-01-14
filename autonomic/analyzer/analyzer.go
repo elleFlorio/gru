@@ -115,9 +115,9 @@ func computeAvgResponseTime(responseTimes []float64) float64 {
 
 func computeLoad(maxRt float64, avgRt float64) float64 {
 	// I want the maximum response time
-	// to correspond to the 80% of load
+	// to correspond to the 60% of load
 	// TEST
-	upperBound := maxRt / 0.8
+	upperBound := maxRt / 0.6
 	if avgRt > upperBound {
 		avgRt = upperBound
 	}
