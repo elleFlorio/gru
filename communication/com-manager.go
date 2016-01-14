@@ -24,6 +24,10 @@ var (
 	ErrNoFriends            error = errors.New("There are no friends to reach")
 )
 
+func init() {
+	rand.Seed(int64(time.Now().Nanosecond()))
+}
+
 func Start(nFriends int, timeInterval int) {
 	go start(nFriends, timeInterval)
 }
@@ -92,7 +96,9 @@ func getAllPeers() map[string]string {
 		log.WithField("err", err).Errorln("Error getting my cluster")
 		return map[string]string{}
 	}
-	return cluster.ListNodes(myCluster.Name, true)
+	peers := cluster.ListNodes(myCluster.Name, true)
+	delete(peers, cfg.GetNodeConfig().Name)
+	return peers
 }
 
 // Is there a more efficient way to do this?
@@ -115,15 +121,9 @@ func chooseRandomFriends(peers map[string]string, n int) (map[string]string, err
 		peersKeys = append(peersKeys, peerKey)
 	}
 
-	friendsKeys := make([]string, 0, n)
 	indexes := rand.Perm(nPeers)[:n]
 	for _, index := range indexes {
-		if peersKeys[index] != cfg.GetNodeConfig().Name {
-			friendsKeys = append(friendsKeys, peersKeys[index])
-		}
-	}
-
-	for _, friendKey := range friendsKeys {
+		friendKey := peersKeys[index]
 		friends[friendKey] = peers[friendKey]
 	}
 
