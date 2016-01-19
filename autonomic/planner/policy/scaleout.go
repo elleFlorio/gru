@@ -9,8 +9,8 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-const c_THRESHOLD_SCALEOUT_LOAD = 0.7
-const c_THRESHOLD_SCALEOUT_CPU = 0.7
+const c_THRESHOLD_SCALEOUT_LOAD = 0.8
+const c_THRESHOLD_SCALEOUT_CPU = 0.8
 
 type ScaleOut struct{}
 
