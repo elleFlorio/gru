@@ -104,7 +104,7 @@ func getAllPeers() map[string]string {
 // Is there a more efficient way to do this?
 func chooseRandomFriends(peers map[string]string, n int) (map[string]string, error) {
 	nPeers := len(peers)
-	if nPeers <= 1 {
+	if nPeers < 1 {
 		return nil, ErrNoFriends
 	}
 
