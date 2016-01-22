@@ -319,6 +319,11 @@ func CheckAndSetSpecificCores(cpusetcpus string, id string) bool {
 	instanceCores[id] = cpusetcpus
 	mutex_instance.Unlock()
 
+	log.WithFields(log.Fields{
+		"id":    id,
+		"cores": cpusetcpus,
+	}).Debugln("Assigned cores to instance")
+
 	return true
 }
 
@@ -335,6 +340,11 @@ func FreeInstanceCores(id string) bool {
 		mutex_instance.Lock()
 		delete(instanceCores, id)
 		mutex_instance.Unlock()
+
+		log.WithFields(log.Fields{
+			"id":    id,
+			"cores": cores,
+		}).Debugln("Released cores of instance")
 
 		return true
 	}

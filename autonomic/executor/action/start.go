@@ -28,7 +28,11 @@ func (p *Start) Run(config GruActionConfig) error {
 		}).Debugln("Starting a paused container")
 		toStart = paused[0]
 		err = container.Docker().Client.UnpauseContainer(toStart)
-		return err
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 
 	if len(stopped) > 0 {
@@ -39,9 +43,12 @@ func (p *Start) Run(config GruActionConfig) error {
 		toStart = stopped[0]
 		err = container.Docker().Client.StartContainer(toStart, config.HostConfig)
 		if err != nil {
-			res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
+			return err
 		}
-		return err
+		res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
+
+		return nil
+
 	}
 
 	log.WithFields(log.Fields{
@@ -51,10 +58,12 @@ func (p *Start) Run(config GruActionConfig) error {
 	toStart, err = createNewContainer(config)
 	err = container.Docker().Client.StartContainer(toStart, config.HostConfig)
 	if err != nil {
-		res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
+		return err
 	}
+	res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
 
-	return err
+	return nil
+
 }
 
 func createNewContainer(config GruActionConfig) (string, error) {
