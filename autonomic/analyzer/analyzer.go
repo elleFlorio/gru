@@ -210,6 +210,7 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 			if len(ls.Instances.Running) > 0 {
 				active = append(active, ls)
 				isLocal = true
+				log.WithField("service", name).Debugln("Local service running")
 			}
 		}
 
@@ -225,6 +226,13 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 			"service": name,
 			"total":   len(active),
 		}).Debugln("Active services")
+
+		if !isLocal {
+			// I don't want to merge instance status. This may
+			// cause some problems of synchronization with
+			// other peers
+			active[0].Instances = cfg.ServiceStatus{}
+		}
 
 		if len(active) > 1 {
 			avgSa = active[0]
@@ -264,12 +272,6 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 			avg[name] = avgSa
 
 		} else if len(active) == 1 {
-			if !isLocal {
-				// I don't want to merge instance status. This may
-				// cause some problems of synchronization with
-				// other peers
-				active[0].Instances = cfg.ServiceStatus{}
-			}
 			avg[name] = active[0]
 		}
 	}
