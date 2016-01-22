@@ -115,9 +115,9 @@ func computeAvgResponseTime(responseTimes []float64) float64 {
 
 func computeLoad(maxRt float64, avgRt float64) float64 {
 	// I want the maximum response time
-	// to correspond to the 60% of load
+	// to correspond to the 80% of load
 	// TEST
-	upperBound := maxRt / 0.6
+	upperBound := maxRt / 0.8
 	if avgRt > upperBound {
 		avgRt = upperBound
 	}
@@ -221,6 +221,11 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 			}
 		}
 
+		log.WithFields(log.Fields{
+			"service": name,
+			"total":   len(active),
+		}).Debugln("Active services")
+
 		if len(active) > 1 {
 			avgSa = active[0]
 			active = active[1:]
@@ -232,7 +237,6 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 
 			for _, actv := range active {
 
-				//LABELS
 				sumLoad += actv.Load
 				sumCpu += actv.Resources.Cpu
 				sumMem += actv.Resources.Memory
@@ -244,6 +248,13 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 			avgCpu := sumCpu / total_active
 			avgMem := sumMem / total_active
 			avgH := sumH / total_active
+
+			log.WithFields(log.Fields{
+				"service":      name,
+				"sumLoad":      sumLoad,
+				"sumCpu":       sumCpu,
+				"total_active": total_active,
+			}).Debugln("Active services")
 
 			avgSa.Load = avgLoad
 			avgSa.Resources.Cpu = avgCpu
