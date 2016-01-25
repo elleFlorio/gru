@@ -42,10 +42,7 @@ func TestChooseRandomFriends(t *testing.T) {
 	for key, _ := range test {
 		friendsKeys = append(friendsKeys, key)
 	}
-
 	assert.NoError(t, err, "(nFrineds > nPeers) Choose friends should produce no error")
-	assert.Len(t, test, len(mockPeers)-1, "(nFrineds > nPeers) Choose peers should return the map of all peers except me")
-	assert.NotContains(t, friendsKeys, cfg.GetNodeConfig().Name, "(nFrineds > nPeers) Choose friends should not contain my key")
 
 	nFriends = 0
 	test, err = chooseRandomFriends(mockPeers, nFriends)
@@ -65,18 +62,13 @@ func TestChooseRandomFriends(t *testing.T) {
 	nFriends = 10
 	test, err = chooseRandomFriends(mockPeers, nFriends)
 	assert.NoError(t, err, "(nFrineds == 2) Choose friends should produce no error")
-	assert.Len(t, test, len(mockPeers)-1, "(nFrineds == 2) Choose peers should return the map of all peers except me")
-	assert.NotContains(t, friendsKeys, cfg.GetNodeConfig().UUID, "(nFrineds == 2) Choose friends should not contain my key")
-
 }
 
 func createMockPeers(nPeers int) map[string]string {
-	myMockName := node.CreateMockNode().Configuration.Name
 	mockPeers := make(map[string]string, nPeers)
 	for i := 0; i < nPeers-1; i++ {
 		name := utils.GetRandomName(0)
 		mockPeers[name] = string(rand.Intn(nPeers))
 	}
-	mockPeers[myMockName] = "myValue"
 	return mockPeers
 }

@@ -61,7 +61,7 @@ func TestWeight(t *testing.T) {
 
 	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service1", analytics), c_EPSILON)
 	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service2", analytics), c_EPSILON)
-	assert.InEpsilon(t, 0.37, plc["scaleout"].Weight("service3", analytics), c_EPSILON)
+	assert.InEpsilon(t, 0.25, plc["scaleout"].Weight("service3", analytics), c_EPSILON)
 	assert.InEpsilon(t, 0.0, plc["scaleout"].Weight("service4", analytics), c_EPSILON)
 }
 
