@@ -11,6 +11,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
@@ -150,7 +151,7 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 			cpu = 0
 		} else {
 			// "100 * cpu" should produce values in [0, 100]
-			cpu = (instDelta / sysDelta) * float64(cfg.GetNode().Resources.TotalCpus)
+			cpu = (instDelta / sysDelta) * float64(res.GetResources().CPU.Total)
 		}
 		sum += cpu
 	}
