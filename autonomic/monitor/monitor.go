@@ -27,7 +27,7 @@ var (
 )
 
 //History window
-const W_SIZE = 50
+const W_SIZE = 100
 const W_MULT = 1000
 
 func init() {
