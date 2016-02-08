@@ -101,12 +101,22 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 
 }
 
+// TODO the update of the service insetances could be redundant in the monitor execution.
+// Refactor the add and remove resources functions to use only the service.instances struct.
+// This may involve a refactoring of the monitor and analyzer as well, because maybe I do not
+// need to replicate the active instances in service, stats and analytics.
+// JUST FOR NOW services instances are updated only on the start and stop of a container to fix
+// a bug in the remote start of a service
 func addResource(id string, srvName string, status string, stats *GruStats, hist *statsHistory) {
 	servStats := stats.Service[srvName]
+	srv, _ := service.GetServiceByName(srvName)
+
 	_, err := findIdIndex(id, servStats.Instances.All)
 	if err != nil {
 		servStats.Instances.All = append(servStats.Instances.All, id)
 		stats.System.Instances.All = append(stats.System.Instances.All, id)
+		// TODO
+		srv.Instances.All = append(srv.Instances.All, id)
 	}
 
 	switch status {
@@ -129,6 +139,8 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 	case "pending":
 		servStats.Instances.Pending = append(servStats.Instances.Pending, id)
 		stats.System.Instances.Pending = append(stats.System.Instances.Pending, id)
+		// TODO
+		srv.Instances.Pending = append(srv.Instances.Pending, id)
 
 		index, err := findIdIndex(id, servStats.Instances.Stopped)
 		if err != nil {
@@ -137,6 +149,11 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 			servStats.Instances.Stopped = append(
 				servStats.Instances.Stopped[:index],
 				servStats.Instances.Stopped[index+1:]...)
+			// TODO
+			srvIndex, _ := findIdIndex(id, srv.Instances.Stopped)
+			srv.Instances.Stopped = append(
+				srv.Instances.Stopped[:srvIndex],
+				srv.Instances.Stopped[srvIndex+1:]...)
 
 			sysIndex, _ := findIdIndex(id, stats.System.Instances.Stopped)
 			stats.System.Instances.Stopped = append(
@@ -155,6 +172,10 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 	case "stopped":
 		servStats.Instances.Stopped = append(servStats.Instances.Stopped, id)
 		stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
+		// TODO
+		srv.Instances.Stopped = append(srv.Instances.Stopped, id)
+		log.Debugln("services stopped: ", srv.Instances.Stopped)
+
 	case "paused":
 		servStats.Instances.Paused = append(servStats.Instances.Paused, id)
 		stats.System.Instances.Paused = append(stats.System.Instances.Paused, id)
@@ -183,6 +204,7 @@ func findIdIndex(id string, instances []string) (int, error) {
 	return -1, ErrNoIndexById
 }
 
+// TODO see add resources function
 func removeResource(id string, stats *GruStats, hist *statsHistory) {
 	srvName := findServiceByInstanceId(id, stats)
 
