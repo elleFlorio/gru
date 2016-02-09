@@ -155,13 +155,8 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 		}
 		sum += cpu
 	}
-	log.WithFields(log.Fields{
-		"sum":  sum,
-		"cpus": res.GetResources().CPU.Total,
-		"inst": len(instCpus) - 1,
-	}).Debugln("Cpu usage")
 
-	return math.Min(1.0, sum/float64(len(instCpus)-1))
+	return math.Min(1.0, sum/float64((len(instCpus)/2)-1))
 }
 
 func computeServiceMemory(name string, stats *GruStats) {
