@@ -233,6 +233,9 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 				// cause some problems of synchronization with
 				// other peers
 				active[0].Instances = cfg.ServiceStatus{}
+				// I don't have to take the resources available for that service
+				// in the peer node, I need to compute the local ones
+				active[0].Resources.Available = res.AvailableResourcesService(name)
 			}
 		}
 
