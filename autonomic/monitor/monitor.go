@@ -252,7 +252,7 @@ func computeSystemCpu(stats *GruStats) {
 	for _, value := range stats.Service {
 		sum += value.Cpu.Tot
 	}
-	stats.System.Cpu = sum
+	stats.System.Cpu = math.Min(1.0, sum)
 }
 
 //TODO maybe I can just compute historical data without make a deep copy
