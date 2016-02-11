@@ -337,10 +337,13 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 	dst.System.Cpu = src.System.Cpu
 }
 
+// Inverted
 func updateServicesInstances(stats GruStats) {
-	for name, item := range stats.Service {
+	for name, _ := range stats.Service {
 		srv, _ := service.GetServiceByName(name)
-		srv.Instances = item.Instances
+		srvStats := stats.Service[name]
+		srvStats.Instances = srv.Instances
+		stats.Service[name] = srvStats
 	}
 }
 

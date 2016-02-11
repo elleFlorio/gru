@@ -75,6 +75,10 @@ func GetServiceByImage(sImg string) (*cfg.Service, error) {
 	return getServiceBy("Image", sImg)
 }
 
+func GetServiceById(id string) (*cfg.Service, error) {
+	return getServiceBy("id", id)
+}
+
 func getServiceBy(field string, value string) (*cfg.Service, error) {
 	services := cfg.GetServices()
 	for i := 0; i < len(services); i++ {
@@ -86,6 +90,13 @@ func getServiceBy(field string, value string) (*cfg.Service, error) {
 		case "Image":
 			if services[i].Image == value {
 				return &services[i], nil
+			}
+		case "id":
+			instances := services[i].Instances.All
+			for _, instance := range instances {
+				if instance == value {
+					return &services[i], nil
+				}
 			}
 		}
 	}
