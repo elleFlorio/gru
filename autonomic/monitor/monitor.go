@@ -49,7 +49,7 @@ func Run() GruStats {
 	computeServicesStats(&gruStats)
 	computeSystemCpu(&gruStats)
 	makeSnapshot(&gruStats, &snapshot)
-	updateServicesInstances(snapshot)
+	updateServicesInstances(&snapshot)
 	err := saveStats(snapshot)
 	if err != nil {
 		log.WithField("err", "Stats data not saved").Errorln("Running monitor")
@@ -263,24 +263,24 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 	for name, stats := range src.Service {
 		srv_src := stats
 		// Copy instances status
-		status_src := stats.Instances
-		all_dst := make([]string, len(status_src.All), len(status_src.All))
-		runnig_dst := make([]string, len(status_src.Running), len(status_src.Running))
-		pending_dst := make([]string, len(status_src.Pending), len(status_src.Pending))
-		stopped_dst := make([]string, len(status_src.Stopped), len(status_src.Stopped))
-		paused_dst := make([]string, len(status_src.Paused), len(status_src.Paused))
-		copy(all_dst, status_src.All)
-		copy(runnig_dst, status_src.Running)
-		copy(pending_dst, status_src.Pending)
-		copy(stopped_dst, status_src.Stopped)
-		copy(paused_dst, status_src.Paused)
-		status_dst := cfg.ServiceStatus{
-			all_dst,
-			runnig_dst,
-			pending_dst,
-			stopped_dst,
-			paused_dst,
-		}
+		// status_src := stats.Instances
+		// all_dst := make([]string, len(status_src.All), len(status_src.All))
+		// runnig_dst := make([]string, len(status_src.Running), len(status_src.Running))
+		// pending_dst := make([]string, len(status_src.Pending), len(status_src.Pending))
+		// stopped_dst := make([]string, len(status_src.Stopped), len(status_src.Stopped))
+		// paused_dst := make([]string, len(status_src.Paused), len(status_src.Paused))
+		// copy(all_dst, status_src.All)
+		// copy(runnig_dst, status_src.Running)
+		// copy(pending_dst, status_src.Pending)
+		// copy(stopped_dst, status_src.Stopped)
+		// copy(paused_dst, status_src.Paused)
+		// status_dst := cfg.ServiceStatus{
+		// 	all_dst,
+		// 	runnig_dst,
+		// 	pending_dst,
+		// 	stopped_dst,
+		// 	paused_dst,
+		// }
 		// Copy events (NEEDED?)
 		events_src := srv_src.Events
 		stop_dst := make([]string, len(events_src.Stop), len(events_src.Stop))
@@ -304,6 +304,7 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		copy(respTime_dst, metrics_src.ResponseTime)
 		metrics_dst := MetricStats{respTime_dst}
 
+		status_dst := cfg.ServiceStatus{}
 		srv_dst := ServiceStats{status_dst, events_dst, cpu_dst, mem_dst, metrics_dst}
 		dst.Service[name] = srv_dst
 	}
@@ -338,7 +339,7 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 }
 
 // Inverted
-func updateServicesInstances(stats GruStats) {
+func updateServicesInstances(stats *GruStats) {
 	for name, _ := range stats.Service {
 		srv, _ := service.GetServiceByName(name)
 		srvStats := stats.Service[name]
