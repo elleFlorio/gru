@@ -49,7 +49,7 @@ func Run() GruStats {
 	computeServicesStats(&gruStats)
 	computeSystemCpu(&gruStats)
 	makeSnapshot(&gruStats, &snapshot)
-	updateServicesInstances(&snapshot)
+	//updateServicesInstances(&snapshot)
 	err := saveStats(snapshot)
 	if err != nil {
 		log.WithField("err", "Stats data not saved").Errorln("Running monitor")
@@ -77,8 +77,11 @@ func computeServicesStats(stats *GruStats) {
 
 //FIXME need to check if all the windows are actually ready
 func updateRunningInstances(name string, stats *GruStats, wsize int) {
-	srvStats := stats.Service[name]
-	pending := srvStats.Instances.Pending
+	//srvStats := stats.Service[name]
+	//pending := srvStats.Instances.Pending
+	srv, _ := service.GetServiceByName(name)
+	pending := srv.Instances.Pending
+
 	for _, inst := range pending {
 		if len(history.instance[inst].cpu.sysUsage.Slice()) >= wsize {
 			addResource(inst, name, "running", stats, &history)
@@ -95,9 +98,10 @@ func computeServiceCpuPerc(name string, stats *GruStats) {
 	sum := 0.0
 	avg := 0.0
 	srvStats := stats.Service[name]
+	srv, _ := service.GetServiceByName(name)
 
-	if len(srvStats.Instances.Running) > 0 {
-		for _, id := range srvStats.Instances.Running {
+	if len(srv.Instances.Running) > 0 {
+		for _, id := range srv.Instances.Running {
 			instCpus := history.instance[id].cpu.totalUsage.Slice()
 			sysCpus := history.instance[id].cpu.sysUsage.Slice()
 			instCpuAvg := computeInstanceCpuPerc(instCpus, sysCpus)
@@ -112,7 +116,7 @@ func computeServiceCpuPerc(name string, stats *GruStats) {
 			}).Debugln("Computed local instance average CPU")
 		}
 
-		avg = sum / float64(len(srvStats.Instances.Running))
+		avg = sum / float64(len(srv.Instances.Running))
 	}
 
 	srvStats.Cpu.Avg = avg
@@ -156,7 +160,7 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 		sum += cpu
 	}
 
-	return math.Min(1.0, sum/float64((len(instCpus)/2)-1))
+	return math.Min(1.0, sum/float64(len(instCpus)-1))
 }
 
 func computeServiceMemory(name string, stats *GruStats) {
@@ -166,8 +170,8 @@ func computeServiceMemory(name string, stats *GruStats) {
 	memLimit := srv.Docker.Memory
 	srvStats := stats.Service[name]
 
-	if len(srvStats.Instances.Running) > 0 {
-		for _, id := range srvStats.Instances.Running {
+	if len(srv.Instances.Running) > 0 {
+		for _, id := range srv.Instances.Running {
 			instMem := history.instance[id].mem.Slice()
 			instMemPerc := computeInstaceMemPerc(instMem, memLimit)
 			inst := stats.Instance[id]
@@ -181,7 +185,7 @@ func computeServiceMemory(name string, stats *GruStats) {
 			}).Debugln("Computed local instance Memory")
 		}
 
-		avg = sum / float64(len(srvStats.Instances.Running))
+		avg = sum / float64(len(srv.Instances.Running))
 	}
 
 	srvStats.Memory.Avg = avg
@@ -304,8 +308,8 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		copy(respTime_dst, metrics_src.ResponseTime)
 		metrics_dst := MetricStats{respTime_dst}
 
-		status_dst := cfg.ServiceStatus{}
-		srv_dst := ServiceStats{status_dst, events_dst, cpu_dst, mem_dst, metrics_dst}
+		//status_dst := cfg.ServiceStatus{}
+		srv_dst := ServiceStats{ /*status_dst, */ events_dst, cpu_dst, mem_dst, metrics_dst}
 		dst.Service[name] = srv_dst
 	}
 
@@ -316,37 +320,37 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 	}
 
 	//Copy system stats
-	sys_status_src := src.System.Instances
-	sys_all_dst := make([]string, len(sys_status_src.All), len(sys_status_src.All))
-	sys_runnig_dst := make([]string, len(sys_status_src.Running), len(sys_status_src.Running))
-	sys_pending_dst := make([]string, len(sys_status_src.Pending), len(sys_status_src.Pending))
-	sys_stopped_dst := make([]string, len(sys_status_src.Stopped), len(sys_status_src.Stopped))
-	sys_paused_dst := make([]string, len(sys_status_src.Paused), len(sys_status_src.Paused))
-	copy(sys_all_dst, sys_status_src.All)
-	copy(sys_runnig_dst, sys_status_src.Running)
-	copy(sys_pending_dst, sys_status_src.Pending)
-	copy(sys_stopped_dst, sys_status_src.Stopped)
-	copy(sys_paused_dst, sys_status_src.Paused)
-	sys_status_dst := cfg.ServiceStatus{
-		sys_all_dst,
-		sys_runnig_dst,
-		sys_pending_dst,
-		sys_stopped_dst,
-		sys_paused_dst,
-	}
-	dst.System.Instances = sys_status_dst
+	// sys_status_src := src.System.Instances
+	// sys_all_dst := make([]string, len(sys_status_src.All), len(sys_status_src.All))
+	// sys_runnig_dst := make([]string, len(sys_status_src.Running), len(sys_status_src.Running))
+	// sys_pending_dst := make([]string, len(sys_status_src.Pending), len(sys_status_src.Pending))
+	// sys_stopped_dst := make([]string, len(sys_status_src.Stopped), len(sys_status_src.Stopped))
+	// sys_paused_dst := make([]string, len(sys_status_src.Paused), len(sys_status_src.Paused))
+	// copy(sys_all_dst, sys_status_src.All)
+	// copy(sys_runnig_dst, sys_status_src.Running)
+	// copy(sys_pending_dst, sys_status_src.Pending)
+	// copy(sys_stopped_dst, sys_status_src.Stopped)
+	// copy(sys_paused_dst, sys_status_src.Paused)
+	// sys_status_dst := cfg.ServiceStatus{
+	// 	sys_all_dst,
+	// 	sys_runnig_dst,
+	// 	sys_pending_dst,
+	// 	sys_stopped_dst,
+	// 	sys_paused_dst,
+	// }
+	// dst.System.Instances = sys_status_dst
 	dst.System.Cpu = src.System.Cpu
 }
 
-// Inverted
-func updateServicesInstances(stats *GruStats) {
-	for name, _ := range stats.Service {
-		srv, _ := service.GetServiceByName(name)
-		srvStats := stats.Service[name]
-		srvStats.Instances = srv.Instances
-		stats.Service[name] = srvStats
-	}
-}
+// DEPRECATED
+// func updateServicesInstances(stats *GruStats) {
+// 	for name, _ := range stats.Service {
+// 		srv, _ := service.GetServiceByName(name)
+// 		srvStats := stats.Service[name]
+// 		srvStats.Instances = srv.Instances
+// 		stats.Service[name] = srvStats
+// 	}
+// }
 
 func saveStats(stats GruStats) error {
 	data, err := convertStatsToData(stats)
@@ -390,17 +394,18 @@ func resetMetricStats(srvName string, stats *GruStats) {
 }
 
 func displayStatsOfServices(stats GruStats) {
-	for srv, value := range stats.Service {
+	for name, value := range stats.Service {
+		srv, _ := service.GetServiceByName(name)
 		log.WithFields(log.Fields{
-			"pending:": len(value.Instances.Pending),
-			"running:": len(value.Instances.Running),
-			"stopped:": len(value.Instances.Stopped),
-			"paused:":  len(value.Instances.Paused),
+			"pending:": len(srv.Instances.Pending),
+			"running:": len(srv.Instances.Running),
+			"stopped:": len(srv.Instances.Stopped),
+			"paused:":  len(srv.Instances.Paused),
 			"cpu avg":  fmt.Sprintf("%.2f", value.Cpu.Avg),
 			"cpu tot":  fmt.Sprintf("%.2f", value.Cpu.Tot),
 			"mem avg":  fmt.Sprintf("%.2f", value.Memory.Avg),
 			"mem tot":  fmt.Sprintf("%.2f", value.Memory.Tot),
-		}).Infoln("Stats computed: ", srv)
+		}).Infoln("Stats computed: ", name)
 	}
 }
 

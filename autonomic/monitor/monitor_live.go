@@ -115,8 +115,7 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 	_, err := findIdIndex(id, srv.Instances.All)
 	if err != nil {
 		//servStats.Instances.All = append(servStats.Instances.All, id)
-		stats.System.Instances.All = append(stats.System.Instances.All, id)
-		// TODO
+		//stats.System.Instances.All = append(stats.System.Instances.All, id)
 		srv.Instances.All = append(srv.Instances.All, id)
 	}
 
@@ -126,7 +125,7 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 		index, err := findIdIndex(id, srv.Instances.Pending)
 		//servStats.Instances.Running = append(servStats.Instances.Running, id)
 		srv.Instances.Running = append(srv.Instances.Running, id)
-		stats.System.Instances.Running = append(stats.System.Instances.Running, id)
+		//stats.System.Instances.Running = append(stats.System.Instances.Running, id)
 		if err != nil {
 			log.WithField("error", err).Errorln("Cannot find pending instance to promote running")
 		} else {
@@ -137,14 +136,14 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 				srv.Instances.Pending[:index],
 				srv.Instances.Pending[index+1:]...)
 
-			sysIndex, _ := findIdIndex(id, stats.System.Instances.Pending)
-			stats.System.Instances.Pending = append(
-				stats.System.Instances.Pending[:sysIndex],
-				stats.System.Instances.Pending[sysIndex+1:]...)
+			// sysIndex, _ := findIdIndex(id, stats.System.Instances.Pending)
+			// stats.System.Instances.Pending = append(
+			// 	stats.System.Instances.Pending[:sysIndex],
+			// 	stats.System.Instances.Pending[sysIndex+1:]...)
 		}
 	case "pending":
 		//servStats.Instances.Pending = append(servStats.Instances.Pending, id)
-		stats.System.Instances.Pending = append(stats.System.Instances.Pending, id)
+		//stats.System.Instances.Pending = append(stats.System.Instances.Pending, id)
 		// TODO
 		srv.Instances.Pending = append(srv.Instances.Pending, id)
 
@@ -161,14 +160,15 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 				srv.Instances.Stopped[:index],
 				srv.Instances.Stopped[index+1:]...)
 
-			sysIndex, _ := findIdIndex(id, stats.System.Instances.Stopped)
+			/*sysIndex, _ := findIdIndex(id, stats.System.Instances.Stopped)
 			stats.System.Instances.Stopped = append(
 				stats.System.Instances.Stopped[:sysIndex],
-				stats.System.Instances.Stopped[sysIndex+1:]...)
+				stats.System.Instances.Stopped[sysIndex+1:]...)*/
 		}
 
 		servStats := stats.Service[srvName]
 		servStats.Events.Start = append(servStats.Events.Start, id)
+		stats.Service[srvName] = servStats
 
 		cpu := cpuHistory{
 			totalUsage: window.New(W_SIZE, W_MULT),
@@ -178,7 +178,7 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 		hist.instance[id] = instanceHistory{cpu, mem}
 	case "stopped":
 		//servStats.Instances.Stopped = append(servStats.Instances.Stopped, id)
-		stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
+		//stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
 		// TODO
 		srv.Instances.Stopped = append(srv.Instances.Stopped, id)
 		log.Debugln("services stopped: ", srv.Instances.Stopped)
@@ -186,7 +186,7 @@ func addResource(id string, srvName string, status string, stats *GruStats, hist
 	case "paused":
 		//servStats.Instances.Paused = append(servStats.Instances.Paused, id)
 		srv.Instances.Paused = append(srv.Instances.Paused, id)
-		stats.System.Instances.Paused = append(stats.System.Instances.Paused, id)
+		//stats.System.Instances.Paused = append(stats.System.Instances.Paused, id)
 	default:
 		log.WithFields(log.Fields{
 			"error":   "Unknown container state: " + status,
@@ -236,25 +236,25 @@ func removeResource(id string, stats *GruStats, hist *statsHistory) {
 		srv.Instances.Pending = pending
 
 		// Updating system stats
-		sysIndex, _ := findIdIndex(id, stats.System.Instances.Pending)
-		stats.System.Instances.Pending = append(
-			stats.System.Instances.Pending[:sysIndex],
-			stats.System.Instances.Pending[sysIndex+1:]...)
+		// sysIndex, _ := findIdIndex(id, stats.System.Instances.Pending)
+		// stats.System.Instances.Pending = append(
+		// 	stats.System.Instances.Pending[:sysIndex],
+		// 	stats.System.Instances.Pending[sysIndex+1:]...)
 	} else {
 		running = append(running[:index], running[index+1:]...)
 		//srvStats.Instances.Running = running
 		srv.Instances.Running = running
 
 		// Updating system stats
-		sysIndex, _ := findIdIndex(id, stats.System.Instances.Running)
-		stats.System.Instances.Running = append(
-			stats.System.Instances.Running[:sysIndex],
-			stats.System.Instances.Running[sysIndex+1:]...)
+		// sysIndex, _ := findIdIndex(id, stats.System.Instances.Running)
+		// stats.System.Instances.Running = append(
+		// 	stats.System.Instances.Running[:sysIndex],
+		// 	stats.System.Instances.Running[sysIndex+1:]...)
 	}
 
 	//srvStats.Instances.Stopped = append(srvStats.Instances.Stopped, id)
 	srv.Instances.Stopped = append(srv.Instances.Stopped, id)
-	stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
+	//stats.System.Instances.Stopped = append(stats.System.Instances.Stopped, id)
 
 	// Upating Event stats
 	srvStats := stats.Service[srv.Name]
@@ -287,18 +287,18 @@ func startMonitorLog(id string) {
 	}
 }
 
-// TODO create error?
-func findServiceByInstanceId(id string, stats *GruStats) string {
-	for k, v := range stats.Service {
-		for _, instance := range v.Instances.All {
-			if instance == id {
-				return k
-			}
-		}
-	}
+// DEPRECATED
+// func findServiceByInstanceId(id string, stats *GruStats) string {
+// 	for k, v := range stats.Service {
+// 		for _, instance := range v.Instances.All {
+// 			if instance == id {
+// 				return k
+// 			}
+// 		}
+// 	}
 
-	return ""
-}
+// 	return ""
+// }
 
 func getContainerStatus(info *dockerclient.ContainerInfo) string {
 	if info.State.Running {

@@ -317,12 +317,3 @@ func createService(name string, cpu int, mem string) cfg.Service {
 
 	return srv
 }
-
-func setResources(totCpu int64, totMem string, usedCpu int64, usedMem string) {
-	totMemB, _ := utils.RAMInBytes(totMem)
-	usedMemB, _ := utils.RAMInBytes(usedMem)
-	resources.Memory.Total = totMemB
-	resources.Memory.Used = usedMemB
-	resources.CPU.Total = totCpu
-	resources.CPU.Used = usedCpu
-}
