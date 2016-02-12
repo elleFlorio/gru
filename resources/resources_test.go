@@ -9,7 +9,6 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	cfg "github.com/elleFlorio/gru/configuration"
-	"github.com/elleFlorio/gru/utils"
 )
 
 const c_NCORES = 4

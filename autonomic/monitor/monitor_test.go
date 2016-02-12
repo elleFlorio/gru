@@ -23,6 +23,7 @@ func init() {
 	// 	},
 	// }
 	// cfg.SetNode(n)
+	cfg.SetNode(cfg.Node{})
 	resetMockServices()
 }
 
@@ -74,6 +75,28 @@ func TestComputeServiceCpuPerc(t *testing.T) {
 	assert.Equal(t, 0.4, cpuAvgS2)
 	assert.Equal(t, 0.4, cpuTotS2)
 
+}
+
+func TestUpdateSystemInstances(t *testing.T) {
+	defer resetMockServices()
+
+	mockStats := CreateMockStats()
+	updateSystemInstances(&mockStats)
+
+	srv1, _ := service.GetServiceByName("service1")
+	srv2, _ := service.GetServiceByName("service2")
+	tot_all := len(srv1.Instances.All) + len(srv2.Instances.All)
+	tot_pen := len(srv1.Instances.Pending) + len(srv2.Instances.Pending)
+	tot_run := len(srv1.Instances.Running) + len(srv2.Instances.Running)
+	tot_stop := len(srv1.Instances.Stopped) + len(srv2.Instances.Stopped)
+	tot_pause := len(srv1.Instances.Paused) + len(srv2.Instances.Paused)
+
+	instances := cfg.GetNodeInstances()
+	assert.Len(t, instances.All, tot_all)
+	assert.Len(t, instances.Pending, tot_pen)
+	assert.Len(t, instances.Running, tot_run)
+	assert.Len(t, instances.Stopped, tot_stop)
+	assert.Len(t, instances.Paused, tot_pause)
 }
 
 func TestMakeSnapshot(t *testing.T) {
@@ -161,6 +184,9 @@ func TestRemoveResource(t *testing.T) {
 	mockInstId_p := "instance1_3"
 	serviceName := "service2"
 	srv, _ := service.GetServiceByName(serviceName)
+
+	// check error
+	removeResource("pippo", &mockStats, &mockHist)
 
 	// check running
 	removeResource(mockInstId_r, &mockStats, &mockHist)

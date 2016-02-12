@@ -50,6 +50,24 @@ func TestGetServiceByImage(t *testing.T) {
 	assert.Error(t, err, "There should be no image 'test/pippo'")
 }
 
+func TestGetServiceById(t *testing.T) {
+	defer cfg.CleanServices()
+
+	var err error
+	cfg.SetServices(CreateMockServices())
+
+	srv1, err := GetServiceById("instance1_2")
+	assert.NoError(t, err)
+	assert.Equal(t, "service1", srv1.Name)
+
+	srv2, err := GetServiceById("instance2_1")
+	assert.NoError(t, err)
+	assert.Equal(t, "service2", srv2.Name)
+
+	_, err = GetServiceById("pippo")
+	assert.Error(t, err)
+}
+
 func TestAddServices(t *testing.T) {
 	defer cfg.CleanServices()
 	cfg.SetServices(CreateMockServices())

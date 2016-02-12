@@ -3,7 +3,8 @@ package configuration
 type Node struct {
 	Configuration NodeConfig      `json:"configuration"`
 	Constraints   NodeConstraints `json:"constraints"`
-	Resources     NodeResources   `json:resources`
+	Resources     NodeResources   `json:"resources"`
+	Instances     ServiceStatus   `json:"instances"`
 	Active        bool            `json:"active"`
 }
 

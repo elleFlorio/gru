@@ -104,7 +104,14 @@ func ReadNode(remote string) Node {
 	ReadNodeResources(remote, &resources)
 	active := ReadNodeActive(remote)
 
-	return Node{config, constraints, resources, active}
+	node := Node{
+		Configuration: config,
+		Constraints:   constraints,
+		Resources:     resources,
+		Active:        active,
+	}
+
+	return node
 }
 
 func ReadNodeConfig(remote string, config *NodeConfig) {

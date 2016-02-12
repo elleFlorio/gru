@@ -68,7 +68,9 @@ func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
 		cpu := value.Cpu.Tot
 		mem := value.Memory.Tot
 		resAvailable := res.AvailableResourcesService(name)
-		instances := value.Instances
+
+		srv, _ := service.GetServiceByName(name)
+		instances := srv.Instances
 
 		health := 1 - ((load + mem + cpu - resAvailable) / 4) //I don't like this...
 
@@ -144,7 +146,7 @@ func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
 	//TODO compute system mem!!!
 	mem := temp
 	resources := res.AvailableResources()
-	instances := stats.System.Instances
+	instances := *cfg.GetNodeInstances()
 
 	health := 1 - ((cpu + mem - resources) / 3) //Ok, maybe this is a bit... "mah"...
 

@@ -10,6 +10,7 @@ const (
 	c_NODE_CONFIG      = "config"
 	c_NODE_CONSTRAINTS = "constraints"
 	c_NODE_RESOURCES   = "resources"
+	c_NODE_INSTANCES   = "instances"
 	c_NODE_ACTIVE      = "active"
 )
 
@@ -84,6 +85,10 @@ func GetNodeResources() *NodeResources {
 	return getNodeSubConfig(c_NODE_RESOURCES).(*NodeResources)
 }
 
+func GetNodeInstances() *ServiceStatus {
+	return getNodeSubConfig(c_NODE_INSTANCES).(*ServiceStatus)
+}
+
 func getNodeSubConfig(subCfg string) interface{} {
 	switch subCfg {
 	case c_NODE_CONFIG:
@@ -92,6 +97,8 @@ func getNodeSubConfig(subCfg string) interface{} {
 		return &node.Constraints
 	case c_NODE_RESOURCES:
 		return &node.Resources
+	case c_NODE_INSTANCES:
+		return &node.Instances
 	}
 
 	return nil
@@ -99,6 +106,10 @@ func getNodeSubConfig(subCfg string) interface{} {
 
 func ToggleActiveNode() {
 	node.Active = !node.Active
+}
+
+func ClearNodeInstances() {
+	node.Instances = ServiceStatus{}
 }
 
 func SetServices(cfg []Service) {

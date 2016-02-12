@@ -10,6 +10,7 @@ import (
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
+	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
 )
@@ -32,31 +33,34 @@ func TestAnalyzeServices(t *testing.T) {
 	}
 
 	services := []cfg.Service{
-		createService("service1", "0,1,2,3", "4G"),
-		createService("service2", "0", "2G"),
+		createService("service1", "0,1,2,3", "4G", []string{"a", "b", "c"}),
+		createService("service2", "0", "2G", []string{"d"}),
 	}
 	cfg.SetServices(services)
-
 	setResources(6, "8G", 0, "0G")
-
 	stats := monitor.CreateMockStats()
+
 	analyzeServices(&analytics, stats)
 
+	srv, _ := service.GetServiceByName("service1")
 	assert.Len(t,
 		analytics.Service["service1"].Instances.Running,
-		len(stats.Service["service1"].Instances.Running),
+		len(srv.Instances.Running),
 	)
 }
 
-func createService(name string, cpu string, mem string) cfg.Service {
+func createService(name string, cpu string, mem string, running []string) cfg.Service {
 	srvConfig := cfg.ServiceDocker{
 		CpusetCpus: cpu,
 		Memory:     mem,
 	}
 
+	srvStatus := cfg.ServiceStatus{Running: running}
+
 	srv := cfg.Service{
-		Name:   name,
-		Docker: srvConfig,
+		Name:      name,
+		Docker:    srvConfig,
+		Instances: srvStatus,
 	}
 
 	return srv

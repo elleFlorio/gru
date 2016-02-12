@@ -11,6 +11,10 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
+//History window
+const W_SIZE = 100
+const W_MULT = 1000
+
 func Start(cError chan error, cStop chan struct{}) {
 	go startMonitoring(cError, cStop)
 }
@@ -214,7 +218,11 @@ func findIdIndex(id string, instances []string) (int, error) {
 
 // TODO see add resources function
 func removeResource(id string, stats *GruStats, hist *statsHistory) {
-	srv, _ := service.GetServiceById(id)
+	srv, err := service.GetServiceById(id)
+	if err != nil {
+		log.Warningln("Cannor remove resource: service unknown")
+		return
+	}
 	// Updating service stats
 	//srvStats := stats.Service[srvName]
 	//running := srvStats.Instances.Running
