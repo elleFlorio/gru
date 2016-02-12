@@ -26,10 +26,6 @@ var (
 	ErrNoIndexById error = errors.New("No index for such Id")
 )
 
-//History window
-const W_SIZE = 100
-const W_MULT = 1000
-
 func init() {
 	gruStats = GruStats{
 		Service:  make(map[string]ServiceStats),
@@ -48,6 +44,7 @@ func Run() GruStats {
 
 	computeServicesStats(&gruStats)
 	computeSystemCpu(&gruStats)
+	updateSystemInstances(&gruStats)
 	makeSnapshot(&gruStats, &snapshot)
 	//updateServicesInstances(&snapshot)
 	err := saveStats(snapshot)
@@ -144,23 +141,33 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 	sysPrev := 0.0
 	cpu := 0.0
 
+	valid := 0
+
 	for i := 1; i < len(instCpus); i++ {
 		instPrev = instCpus[i-1]
 		sysPrev = sysCpus[i-1]
 		instNext = instCpus[i]
 		sysNext = sysCpus[i]
 		instDelta := instNext - instPrev
-		sysDelta := sysNext - sysPrev
-		if sysDelta == 0 {
-			cpu = 0
-		} else {
-			// "100 * cpu" should produce values in [0, 100]
-			cpu = (instDelta / sysDelta) * float64(res.GetResources().CPU.Total)
+		if instDelta > 0 {
+			sysDelta := sysNext - sysPrev
+			if sysDelta == 0 {
+				cpu = 0
+			} else {
+				// "100 * cpu" should produce values in [0, 100]
+				cpu = (instDelta / sysDelta) * float64(res.GetResources().CPU.Total)
+			}
+			sum += cpu
+			valid++
 		}
-		sum += cpu
 	}
 
-	return math.Min(1.0, sum/float64(len(instCpus)-1))
+	log.WithFields(log.Fields{
+		"instCpus": len(instCpus),
+		"valid":    valid,
+	}).Debugln("INSTANCE CPU USAGE")
+
+	return math.Min(1.0, sum/float64(valid))
 }
 
 func computeServiceMemory(name string, stats *GruStats) {
@@ -257,6 +264,19 @@ func computeSystemCpu(stats *GruStats) {
 		sum += value.Cpu.Tot
 	}
 	stats.System.Cpu = math.Min(1.0, sum)
+}
+
+func updateSystemInstances(stats *GruStats) {
+	cfg.ClearNodeInstances()
+	instances := cfg.GetNodeInstances()
+	for name, _ := range stats.Service {
+		srv, _ := service.GetServiceByName(name)
+		instances.All = append(instances.All, srv.Instances.All...)
+		instances.Pending = append(instances.Pending, srv.Instances.Pending...)
+		instances.Running = append(instances.Running, srv.Instances.Running...)
+		instances.Stopped = append(instances.Stopped, srv.Instances.Stopped...)
+		instances.Paused = append(instances.Paused, srv.Instances.Paused...)
+	}
 }
 
 //TODO maybe I can just compute historical data without make a deep copy
