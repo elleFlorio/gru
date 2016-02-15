@@ -74,8 +74,6 @@ func computeServicesStats(stats *GruStats) {
 
 //FIXME need to check if all the windows are actually ready
 func updateRunningInstances(name string, stats *GruStats, wsize int) {
-	//srvStats := stats.Service[name]
-	//pending := srvStats.Instances.Pending
 	srv, _ := service.GetServiceByName(name)
 	pending := srv.Instances.Pending
 
@@ -287,25 +285,6 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 	// Copy service stats
 	for name, stats := range src.Service {
 		srv_src := stats
-		// Copy instances status
-		// status_src := stats.Instances
-		// all_dst := make([]string, len(status_src.All), len(status_src.All))
-		// runnig_dst := make([]string, len(status_src.Running), len(status_src.Running))
-		// pending_dst := make([]string, len(status_src.Pending), len(status_src.Pending))
-		// stopped_dst := make([]string, len(status_src.Stopped), len(status_src.Stopped))
-		// paused_dst := make([]string, len(status_src.Paused), len(status_src.Paused))
-		// copy(all_dst, status_src.All)
-		// copy(runnig_dst, status_src.Running)
-		// copy(pending_dst, status_src.Pending)
-		// copy(stopped_dst, status_src.Stopped)
-		// copy(paused_dst, status_src.Paused)
-		// status_dst := cfg.ServiceStatus{
-		// 	all_dst,
-		// 	runnig_dst,
-		// 	pending_dst,
-		// 	stopped_dst,
-		// 	paused_dst,
-		// }
 		// Copy events (NEEDED?)
 		events_src := srv_src.Events
 		stop_dst := make([]string, len(events_src.Stop), len(events_src.Stop))
@@ -329,7 +308,6 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		copy(respTime_dst, metrics_src.ResponseTime)
 		metrics_dst := MetricStats{respTime_dst}
 
-		//status_dst := cfg.ServiceStatus{}
 		srv_dst := ServiceStats{ /*status_dst, */ events_dst, cpu_dst, mem_dst, metrics_dst}
 		dst.Service[name] = srv_dst
 	}
@@ -340,38 +318,8 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		dst.Instance[id] = inst_dst
 	}
 
-	//Copy system stats
-	// sys_status_src := src.System.Instances
-	// sys_all_dst := make([]string, len(sys_status_src.All), len(sys_status_src.All))
-	// sys_runnig_dst := make([]string, len(sys_status_src.Running), len(sys_status_src.Running))
-	// sys_pending_dst := make([]string, len(sys_status_src.Pending), len(sys_status_src.Pending))
-	// sys_stopped_dst := make([]string, len(sys_status_src.Stopped), len(sys_status_src.Stopped))
-	// sys_paused_dst := make([]string, len(sys_status_src.Paused), len(sys_status_src.Paused))
-	// copy(sys_all_dst, sys_status_src.All)
-	// copy(sys_runnig_dst, sys_status_src.Running)
-	// copy(sys_pending_dst, sys_status_src.Pending)
-	// copy(sys_stopped_dst, sys_status_src.Stopped)
-	// copy(sys_paused_dst, sys_status_src.Paused)
-	// sys_status_dst := cfg.ServiceStatus{
-	// 	sys_all_dst,
-	// 	sys_runnig_dst,
-	// 	sys_pending_dst,
-	// 	sys_stopped_dst,
-	// 	sys_paused_dst,
-	// }
-	// dst.System.Instances = sys_status_dst
 	dst.System.Cpu = src.System.Cpu
 }
-
-// DEPRECATED
-// func updateServicesInstances(stats *GruStats) {
-// 	for name, _ := range stats.Service {
-// 		srv, _ := service.GetServiceByName(name)
-// 		srvStats := stats.Service[name]
-// 		srvStats.Instances = srv.Instances
-// 		stats.Service[name] = srvStats
-// 	}
-// }
 
 func saveStats(stats GruStats) error {
 	data, err := convertStatsToData(stats)

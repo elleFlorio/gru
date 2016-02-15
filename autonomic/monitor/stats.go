@@ -2,8 +2,6 @@ package monitor
 
 import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
-
-	//cfg "github.com/elleFlorio/gru/configuration"
 )
 
 type GruStats struct {
@@ -13,7 +11,6 @@ type GruStats struct {
 }
 
 type ServiceStats struct {
-	//Instances cfg.ServiceStatus `json:"instances"`
 	Events  EventStats  `json:"events"`
 	Cpu     CpuStats    `json:"cpu"`
 	Memory  MemoryStats `json:memory`
@@ -45,7 +42,6 @@ type InstanceStats struct {
 }
 
 type SystemStats struct {
-	//Instances cfg.ServiceStatus `json:"instances"`
 	Cpu float64 `json:"cpu"`
 }
 

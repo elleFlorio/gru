@@ -118,7 +118,6 @@ func computeAvgResponseTime(responseTimes []float64) float64 {
 func computeLoad(maxRt float64, avgRt float64) float64 {
 	// I want the maximum response time
 	// to correspond to the 80% of load
-	// TEST
 	upperBound := maxRt / 0.8
 	if avgRt > upperBound {
 		avgRt = upperBound
@@ -190,7 +189,6 @@ func analyzeCluster(analytics *GruAnalytics) {
 func getPeersAnalytics() []GruAnalytics {
 	peers := make([]GruAnalytics, 0)
 	dataAn, _ := storage.GetAllData(enum.ANALYTICS)
-	//TEST
 	delete(dataAn, enum.CLUSTER.ToString())
 	for _, data := range dataAn {
 		a, _ := convertDataToAnalytics(data)

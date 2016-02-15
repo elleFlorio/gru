@@ -2,8 +2,6 @@ package monitor
 
 import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
-
-	//cfg "github.com/elleFlorio/gru/configuration"
 )
 
 const maxHistory = 6
@@ -25,19 +23,6 @@ func MaxNumberOfEntryInHistory() int {
 }
 
 func CreateMockStats() GruStats {
-	// all1 := []string{"instance1_0, instance1_1", "instance1_2", "instance1_3", "instance1_4"}
-	// running1 := []string{"instance1_1", "instance1_2"}
-	// pending1 := []string{"instance1_3", "instance1_4"}
-	// stopped1 := []string{"instance1_0"}
-	// paused1 := []string{}
-	// instances1 := cfg.ServiceStatus{
-	// 	All:     all1,
-	// 	Running: running1,
-	// 	Pending: pending1,
-	// 	Stopped: stopped1,
-	// 	Paused:  paused1,
-	// }
-
 	events1 := EventStats{
 		Stop:  []string{"instance1_0"},
 		Start: []string{"instance1_4"},
@@ -55,19 +40,12 @@ func CreateMockStats() GruStats {
 		[]float64{1000},
 	}
 	service1 := ServiceStats{
-		//Instances: instances1,
 		Events:  events1,
 		Cpu:     cpu1,
 		Memory:  mem1,
 		Metrics: metric1,
 	}
 
-	// all2 := []string{"instance2_1"}
-	// running2 := []string{"instance2_1"}
-	// instances2 := cfg.ServiceStatus{
-	// 	All:     all2,
-	// 	Running: running2,
-	// }
 	cpu2 := CpuStats{
 		Avg: 0.2,
 		Tot: 0.2,
@@ -80,7 +58,6 @@ func CreateMockStats() GruStats {
 		[]float64{2000},
 	}
 	service2 := ServiceStats{
-		//Instances: instances2,
 		Cpu:     cpu2,
 		Memory:  mem2,
 		Metrics: metric2,
@@ -116,21 +93,7 @@ func CreateMockStats() GruStats {
 		"instance2_1": instStat2_1,
 	}
 
-	// allSys := []string{"instance1_0, instance1_1", "instance1_2", "instance1_3", "instance1_4", "instance2_1"}
-	// runningSys := []string{"instance1_1", "instance1_2", "instance2_1"}
-	// pendingSys := []string{"instance1_3", "instance1_4"}
-	// stoppedSys := []string{"instance1_0"}
-	// pausedSys := []string{}
-	// instancesSys := cfg.ServiceStatus{
-	// 	All:     allSys,
-	// 	Running: runningSys,
-	// 	Pending: pendingSys,
-	// 	Stopped: stoppedSys,
-	// 	Paused:  pausedSys,
-	// }
-
 	system := SystemStats{
-		//Instances: instancesSys,
 		Cpu: cpuSys,
 	}
 
