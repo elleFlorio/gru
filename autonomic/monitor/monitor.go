@@ -142,8 +142,9 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 	cpu := 0.0
 
 	valid := 0
+	nValues := int(math.Min(float64(len(instCpus)), float64(len(sysCpus))))
 
-	for i := 1; i < len(instCpus); i++ {
+	for i := 1; i < nValues; i++ {
 		instPrev = instCpus[i-1]
 		sysPrev = sysCpus[i-1]
 		instNext = instCpus[i]
@@ -163,8 +164,8 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 	}
 
 	log.WithFields(log.Fields{
-		"instCpus": len(instCpus),
-		"valid":    valid,
+		"nValues": nValues,
+		"valid":   valid,
 	}).Debugln("INSTANCE CPU USAGE")
 
 	return math.Min(1.0, sum/float64(valid))
