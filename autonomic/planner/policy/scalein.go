@@ -18,7 +18,6 @@ func (p *ScaleIn) Name() string {
 	return "scalein"
 }
 
-//TODO find a way to compute a label that make some sense...
 func (p *ScaleIn) Weight(name string, analytics analyzer.GruAnalytics) float64 {
 	srv, _ := service.GetServiceByName(name)
 	inst_run := len(srv.Instances.Running)
