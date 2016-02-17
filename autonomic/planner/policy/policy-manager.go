@@ -2,6 +2,7 @@ package policy
 
 import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
+	"github.com/elleFlorio/gru/enum"
 )
 
 type policyCreator interface {
@@ -47,5 +48,31 @@ func CreatePolicies(srvList []string, analytics analyzer.GruAnalytics) []Policy 
 		policies = append(policies, creatorPolicies...)
 	}
 
+	noaction := createNoActionPolicy(policies)
+	policies = append(policies, noaction)
+
 	return policies
+}
+
+func createNoActionPolicy(policies []Policy) Policy {
+	max := 0.0
+	for _, policy := range policies {
+		if policy.Weight > max {
+			max = policy.Weight
+		}
+	}
+
+	policyName := "noaction"
+	policyWeight := 1.0 - max
+	policyTargets := map[string]enum.Action{
+		"noservice": enum.NOACTION,
+	}
+
+	noactionPolicy := Policy{
+		Name:    policyName,
+		Weight:  policyWeight,
+		Targets: policyTargets,
+	}
+
+	return noactionPolicy
 }
