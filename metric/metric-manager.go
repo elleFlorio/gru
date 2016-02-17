@@ -127,13 +127,12 @@ func UpdateMetrics() {
 		metrics.Service[name] = srv_metrics
 	}
 
-	plans, err := planner.GetPlannerData()
+	plc, err := planner.GetPlannerData()
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot update plans metrics")
 	} else {
-		metrics.Plan.Policy = plans.Policy
-		metrics.Plan.Target = plans.Target.Name
-		metrics.Plan.Weight = plans.Weight
+		metrics.Policy.Name = plc.Name
+		metrics.Policy.Weight = plc.Weight
 	}
 
 }
@@ -153,8 +152,8 @@ func newMetrics() GruMetric {
 
 		new_metrics.Service[name] = service_new
 	}
-	plans_new := PlansMetric{"noaction", "noservice", 1.0}
-	new_metrics.Plan = plans_new
+	policy_new := PolicyMetric{Name: "noaction", Weight: 1.0}
+	new_metrics.Policy = policy_new
 
 	return new_metrics
 }

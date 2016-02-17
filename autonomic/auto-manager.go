@@ -41,8 +41,8 @@ func RunLoop(loopTimeInterval int) {
 		case <-ticker.C:
 			stats := monitor.Run()
 			analytics := analyzer.Run(stats)
-			plan := planner.Run(analytics)
-			executor.Run(plan)
+			policy := planner.Run(analytics)
+			executor.Run(policy)
 
 			collectMetrics()
 

@@ -19,7 +19,7 @@ var (
 type internal struct {
 	statsData     map[string][]byte
 	analyticsData map[string][]byte
-	plansData     map[string][]byte
+	policiesData  map[string][]byte
 }
 
 func (p *internal) Name() string {
@@ -29,7 +29,7 @@ func (p *internal) Name() string {
 func (p *internal) Initialize() error {
 	p.statsData = make(map[string][]byte)
 	p.analyticsData = make(map[string][]byte)
-	p.plansData = make(map[string][]byte)
+	p.policiesData = make(map[string][]byte)
 	return nil
 }
 
@@ -43,9 +43,9 @@ func (p *internal) StoreData(key string, data []byte, dataType enum.Datatype) er
 		mutex_a.Lock()
 		p.analyticsData[key] = data
 		mutex_a.Unlock()
-	case enum.PLANS:
+	case enum.POLICIES:
 		mutex_p.Lock()
-		p.plansData[key] = data
+		p.policiesData[key] = data
 		mutex_p.Unlock()
 	}
 	runtime.Gosched()
@@ -65,9 +65,9 @@ func (p *internal) GetData(key string, dataType enum.Datatype) ([]byte, error) {
 		mutex_a.RLock()
 		data, ok = p.analyticsData[key]
 		mutex_a.RUnlock()
-	case enum.PLANS:
+	case enum.POLICIES:
 		mutex_p.RLock()
-		data, ok = p.plansData[key]
+		data, ok = p.policiesData[key]
 		mutex_p.RUnlock()
 	}
 	runtime.Gosched()
@@ -90,9 +90,9 @@ func (p *internal) GetAllData(dataType enum.Datatype) (map[string][]byte, error)
 		mutex_a.RLock()
 		data = p.analyticsData
 		mutex_a.RUnlock()
-	case enum.PLANS:
+	case enum.POLICIES:
 		mutex_p.RLock()
-		data = p.plansData
+		data = p.policiesData
 		mutex_p.RUnlock()
 	}
 	runtime.Gosched()
@@ -110,9 +110,9 @@ func (p *internal) DeleteData(key string, dataType enum.Datatype) error {
 		mutex_a.Lock()
 		delete(p.analyticsData, key)
 		mutex_a.Unlock()
-	case enum.PLANS:
+	case enum.POLICIES:
 		mutex_p.Lock()
-		delete(p.plansData, key)
+		delete(p.policiesData, key)
 		mutex_p.Unlock()
 	}
 
@@ -129,9 +129,9 @@ func (p *internal) DeleteAllData(dataType enum.Datatype) error {
 		mutex_a.Lock()
 		p.analyticsData = make(map[string][]byte)
 		mutex_a.Unlock()
-	case enum.PLANS:
+	case enum.POLICIES:
 		mutex_p.Lock()
-		p.plansData = make(map[string][]byte)
+		p.policiesData = make(map[string][]byte)
 		mutex_p.Unlock()
 	}
 	runtime.Gosched()

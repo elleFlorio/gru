@@ -3,7 +3,7 @@ package metric
 type GruMetric struct {
 	Node    NodeMetrics
 	Service map[string]ServiceMetric
-	Plan    PlansMetric
+	Policy  PolicyMetric
 }
 
 type NodeMetrics struct {
@@ -46,8 +46,7 @@ type AnalyticsMetric struct {
 	Health    float64
 }
 
-type PlansMetric struct {
-	Policy string
-	Target string
+type PolicyMetric struct {
+	Name   string
 	Weight float64
 }

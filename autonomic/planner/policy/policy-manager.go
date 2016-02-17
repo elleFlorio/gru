@@ -64,8 +64,8 @@ func createNoActionPolicy(policies []Policy) Policy {
 
 	policyName := "noaction"
 	policyWeight := 1.0 - max
-	policyTargets := map[string]enum.Action{
-		"noservice": enum.NOACTION,
+	policyTargets := map[string][]enum.Action{
+		"noservice": []enum.Action{enum.NOACTION},
 	}
 
 	noactionPolicy := Policy{

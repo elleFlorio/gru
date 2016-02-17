@@ -121,12 +121,12 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 
 	}
 
-	planPoint, err := createInfluxPlans(nodeName, metrics.Plan)
+	policyPoint, err := createInfluxPolicy(nodeName, metrics.Policy)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error creating policy metrics")
 		return points, err
 	}
-	points = append(points, planPoint)
+	points = append(points, policyPoint)
 
 	return points, nil
 }
@@ -265,22 +265,21 @@ func createInfluxHealthService(nodeName string, service ServiceMetric) (*client.
 	return point, nil
 }
 
-func createInfluxPlans(nodeName string, plans PlansMetric) (*client.Point, error) {
+func createInfluxPolicy(nodeName string, plc PolicyMetric) (*client.Point, error) {
 	tags := map[string]string{
-		"node":   nodeName,
-		"policy": plans.Policy,
+		"node": nodeName,
+		"name": plc.Name,
 	}
 	fields := map[string]interface{}{
-		"target": plans.Policy,
-		"weight": plans.Weight,
+		"weight": plc.Weight,
 	}
 
-	point, err := client.NewPoint("plans", tags, fields, time.Now())
+	point, err := client.NewPoint("policy", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
-	log.WithField("series", "plans").Debugln("Created influx metrics")
+	log.WithField("series", "policy").Debugln("Created influx metrics")
 
 	return point, nil
 }

@@ -28,8 +28,8 @@ func (p *scaleinCreator) createPolicies(srvList []string, analytics analyzer.Gru
 	for _, name := range srvList {
 		policyName := p.getPolicyName()
 		policyWeight := p.computeWeight(name, analytics)
-		policyTargets := map[string]enum.Action{
-			name: enum.STOP,
+		policyTargets := map[string][]enum.Action{
+			name: []enum.Action{enum.STOP},
 		}
 
 		scaleinPolicy := Policy{

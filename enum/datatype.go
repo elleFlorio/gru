@@ -5,7 +5,7 @@ type Datatype float64
 const (
 	STATS     Datatype = iota
 	ANALYTICS Datatype = iota
-	PLANS     Datatype = iota
+	POLICIES  Datatype = iota
 )
 
 func (d Datatype) Value() float64 {
@@ -15,7 +15,7 @@ func (d Datatype) Value() float64 {
 		v = 0.0
 	case d == ANALYTICS:
 		v = 1.0
-	case d == PLANS:
+	case d == POLICIES:
 		v = 2.0
 	}
 
@@ -29,8 +29,8 @@ func (d Datatype) ToString() string {
 		s = "STATS"
 	case d == ANALYTICS:
 		s = "ANALYTICS"
-	case d == PLANS:
-		s = "PLANS"
+	case d == POLICIES:
+		s = "POLICIES"
 	}
 
 	return s

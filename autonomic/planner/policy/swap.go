@@ -28,9 +28,9 @@ func (p *swapCreator) createPolicies(srvList []string, analytics analyzer.GruAna
 		for _, inactive := range inactives {
 			policyName := p.getPolicyName()
 			policyWeight := p.computeWeight(running, inactive, analytics)
-			policyTargets := map[string]enum.Action{
-				running:  enum.STOP,
-				inactive: enum.START,
+			policyTargets := map[string][]enum.Action{
+				running:  []enum.Action{enum.STOP},
+				inactive: []enum.Action{enum.START},
 			}
 
 			swapPolicy := Policy{

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"math/rand"
 	"time"
+
+	"github.com/elleFlorio/gru/autonomic/planner/policy"
 )
 
 func init() {
@@ -27,31 +29,31 @@ func (p *probabilisticStrategy) Initialize() error {
 	return nil
 }
 
-func (p *probabilisticStrategy) MakeDecision(plans []GruPlan) *GruPlan {
-	return weightedRandomElement(plans)
+func (p *probabilisticStrategy) MakeDecision(policies []policy.Policy) *policy.Policy {
+	return weightedRandomElement(policies)
 }
 
-func weightedRandomElement(plans []GruPlan) *GruPlan {
-	var thePlan GruPlan
+func weightedRandomElement(policies []policy.Policy) *policy.Policy {
+	var chosenPolicy *policy.Policy
 	totalWeight := 0.0
 	threshold := randUniform(0, 1)
 	normalizedCumulative := 0.0
 
-	for _, plan := range plans {
-		totalWeight += plan.Weight
+	for _, plc := range policies {
+		totalWeight += plc.Weight
 	}
 
-	shuffle(plans)
+	shuffle(policies)
 
-	for _, plan := range plans {
-		normalizedCumulative += plan.Weight / totalWeight
+	for _, plc := range policies {
+		normalizedCumulative += plc.Weight / totalWeight
 		if normalizedCumulative > threshold {
-			thePlan = plan
-			break
+			chosenPolicy = &plc
+			return chosenPolicy
 		}
 	}
 
-	return &thePlan
+	return chosenPolicy
 
 }
 
@@ -59,9 +61,9 @@ func randUniform(min, max float64) float64 {
 	return gen.Float64()*(max-min) + min
 }
 
-func shuffle(plans []GruPlan) {
-	for i := range plans {
+func shuffle(policies []policy.Policy) {
+	for i := range policies {
 		j := gen.Intn(i + 1)
-		plans[i], plans[j] = plans[j], plans[i]
+		policies[i], policies[j] = policies[j], policies[i]
 	}
 }

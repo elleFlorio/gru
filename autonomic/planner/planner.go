@@ -9,9 +9,9 @@ import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
-	cfg "github.com/elleFlorio/gru/configuration"
+	// cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/service"
+	// "github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
 
@@ -31,93 +31,115 @@ func SetPlannerStrategy(strategyName string) {
 	log.WithField("strategy", strtg.Name()).Infoln("Strategy initialized")
 }
 
-func Run(analytics analyzer.GruAnalytics) *strategy.GruPlan {
+func Run(analytics analyzer.GruAnalytics) *policy.Policy {
 	log.WithField("status", "init").Debugln("Gru Planner")
 	defer log.WithField("status", "done").Debugln("Gru Planner")
-	var thePlan *strategy.GruPlan
+	var chosenPolicy *policy.Policy
 
 	if len(analytics.Service) == 0 {
 		log.WithField("err", "No services analytics").Warnln("Cannot compute plans.")
 	} else {
-		plans := buildPlans(analytics)
-		thePlan = currentStrategy.MakeDecision(plans)
-		err := savePlan(thePlan)
+		srvList := getServicesListFromAnalytics(analytics)
+		policies := policy.CreatePolicies(srvList, analytics)
+		chosenPolicy = currentStrategy.MakeDecision(policies)
+		err := savePolicy(chosenPolicy)
 		if err != nil {
-			log.WithField("err", err).Errorln("Plan data not saved")
+			log.WithField("err", err).Errorln("Planner data not saved")
 		}
 
-		displayThePlan(thePlan)
+		displayPolicy(chosenPolicy)
+
+		// plans := buildPlans(analytics)
+		// thePlan = currentStrategy.MakeDecision(plans)
+		// err := savePlan(thePlan)
+		// if err != nil {
+		// 	log.WithField("err", err).Errorln("Plan data not saved")
+		// }
+
+		// displayThePlan(thePlan)
 	}
 
-	return thePlan
+	return chosenPolicy
 }
 
-func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
-	plans := []strategy.GruPlan{}
-
-	if len(analytics.Service) == 0 {
-		log.Warnln("No service for building plans.")
-		noServicePlan := strategy.GruPlan{
-			"noaction",
-			1.0,
-			&cfg.Service{Name: "noService"},
-			[]enum.Action{enum.NOACTION},
-		}
-		plans = append(plans, noServicePlan)
-		return plans
+// TODO I should remove this and start from the stats to compute something
+// for the services that are not created yet. In that way I just need to call
+// service.List()
+func getServicesListFromAnalytics(analytics analyzer.GruAnalytics) []string {
+	list := make([]string, 0, len(analytics.Service))
+	for srv, _ := range analytics.Service {
+		list = append(list, srv)
 	}
 
-	policies := policy.GetPolicies()
-	weight_max := 0.0
-	for _, name := range service.List() {
-		for _, plc := range policies {
-			weight := plc.Weight(name, analytics)
-			target, _ := service.GetServiceByName(name)
-			actions := plc.Actions()
-			plan := strategy.GruPlan{plc.Name(), weight, target, actions}
-			log.WithFields(log.Fields{
-				"policy":  plc.Name(),
-				"weight":  weight,
-				"service": name,
-			}).Debugln("Computed policy")
-			plans = append(plans, plan)
-
-			if weight >= weight_max {
-				weight_max = weight
-			}
-		}
-	}
-	weight_na := 1 - weight_max
-	plan_na := strategy.GruPlan{
-		"noaction",
-		weight_na,
-		&cfg.Service{Name: "NoService"},
-		[]enum.Action{enum.NOACTION},
-	}
-	log.WithFields(log.Fields{
-		"policy":  "NoAction",
-		"weight":  weight_na,
-		"service": "NoService",
-	}).Debugln("Computed policy")
-	plans = append(plans, plan_na)
-
-	return plans
+	return list
 }
 
-func savePlan(plan *strategy.GruPlan) error {
-	data, err := convertPlanToData(*plan)
+// func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
+// 	plans := []strategy.GruPlan{}
+
+// 	if len(analytics.Service) == 0 {
+// 		log.Warnln("No service for building plans.")
+// 		noServicePlan := strategy.GruPlan{
+// 			"noaction",
+// 			1.0,
+// 			&cfg.Service{Name: "noService"},
+// 			[]enum.Action{enum.NOACTION},
+// 		}
+// 		plans = append(plans, noServicePlan)
+// 		return plans
+// 	}
+
+// 	policies := policy.GetPolicies()
+// 	weight_max := 0.0
+// 	for _, name := range service.List() {
+// 		for _, plc := range policies {
+// 			weight := plc.Weight(name, analytics)
+// 			target, _ := service.GetServiceByName(name)
+// 			actions := plc.Actions()
+// 			plan := strategy.GruPlan{plc.Name(), weight, target, actions}
+// 			log.WithFields(log.Fields{
+// 				"policy":  plc.Name(),
+// 				"weight":  weight,
+// 				"service": name,
+// 			}).Debugln("Computed policy")
+// 			plans = append(plans, plan)
+
+// 			if weight >= weight_max {
+// 				weight_max = weight
+// 			}
+// 		}
+// 	}
+// 	weight_na := 1 - weight_max
+// 	plan_na := strategy.GruPlan{
+// 		"noaction",
+// 		weight_na,
+// 		&cfg.Service{Name: "NoService"},
+// 		[]enum.Action{enum.NOACTION},
+// 	}
+// 	log.WithFields(log.Fields{
+// 		"policy":  "NoAction",
+// 		"weight":  weight_na,
+// 		"service": "NoService",
+// 	}).Debugln("Computed policy")
+// 	plans = append(plans, plan_na)
+
+// 	return plans
+// }
+
+func savePolicy(chosenPolicy *policy.Policy) error {
+	data, err := convertPolicyToData(chosenPolicy)
 	if err != nil {
-		log.WithField("err", err).Debugln("Cannot convert plan to data")
+		log.WithField("err", err).Debugln("Cannot convert policy to data")
 		return err
 	} else {
-		storage.StoreLocalData(data, enum.PLANS)
+		storage.StoreLocalData(data, enum.POLICIES)
 	}
 
 	return nil
 }
 
-func convertPlanToData(plan strategy.GruPlan) ([]byte, error) {
-	data, err := json.Marshal(plan)
+func convertPolicyToData(chosenPolicy *policy.Policy) ([]byte, error) {
+	data, err := json.Marshal(*chosenPolicy)
 	if err != nil {
 		log.WithField("error", err).Errorln("Error marshaling plan data")
 		return nil, err
@@ -126,33 +148,33 @@ func convertPlanToData(plan strategy.GruPlan) ([]byte, error) {
 	return data, nil
 }
 
-func displayThePlan(thePlan *strategy.GruPlan) {
+func displayPolicy(chosenPolicy *policy.Policy) {
 	log.WithFields(log.Fields{
-		"target":  thePlan.Target.Name,
-		"actions": thePlan.Actions.ToString(),
-		"weight":  fmt.Sprintf("%.2f", thePlan.Weight),
-	}).Infoln("Plan computed")
+		"name":    chosenPolicy.Name,
+		"weight":  fmt.Sprintf("%.2f", chosenPolicy.Weight),
+		"targets": chosenPolicy.Targets,
+	}).Infoln("Policy to actuate")
 }
 
-func GetPlannerData() (strategy.GruPlan, error) {
-	plan := strategy.GruPlan{}
-	dataPlan, err := storage.GetLocalData(enum.PLANS)
+func GetPlannerData() (policy.Policy, error) {
+	plc := policy.Policy{}
+	dataPlan, err := storage.GetLocalData(enum.POLICIES)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot retrieve plan data")
 	} else {
-		plan, err = convertDataToPlan(dataPlan)
+		plc, err = convertDataToPolicy(dataPlan)
 	}
 
-	return plan, err
+	return plc, err
 }
 
-func convertDataToPlan(data []byte) (strategy.GruPlan, error) {
-	plan := strategy.GruPlan{}
-	err := json.Unmarshal(data, &plan)
+func convertDataToPolicy(data []byte) (policy.Policy, error) {
+	plc := policy.Policy{}
+	err := json.Unmarshal(data, &plc)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error unmarshaling plan data")
-		return strategy.GruPlan{}, err
+		return policy.Policy{}, err
 	}
 
-	return plan, nil
+	return plc, nil
 }

@@ -28,8 +28,8 @@ func (p *scaleoutCreator) createPolicies(srvList []string, analytics analyzer.Gr
 	for _, name := range srvList {
 		policyName := p.getPolicyName()
 		policyWeight := p.computeWeight(name, analytics)
-		policyTargets := map[string]enum.Action{
-			name: enum.START,
+		policyTargets := map[string][]enum.Action{
+			name: []enum.Action{enum.START},
 		}
 
 		scaleoutPolicy := Policy{

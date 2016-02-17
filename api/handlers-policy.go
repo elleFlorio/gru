@@ -16,7 +16,7 @@ type plc struct {
 
 // /gru/v1/policies
 func GetInfoPolicies(w http.ResponseWriter, r *http.Request) {
-	policies := policy.GetPolicies()
+	policies := policy.List()
 	plcs := createPoliciesJson(policies)
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -30,18 +30,17 @@ func GetInfoPolicies(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createPoliciesJson(policies []policy.GruPolicy) []plc {
+func createPoliciesJson(policies []string) []plc {
 	plcs := make([]plc, 0, len(policies))
 
 	for _, p := range policies {
-		plc_actions := []string{}
-		for _, action := range p.Actions() {
-			plc_actions = append(plc_actions, action.ToString())
-		}
+		plc_actions := policy.ListPolicyActions(p)
+
 		plc_tmp := plc{
-			p.Name(),
+			p,
 			plc_actions,
 		}
+
 		plcs = append(plcs, plc_tmp)
 	}
 

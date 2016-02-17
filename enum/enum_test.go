@@ -15,7 +15,7 @@ var (
 
 	data_s Enum = STATS
 	data_a Enum = ANALYTICS
-	data_p Enum = PLANS
+	data_p Enum = POLICIES
 
 	action_no   Enum    = NOACTION
 	action_st   Enum    = START
@@ -57,7 +57,7 @@ func TestToString(t *testing.T) {
 
 	assert.Equal(t, "STATS", data_s.ToString())
 	assert.Equal(t, "ANALYTICS", data_a.ToString())
-	assert.Equal(t, "PLANS", data_p.ToString())
+	assert.Equal(t, "POLICIES", data_p.ToString())
 
 	assert.Equal(t, "NOACTION", action_no.ToString())
 	assert.Equal(t, "START", action_st.ToString())

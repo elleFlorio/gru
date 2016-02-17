@@ -4,10 +4,11 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/executor/action"
-	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	ch "github.com/elleFlorio/gru/channels"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
+	"github.com/elleFlorio/gru/service"
 )
 
 func ListenToActionMessages() {
@@ -26,15 +27,18 @@ func listen() {
 	}
 }
 
-func Run(plan *strategy.GruPlan) {
+func Run(chosenPolicy *policy.Policy) {
 	log.WithField("status", "init").Debugln("Gru Executor")
 	defer log.WithField("status", "done").Debugln("Gru Executor")
 
-	if plan == nil {
-		log.WithField("err", "No plan to execute").Warnln("Cannot execute actions")
+	if chosenPolicy == nil {
+		log.WithField("err", "No policy to execute").Warnln("Cannot execute actions")
 	} else {
-		config := buildConfig(plan.Target)
-		executeActions(plan.Actions, config)
+		for target, actions := range chosenPolicy.Targets {
+			srv, _ := service.GetServiceByName(target)
+			config := buildConfig(srv)
+			executeActions(actions, config)
+		}
 	}
 }
 
