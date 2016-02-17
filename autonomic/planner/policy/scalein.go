@@ -12,13 +12,39 @@ import (
 const c_THRESHOLD_SCALEIN_LOAD = 0.3
 const c_THRESHOLD_SCALEIN_CPU = 0.3
 
-type ScaleIn struct{}
+type scaleinCreator struct{}
 
-func (p *ScaleIn) Name() string {
+func (p *scaleinCreator) getPolicyName() string {
 	return "scalein"
 }
 
-func (p *ScaleIn) Weight(name string, analytics analyzer.GruAnalytics) float64 {
+func (p *scaleinCreator) listActions() []string {
+	return []string{"stop"}
+}
+
+func (p *scaleinCreator) createPolicies(srvList []string, analytics analyzer.GruAnalytics) []Policy {
+	scaleinPolicies := make([]Policy, 0, len(srvList))
+
+	for _, name := range srvList {
+		policyName := p.getPolicyName()
+		policyWeight := p.computeWeight(name, analytics)
+		policyTargets := map[string]enum.Action{
+			name: enum.STOP,
+		}
+
+		scaleinPolicy := Policy{
+			Name:    policyName,
+			Weight:  policyWeight,
+			Targets: policyTargets,
+		}
+
+		scaleinPolicies = append(scaleinPolicies, scaleinPolicy)
+	}
+
+	return scaleinPolicies
+}
+
+func (p *scaleinCreator) computeWeight(name string, analytics analyzer.GruAnalytics) float64 {
 	srv, _ := service.GetServiceByName(name)
 	inst_run := len(srv.Instances.Running)
 	inst_pen := len(srv.Instances.Pending)
@@ -28,7 +54,7 @@ func (p *ScaleIn) Weight(name string, analytics analyzer.GruAnalytics) float64 {
 	}
 
 	baseServices := cfg.GetNodeConstraints().BaseServices
-	if (inst_pen+inst_run) <= 1 && contains(baseServices, name) {
+	if (inst_pen+inst_run) <= 1 && p.contains(baseServices, name) {
 		return 0.0
 	}
 
@@ -49,7 +75,7 @@ func (p *ScaleIn) Weight(name string, analytics analyzer.GruAnalytics) float64 {
 	return policyValue
 }
 
-func contains(slice []string, s string) bool {
+func (p *scaleinCreator) contains(slice []string, s string) bool {
 	for _, item := range slice {
 		if item == s {
 			return true
@@ -57,10 +83,4 @@ func contains(slice []string, s string) bool {
 	}
 
 	return false
-}
-
-func (p *ScaleIn) Actions() enum.Actions {
-	return []enum.Action{
-		enum.STOP,
-	}
 }

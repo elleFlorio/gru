@@ -6,7 +6,7 @@ import (
 
 type policyCreator interface {
 	getPolicyName() string
-	createPolicy(analyzer.GruAnalytics, ...string) Policy
+	createPolicies([]string, analyzer.GruAnalytics) []Policy
 	listActions() []string
 }
 
@@ -14,6 +14,8 @@ var creators []policyCreator
 
 func init() {
 	creators = []policyCreator{
+		&scaleoutCreator{},
+		&scaleinCreator{},
 		&swapCreator{},
 	}
 }
@@ -37,14 +39,13 @@ func ListPolicyActions(name string) []string {
 	return []string{}
 }
 
-func CreatePolicies(srvList []string) []Policy {
+func CreatePolicies(srvList []string, analytics analyzer.GruAnalytics) []Policy {
 	policies := []Policy{}
 
+	for _, creator := range creators {
+		creatorPolicies := creator.createPolicies(srvList, analytics)
+		policies = append(policies, creatorPolicies...)
+	}
+
 	return policies
-}
-
-func createSwapPairs(srvList []string) map[string][]string {
-	pairs := map[string][]string{}
-
-	return pairs
 }
