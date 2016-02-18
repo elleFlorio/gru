@@ -7,11 +7,8 @@ import (
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	cfg "github.com/elleFlorio/gru/configuration"
-	// "github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
 )
-
-// var plc map[string]GruPolicy
 
 const c_EPSILON = 0.09
 
@@ -64,12 +61,12 @@ func TestScaleOut(t *testing.T) {
 
 	w1 := creator.computeWeight("service1", analytics)
 	w2 := creator.computeWeight("service2", analytics)
-	//w3 := creator.computeWeight("service3", analytics)
+	w3 := creator.computeWeight("service3", analytics)
 	w4 := creator.computeWeight("service4", analytics)
 	assert.InEpsilon(t, 0.0, w1, c_EPSILON)
 	assert.InEpsilon(t, 0.0, w2, c_EPSILON)
-	//assert.InEpsilon(t, 0.25, w3, c_EPSILON)
-	assert.InEpsilon(t, 0.0, w4, c_EPSILON)
+	assert.InEpsilon(t, 0.0, w3, c_EPSILON)
+	assert.InEpsilon(t, 0.25, w4, c_EPSILON)
 }
 
 func TestSwap(t *testing.T) {
@@ -81,6 +78,7 @@ func TestSwap(t *testing.T) {
 		"service2",
 		"service3",
 		"service4",
+		"service5",
 	}
 
 	pairs := creator.createSwapPairs(srvList)
@@ -88,35 +86,41 @@ func TestSwap(t *testing.T) {
 
 	pair1 := pairs["service1"]
 	pair2 := pairs["service2"]
-	assert.Len(t, pair1, 2)
-	assert.Len(t, pair2, 2)
+	assert.Len(t, pair1, 3)
+	assert.Len(t, pair2, 3)
 	assert.Contains(t, pair1, "service3")
-	assert.Contains(t, pair1, "service4")
+	assert.Contains(t, pair1, "service5")
 	assert.Contains(t, pair2, "service3")
-	assert.Contains(t, pair2, "service4")
+	assert.Contains(t, pair2, "service5")
 
 	w13 := creator.computeWeight("service1", "service3", analytics)
 	w14 := creator.computeWeight("service1", "service4", analytics)
+	w15 := creator.computeWeight("service1", "service5", analytics)
 	assert.InEpsilon(t, 0.16, w13, c_EPSILON)
 	assert.Equal(t, 0.0, w14)
+	assert.Equal(t, 0.0, w15)
 
 	w23 := creator.computeWeight("service2", "service3", analytics)
 	w24 := creator.computeWeight("service2", "service4", analytics)
+	w25 := creator.computeWeight("service2", "service5", analytics)
 	assert.InEpsilon(t, 0.8, w23, c_EPSILON)
 	assert.Equal(t, 0.0, w24)
+	assert.Equal(t, 0.0, w25)
 }
 
 func TestCreatePolicy(t *testing.T) {
-	// analytics := createAnalytics()
+	analytics := createAnalytics()
 
-	// srvList := []string{
-	// 	"service1",
-	// 	"service2",
-	// 	"service3",
-	// 	"service4",
-	// }
+	srvList := []string{
+		"service1",
+		"service2",
+		"service3",
+		"service4",
+		"service5",
+	}
 
-	// policies := CreatePolicies(srvList, analytics)
+	policies := CreatePolicies(srvList, analytics)
+	assert.Len(t, policies, 17)
 
 }
 
@@ -138,7 +142,10 @@ func createServices() []cfg.Service {
 	srv4 := cfg.Service{}
 	srv4.Name = "service4"
 
-	services := []cfg.Service{srv1, srv2, srv3, srv4}
+	srv5 := cfg.Service{}
+	srv5.Name = "service5"
+
+	services := []cfg.Service{srv1, srv2, srv3, srv4, srv5}
 
 	return services
 }
@@ -162,13 +169,19 @@ func createAnalytics() analyzer.GruAnalytics {
 	srv3A.Resources.Available = 0.0
 
 	srv4A := analyzer.ServiceAnalytics{}
-	srv4A.Resources.Available = 0.0
+	srv4A.Load = 0.9
+	srv4A.Resources.Cpu = 0.8
+	srv4A.Resources.Available = 1.0
+
+	srv5A := analyzer.ServiceAnalytics{}
+	srv5A.Resources.Available = 0.0
 
 	analytics.Service = map[string]analyzer.ServiceAnalytics{
 		"service1": srv1A,
 		"service2": srv2A,
 		"service3": srv3A,
 		"service4": srv4A,
+		"service5": srv5A,
 	}
 
 	return analytics
