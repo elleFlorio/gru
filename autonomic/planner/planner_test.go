@@ -5,12 +5,8 @@ import (
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
-	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/planner/policy"
-	"github.com/elleFlorio/gru/autonomic/planner/strategy"
-	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
 
@@ -29,62 +25,42 @@ func TestSetPlannerStrategy(t *testing.T) {
 	assert.Equal(t, "dummy", currentStrategy.Name(), "(notsupported) Current strategy should be dummy")
 }
 
-func TestBuildPlans(t *testing.T) {
-	srvcs := service.CreateMockServices()
-	cfg.SetServices(srvcs)
-	analytics := analyzer.GruAnalytics{}
-	plans := buildPlans(analytics)
-	assert.Len(t, plans, 1)
-	analytics = analyzer.CreateMockAnalytics()
-	plans = buildPlans(analytics)
-	nPlans := len(srvcs)*len(policy.List()) + 1 // count also the noAction plan
-	assert.Len(t, plans, nPlans)
-}
-
 func TestSavePlan(t *testing.T) {
-	defer storage.DeleteAllData(enum.PLANS)
-	plan := strategy.CreateRandomPlans(1)[0]
+	defer storage.DeleteAllData(enum.POLICIES)
+	plc := policy.CreateRandomMockPolicies(1)[0]
 
-	err := savePlan(&plan)
+	err := savePolicy(&plc)
 	assert.NoError(t, err)
 }
 
-func TestConvertPlanToData(t *testing.T) {
-	plan := strategy.CreateMockPlan("scaleout", 0.0, cfg.Service{}, enum.Actions{enum.START})
-
-	_, err := convertPlanToData(plan)
+func TestConvertPolicyToData(t *testing.T) {
+	plc := policy.CreateRandomMockPolicies(1)[0]
+	_, err := convertPolicyToData(&plc)
 	assert.NoError(t, err)
 }
 
-func TestConvertDataToPlan(t *testing.T) {
-	plan := strategy.CreateMockPlan("scaleout", 0.0, cfg.Service{}, enum.Actions{enum.START})
-	data_ok, err := convertPlanToData(plan)
+func TestConvertDataToPolicy(t *testing.T) {
+	plc := policy.CreateRandomMockPolicies(1)[0]
+	data_ok, err := convertPolicyToData(&plc)
 	data_bad := []byte{}
 
-	_, err = convertDataToPlan(data_ok)
+	plc_data, err := convertDataToPolicy(data_ok)
 	assert.NoError(t, err)
+	assert.Equal(t, plc, plc_data)
 
-	_, err = convertDataToPlan(data_bad)
+	_, err = convertDataToPolicy(data_bad)
 	assert.Error(t, err)
 }
 
 func TestGetPlannerData(t *testing.T) {
-	defer storage.DeleteAllData(enum.PLANS)
+	defer storage.DeleteAllData(enum.POLICIES)
 	var err error
 
 	_, err = GetPlannerData()
 	assert.Error(t, err)
 
-	strategy.StoreMockPlan("policy", 0.8, cfg.Service{}, enum.Actions{})
+	plc := policy.CreateRandomMockPolicies(1)[0]
+	StoreMockPolicy(plc)
 	_, err = GetPlannerData()
 	assert.NoError(t, err)
-}
-
-func TestRun(t *testing.T) {
-	srvcs := service.CreateMockServices()
-	cfg.SetServices(srvcs)
-	assert.Nil(t, Run(analyzer.GruAnalytics{}))
-
-	analytics := analyzer.CreateMockAnalytics()
-	assert.NotNil(t, Run(analytics))
 }

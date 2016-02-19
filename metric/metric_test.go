@@ -7,7 +7,8 @@ import (
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/monitor"
-	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	"github.com/elleFlorio/gru/autonomic/planner"
+	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
@@ -43,16 +44,16 @@ func TestUpdateMetrics(t *testing.T) {
 	UpdateMetrics()
 	assert.Equal(t, 0.0, Metrics().Service["service1"].Stats.CpuTot)
 	assert.Equal(t, 0.0, Metrics().Service["service2"].Analytics.Cpu)
-	assert.Equal(t, "noaction", Metrics().Plan.Policy)
+	assert.Equal(t, "noaction", Metrics().Policy.Name)
 
 	monitor.StoreMockStats()
 	analyzer.StoreMockAnalytics()
-	mockService, _ := service.GetServiceByName("service1")
-	strategy.StoreMockPlan("policy", 1.0, *mockService, enum.Actions{enum.START})
+	plc := policy.CreateMockPolicy("policy", 1.0, map[string][]enum.Action{})
+	planner.StoreMockPolicy(plc)
 	UpdateMetrics()
 	assert.Equal(t, 0.7, Metrics().Service["service1"].Stats.CpuTot)
 	assert.Equal(t, 0.2, Metrics().Service["service2"].Analytics.Cpu)
-	assert.Equal(t, "policy", Metrics().Plan.Policy)
+	assert.Equal(t, "policy", Metrics().Policy.Name)
 }
 
 func TestCreateInfluxMetrics(t *testing.T) {

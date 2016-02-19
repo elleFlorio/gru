@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+
+	"github.com/elleFlorio/gru/autonomic/planner/policy"
 )
 
 func TestRandomUniform(t *testing.T) {
@@ -13,10 +15,10 @@ func TestRandomUniform(t *testing.T) {
 }
 
 func TestShuffle(t *testing.T) {
-	plans_s := CreateRandomPlans(10)
-	plans := make([]GruPlan, len(plans_s), len(plans_s))
-	copy(plans, plans_s)
+	policies_s := policy.CreateRandomMockPolicies(5)
+	policies := make([]policy.Policy, len(policies_s), len(policies_s))
+	copy(policies, policies_s)
 
-	shuffle(plans_s)
-	assert.NotEqual(t, plans, plans_s)
+	shuffle(policies_s)
+	assert.NotEqual(t, policies, policies_s)
 }
