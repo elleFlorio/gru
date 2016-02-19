@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/elleFlorio/gru/autonomic/analyzer"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 )
@@ -69,6 +70,14 @@ func (p *swapCreator) createSwapPairs(srvList []string) map[string][]string {
 }
 
 func (p *swapCreator) computeWeight(running string, candidate string, analytics analyzer.GruAnalytics) float64 {
+	srv, _ := service.GetServiceByName(running)
+	nRun := len(srv.Instances.Running)
+	baseServices := cfg.GetNodeConstraints().BaseServices
+
+	if p.contains(baseServices, running) && nRun < 2 {
+		return 0.0
+	}
+
 	runAnalytics := analytics.Service[running]
 	candAnalytics := analytics.Service[candidate]
 
@@ -87,4 +96,15 @@ func (p *swapCreator) computeWeight(running string, candidate string, analytics 
 	weight := math.Max(0.0, (cpuValue+loadValue)/2)
 
 	return weight
+}
+
+// FIX duplicated from scalein...
+func (p *swapCreator) contains(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+
+	return false
 }
