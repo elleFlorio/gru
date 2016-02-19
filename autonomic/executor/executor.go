@@ -35,11 +35,21 @@ func Run(chosenPolicy *policy.Policy) {
 		log.WithField("err", "No policy to execute").Warnln("Cannot execute actions")
 	} else {
 		for target, actions := range chosenPolicy.Targets {
-			srv, _ := service.GetServiceByName(target)
+			srv := getTargetService(target)
 			config := buildConfig(srv)
 			executeActions(actions, config)
 		}
 	}
+}
+
+func getTargetService(name string) *cfg.Service {
+	var srv *cfg.Service
+	srv, err := service.GetServiceByName(name)
+	if err != nil {
+		srv = &cfg.Service{Name: "noservice"}
+	}
+
+	return srv
 }
 
 func buildConfig(srv *cfg.Service) action.GruActionConfig {
