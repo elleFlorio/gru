@@ -23,6 +23,18 @@ type ActionParameters struct {
 	StopTimeout int
 }
 
+const c_CMD_IP = "$ip"
+const c_CMD_PORT = "$port"
+
+var cmdSpecValue map[string]string
+
+func init() {
+	cmdSpecValue = map[string]string{
+		c_CMD_IP:   "",
+		c_CMD_PORT: "",
+	}
+}
+
 func CreateHostConfig(sConf cfg.ServiceDocker) *dockerclient.HostConfig {
 	memInBytes, err := utils.RAMInBytes(sConf.Memory)
 	hostConfig := dockerclient.HostConfig{}
@@ -36,7 +48,8 @@ func CreateHostConfig(sConf cfg.ServiceDocker) *dockerclient.HostConfig {
 		}
 	}
 	hostConfig.Links = sConf.Links
-	hostConfig.PortBindings = createPortBindings(sConf.PortBindings)
+	//hostConfig.PortBindings = createPortBindings(sConf.PortBindings)
+	hostConfig.PortBindings = createPortBindings(sConf.Ports)
 
 	if err != nil {
 		log.Debugln("Creating Host config: Memory limit not specified")
@@ -47,17 +60,34 @@ func CreateHostConfig(sConf cfg.ServiceDocker) *dockerclient.HostConfig {
 	return &hostConfig
 }
 
-func createPortBindings(portBindings map[string][]cfg.PortBinding) map[string][]dockerclient.PortBinding {
+// func createPortBindings(portBindings map[string][]cfg.PortBinding) map[string][]dockerclient.PortBinding {
+// 	portBindings_dckr := make(map[string][]dockerclient.PortBinding)
+// 	for key, value := range portBindings {
+// 		prtbndngs := []dockerclient.PortBinding{}
+// 		for _, item := range value {
+// 			prtbndng := dockerclient.PortBinding{}
+// 			prtbndng.HostIp = item.HostIp
+// 			prtbndng.HostPort = item.HostPort
+// 			prtbndngs = append(prtbndngs, prtbndng)
+// 		}
+// 		portBindings_dckr[key] = prtbndngs
+// 	}
+
+// 	return portBindings_dckr
+// }
+
+func createPortBindings(ports map[string]string) map[string][]dockerclient.PortBinding {
 	portBindings_dckr := make(map[string][]dockerclient.PortBinding)
-	for key, value := range portBindings {
-		prtbndngs := []dockerclient.PortBinding{}
-		for _, item := range value {
-			prtbndng := dockerclient.PortBinding{}
-			prtbndng.HostIp = item.HostIp
-			prtbndng.HostPort = item.HostPort
-			prtbndngs = append(prtbndngs, prtbndng)
+	for host, guest := range ports {
+		portTcp := guest + "/tcp"
+		pBindings := []dockerclient.PortBinding{}
+		pBinding := dockerclient.PortBinding{
+			HostIp:   "0.0.0.0",
+			HostPort: host,
 		}
-		portBindings_dckr[key] = prtbndngs
+		pBindings = append(pBindings, pBinding)
+
+		portBindings_dckr[portTcp] = pBindings
 	}
 
 	return portBindings_dckr
@@ -67,12 +97,14 @@ func CreateContainerConfig(sConf cfg.ServiceDocker) *dockerclient.ContainerConfi
 	containerConfig := dockerclient.ContainerConfig{}
 	containerConfig.Memory = getMemInBytes(sConf.Memory)
 	containerConfig.Env = getEnvVars(sConf.Env)
-	containerConfig.Cmd = sConf.Cmd
 	containerConfig.Volumes = sConf.Volumes
 	containerConfig.Entrypoint = sConf.Entrypoint
-	containerConfig.ExposedPorts = sConf.ExposedPorts
+	//containerConfig.ExposedPorts = sConf.ExposedPorts
+	containerConfig.ExposedPorts = getExposedPorts(sConf.Ports)
 	containerConfig.CpuShares = sConf.CpuShares
 	containerConfig.Cpuset = sConf.CpusetCpus
+	//containerConfig.Cmd = sConf.Cmd
+	containerConfig.Cmd = getCommands(sConf.Cmd)
 
 	return &containerConfig
 }
@@ -107,4 +139,30 @@ func getEnvVars(vars map[string]string) []string {
 	}
 
 	return envVars
+}
+
+func getExposedPorts(ports map[string]string) map[string]struct{} {
+	exposed := make(map[string]struct{})
+	for _, guest := range ports {
+		guestTcp := guest + "/tcp"
+		exposed[guestTcp] = struct{}{}
+	}
+
+	return exposed
+}
+
+func getCommands(cmds map[string]string) []string {
+	commands := make([]string, 0, len(cmds))
+	for cmd, value := range cmds {
+		switch value {
+		case c_CMD_IP:
+			value = cmdSpecValue[c_CMD_IP]
+		case c_CMD_PORT:
+			value = cmdSpecValue[c_CMD_PORT]
+		}
+
+		commands = append(commands, cmd, value)
+	}
+
+	return commands
 }

@@ -24,21 +24,23 @@ type ServiceConstraints struct {
 }
 
 type ServiceDocker struct {
-	Env          map[string]string        `json:"env"`
-	Cmd          []string                 `json:"cmd"`
-	Volumes      map[string]struct{}      `json:"volumes"`
-	Entrypoint   []string                 `json:"entrypoint"`
-	Memory       string                   `json:"memory"`
-	CPUnumber    int                      `json:"cpunumber"`
-	CpuShares    int64                    `json:"cpushares"`
-	CpusetCpus   string                   `json:"cpusetcpus"`
-	ExposedPorts map[string]struct{}      `json:"exposedports"`
-	PortBindings map[string][]PortBinding `json:"portbindings"`
-	Links        []string                 `json:"links"`
-	StopTimeout  int                      `json:"stoptimeout"`
+	Env map[string]string `json:"env"`
+	//Cmd        []string            `json:"cmd"`
+	Volumes    map[string]struct{} `json:"volumes"`
+	Entrypoint []string            `json:"entrypoint"`
+	Memory     string              `json:"memory"`
+	CPUnumber  int                 `json:"cpunumber"`
+	CpuShares  int64               `json:"cpushares"`
+	CpusetCpus string              `json:"cpusetcpus"`
+	//ExposedPorts map[string]struct{}      `json:"exposedports"`
+	//PortBindings map[string][]PortBinding `json:"portbindings"`
+	Links       []string          `json:"links"`
+	Ports       map[string]string `json:"ports"`
+	Cmd         map[string]string `json:"cmd"`
+	StopTimeout int               `json:"stoptimeout"`
 }
 
-type PortBinding struct {
-	HostIp   string `json:"hostip"`
-	HostPort string `json:"hostport"`
-}
+// type PortBinding struct {
+// 	HostIp   string `json:"hostip"`
+// 	HostPort string `json:"hostport"`
+// }
