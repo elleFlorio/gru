@@ -9,9 +9,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
-	// cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
-	// "github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
 
@@ -49,14 +47,6 @@ func Run(analytics analyzer.GruAnalytics) *policy.Policy {
 
 		displayPolicy(chosenPolicy)
 
-		// plans := buildPlans(analytics)
-		// thePlan = currentStrategy.MakeDecision(plans)
-		// err := savePlan(thePlan)
-		// if err != nil {
-		// 	log.WithField("err", err).Errorln("Plan data not saved")
-		// }
-
-		// displayThePlan(thePlan)
 	}
 
 	return chosenPolicy
@@ -73,58 +63,6 @@ func getServicesListFromAnalytics(analytics analyzer.GruAnalytics) []string {
 
 	return list
 }
-
-// func buildPlans(analytics analyzer.GruAnalytics) []strategy.GruPlan {
-// 	plans := []strategy.GruPlan{}
-
-// 	if len(analytics.Service) == 0 {
-// 		log.Warnln("No service for building plans.")
-// 		noServicePlan := strategy.GruPlan{
-// 			"noaction",
-// 			1.0,
-// 			&cfg.Service{Name: "noService"},
-// 			[]enum.Action{enum.NOACTION},
-// 		}
-// 		plans = append(plans, noServicePlan)
-// 		return plans
-// 	}
-
-// 	policies := policy.GetPolicies()
-// 	weight_max := 0.0
-// 	for _, name := range service.List() {
-// 		for _, plc := range policies {
-// 			weight := plc.Weight(name, analytics)
-// 			target, _ := service.GetServiceByName(name)
-// 			actions := plc.Actions()
-// 			plan := strategy.GruPlan{plc.Name(), weight, target, actions}
-// 			log.WithFields(log.Fields{
-// 				"policy":  plc.Name(),
-// 				"weight":  weight,
-// 				"service": name,
-// 			}).Debugln("Computed policy")
-// 			plans = append(plans, plan)
-
-// 			if weight >= weight_max {
-// 				weight_max = weight
-// 			}
-// 		}
-// 	}
-// 	weight_na := 1 - weight_max
-// 	plan_na := strategy.GruPlan{
-// 		"noaction",
-// 		weight_na,
-// 		&cfg.Service{Name: "NoService"},
-// 		[]enum.Action{enum.NOACTION},
-// 	}
-// 	log.WithFields(log.Fields{
-// 		"policy":  "NoAction",
-// 		"weight":  weight_na,
-// 		"service": "NoService",
-// 	}).Debugln("Computed policy")
-// 	plans = append(plans, plan_na)
-
-// 	return plans
-// }
 
 func savePolicy(chosenPolicy *policy.Policy) error {
 	data, err := convertPolicyToData(chosenPolicy)
@@ -149,10 +87,15 @@ func convertPolicyToData(chosenPolicy *policy.Policy) ([]byte, error) {
 }
 
 func displayPolicy(chosenPolicy *policy.Policy) {
+	targets := make([]string, 0, len(chosenPolicy.Targets))
+	for target, _ := range chosenPolicy.Targets {
+		targets = append(targets, target)
+	}
+
 	log.WithFields(log.Fields{
 		"name":    chosenPolicy.Name,
 		"weight":  fmt.Sprintf("%.2f", chosenPolicy.Weight),
-		"targets": chosenPolicy.Targets,
+		"targets": targets,
 	}).Infoln("Policy to actuate")
 }
 
