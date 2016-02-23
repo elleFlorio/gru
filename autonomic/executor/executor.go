@@ -56,8 +56,8 @@ func buildConfig(srv *cfg.Service) action.GruActionConfig {
 	actConfig := action.GruActionConfig{}
 	actConfig.Service = srv.Name
 	actConfig.Instances = srv.Instances
-	actConfig.HostConfig = action.CreateHostConfig(srv.Docker)
-	actConfig.ContainerConfig = action.CreateContainerConfig(srv.Docker)
+	actConfig.HostConfig = action.CreateHostConfig(srv.Name, srv.Docker)
+	actConfig.ContainerConfig = action.CreateContainerConfig(srv.name, srv.Docker)
 	actConfig.ContainerConfig.Image = srv.Image
 	actConfig.Parameters.StopTimeout = srv.Docker.StopTimeout
 

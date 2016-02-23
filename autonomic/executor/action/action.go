@@ -35,7 +35,7 @@ func init() {
 	}
 }
 
-func CreateHostConfig(sConf cfg.ServiceDocker) *dockerclient.HostConfig {
+func CreateHostConfig(name string, sConf cfg.ServiceDocker) *dockerclient.HostConfig {
 	memInBytes, err := utils.RAMInBytes(sConf.Memory)
 	hostConfig := dockerclient.HostConfig{}
 
@@ -49,7 +49,7 @@ func CreateHostConfig(sConf cfg.ServiceDocker) *dockerclient.HostConfig {
 	}
 	hostConfig.Links = sConf.Links
 	//hostConfig.PortBindings = createPortBindings(sConf.PortBindings)
-	hostConfig.PortBindings = createPortBindings(sConf.Ports)
+	hostConfig.PortBindings = createPortBindings(name)
 
 	if err != nil {
 		log.Debugln("Creating Host config: Memory limit not specified")
@@ -76,31 +76,33 @@ func CreateHostConfig(sConf cfg.ServiceDocker) *dockerclient.HostConfig {
 // 	return portBindings_dckr
 // }
 
-func createPortBindings(ports map[string]string) map[string][]dockerclient.PortBinding {
+func createPortBindings(name string) map[string][]dockerclient.PortBinding {
 	portBindings_dckr := make(map[string][]dockerclient.PortBinding)
-	for host, guest := range ports {
-		portTcp := guest + "/tcp"
-		pBindings := []dockerclient.PortBinding{}
-		pBinding := dockerclient.PortBinding{
-			HostIp:   "0.0.0.0",
-			HostPort: host,
-		}
-		pBindings = append(pBindings, pBinding)
-
-		portBindings_dckr[portTcp] = pBindings
+	//TODO handle error
+	res.AssignPortToService(name)
+	guest := res.GetAssignedPort(name)
+	host := guest
+	portTcp := guest + "/tcp"
+	pBindings := []dockerclient.PortBinding{}
+	pBinding := dockerclient.PortBinding{
+		HostIp:   "0.0.0.0",
+		HostPort: host,
 	}
+	pBindings = append(pBindings, pBinding)
+
+	portBindings_dckr[portTcp] = pBindings
 
 	return portBindings_dckr
 }
 
-func CreateContainerConfig(sConf cfg.ServiceDocker) *dockerclient.ContainerConfig {
+func CreateContainerConfig(name string, sConf cfg.ServiceDocker) *dockerclient.ContainerConfig {
 	containerConfig := dockerclient.ContainerConfig{}
 	containerConfig.Memory = getMemInBytes(sConf.Memory)
 	containerConfig.Env = getEnvVars(sConf.Env)
 	containerConfig.Volumes = sConf.Volumes
 	containerConfig.Entrypoint = sConf.Entrypoint
 	//containerConfig.ExposedPorts = sConf.ExposedPorts
-	containerConfig.ExposedPorts = getExposedPorts(sConf.Ports)
+	containerConfig.ExposedPorts = getExposedPorts(name)
 	containerConfig.CpuShares = sConf.CpuShares
 	containerConfig.Cpuset = sConf.CpusetCpus
 	//containerConfig.Cmd = sConf.Cmd
@@ -141,12 +143,11 @@ func getEnvVars(vars map[string]string) []string {
 	return envVars
 }
 
-func getExposedPorts(ports map[string]string) map[string]struct{} {
+func getExposedPorts(name string) map[string]struct{} {
 	exposed := make(map[string]struct{})
-	for _, guest := range ports {
-		guestTcp := guest + "/tcp"
-		exposed[guestTcp] = struct{}{}
-	}
+	guest := res.GetAssignedPort(name)
+	guestTcp := guest + "/tcp"
+	exposed[guestTcp] = struct{}{}
 
 	return exposed
 }

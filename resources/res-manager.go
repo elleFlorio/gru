@@ -20,14 +20,17 @@ var (
 
 	mutex_cpu      = sync.RWMutex{}
 	mutex_instance = sync.RWMutex{}
+	mutex_port     = sync.RWMutex{}
 
-	ErrTooManyCores    = errors.New("Number of requested cores exceeds the total number of available ones")
-	ErrWrongCoreNumber = errors.New("The number of the specified core is not correct")
+	ErrTooManyCores     = errors.New("Number of requested cores exceeds the total number of available ones")
+	ErrWrongCoreNumber  = errors.New("The number of the specified core is not correct")
+	ErrNoAvailablePorts = errors.New("No available ports for service")
 )
 
 func init() {
 	resources = Resource{}
 	resources.CPU.Cores = make(map[int]bool)
+	resources.Network.ServicePorts = make(map[string]Ports)
 
 	instanceCores = make(map[string]string)
 }
@@ -373,4 +376,75 @@ func getCoresNumber(cores string) ([]int, error) {
 	}
 
 	return cores_int, nil
+}
+
+func setServiceAvailablePorts(name string, ports []string) {
+	defer runtime.Gosched()
+	mutex_port.Lock()
+	servicePorts := resources.Network.ServicePorts[name]
+	servicePorts.Available = ports
+	resources.Network.ServicePorts[name] = servicePorts
+	mutex_port.Unlock()
+}
+
+func getServiceAvailablePorts(name string) []string {
+	defer runtime.Gosched()
+	mutex_port.RLock()
+	available := resources.Network.ServicePorts[name].Available
+	mutex_port.RUnlock()
+	return available
+}
+
+func AssignPortToService(name string) error {
+	defer runtime.Gosched()
+	mutex_port.Lock()
+	servicePorts := resources.Network.ServicePorts[name]
+	available := servicePorts.Available
+	occupied := servicePorts.Occupied
+	if len(available) < 1 {
+		mutex_port.Unlock()
+		return ErrNoAvailablePorts
+	}
+	available, occupied = moveItem(available, occupied)
+	servicePorts.LastAssigned = occupied[len(occupied)-1]
+	servicePorts.Available = available
+	servicePorts.Occupied = occupied
+	resources.Network.ServicePorts[name] = servicePorts
+	mutex_port.Unlock()
+
+	return nil
+}
+
+func FreePortFromService(name string) {
+	defer runtime.Gosched()
+	mutex_port.Lock()
+	servicePorts := resources.Network.ServicePorts[name]
+	available := servicePorts.Available
+	occupied := servicePorts.Occupied
+	occupied, available = moveItem(occupied, available)
+	servicePorts.Available = available
+	servicePorts.Occupied = occupied
+	resources.Network.ServicePorts[name] = servicePorts
+	mutex_port.Unlock()
+}
+
+func moveItem(source []string, dest []string) ([]string, []string) {
+	if len(source) == 0 {
+		return source, dest
+	}
+
+	index := len(source) - 1
+	item := source[index]
+	if index == 0 {
+		source = []string{}
+	} else {
+		source = source[0 : index-1]
+	}
+	dest = append(dest, item)
+
+	return source, dest
+}
+
+func GetAssignedPort(name string) string {
+	return resources.Network.ServicePorts[name].LastAssigned
 }
