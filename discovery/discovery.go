@@ -12,6 +12,7 @@ type Discovery interface {
 	Register(string, string) error
 	Get(string, Options) (map[string]string, error)
 	Set(string, string, Options) error
+	Delete(string) error
 }
 
 type Options map[string]interface{}
@@ -69,4 +70,8 @@ func Get(key string, opt Options) (map[string]string, error) {
 
 func Set(key string, value string, opt Options) error {
 	return service().Set(key, value, opt)
+}
+
+func Delete(key string) error {
+	return service().Delete(key)
 }

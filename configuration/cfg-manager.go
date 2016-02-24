@@ -6,6 +6,7 @@ const (
 	c_AGENT_COM       = "communication"
 	c_AGENT_STORAGE   = "storage"
 	c_AGENT_METRIC    = "metric"
+	c_AGENT_DISCOVERY = "discovery"
 
 	c_NODE_CONFIG      = "config"
 	c_NODE_CONSTRAINTS = "constraints"
@@ -48,6 +49,10 @@ func GetAgentMetric() *MetricConfig {
 	return getAgentSubConfig(c_AGENT_METRIC).(*MetricConfig)
 }
 
+func GetAgentDiscovery() *DiscoveryConfig {
+	return getAgentSubConfig(c_AGENT_DISCOVERY).(*DiscoveryConfig)
+}
+
 func getAgentSubConfig(subCfg string) interface{} {
 	switch subCfg {
 	case c_AGENT_DOCKER:
@@ -60,6 +65,8 @@ func getAgentSubConfig(subCfg string) interface{} {
 		return &agent.Storage
 	case c_AGENT_METRIC:
 		return &agent.Metric
+	case c_AGENT_DISCOVERY:
+		return &agent.Discovery
 	}
 
 	return nil

@@ -6,6 +6,7 @@ type Agent struct {
 	Communication CommunicationConfig `json:"communication"`
 	Storage       StorageConfig       `json:"storage"`
 	Metric        MetricConfig        `json:"metric"`
+	Discovery     DiscoveryConfig     `json:"discovery"`
 }
 
 type DockerConfig struct {
@@ -30,4 +31,9 @@ type StorageConfig struct {
 type MetricConfig struct {
 	MetricService string                 `json:"metricservice"`
 	Configuration map[string]interface{} `json:"configuration"`
+}
+
+type DiscoveryConfig struct {
+	AppRoot string `json:"approot"`
+	TTL     int    `json:ttl`
 }

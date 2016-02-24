@@ -27,3 +27,7 @@ func (p *noService) Get(key string, opt Options) (map[string]string, error) {
 func (p *noService) Set(key string, value string, opt Options) error {
 	return ErrNoService
 }
+
+func (p *noService) Delete(key string) error {
+	return ErrNoService
+}

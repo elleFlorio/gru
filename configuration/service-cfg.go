@@ -34,10 +34,10 @@ type ServiceDocker struct {
 	CpusetCpus string              `json:"cpusetcpus"`
 	//ExposedPorts map[string]struct{}      `json:"exposedports"`
 	//PortBindings map[string][]PortBinding `json:"portbindings"`
-	Links       []string          `json:"links"`
-	Ports       []string          `json:"ports"`
-	Cmd         map[string]string `json:"cmd"`
-	StopTimeout int               `json:"stoptimeout"`
+	Links       []string            `json:"links"`
+	Ports       map[string][]string `json:"ports"`
+	Cmd         map[string]string   `json:"cmd"`
+	StopTimeout int                 `json:"stoptimeout"`
 }
 
 // type PortBinding struct {

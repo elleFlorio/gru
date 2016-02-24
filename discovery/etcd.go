@@ -126,3 +126,10 @@ func (p *etcdDiscovery) Set(key string, value string, opt Options) error {
 
 	return err
 }
+
+func (p *etcdDiscovery) Delete(key string) error {
+	var err error
+	_, err = p.kAPI.Delete(context.Background(), key, nil)
+
+	return err
+}
