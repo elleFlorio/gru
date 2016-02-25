@@ -67,18 +67,14 @@ func CleanResources() {
 	mutex_instance.Lock()
 	instanceCores = make(map[string]string)
 	mutex_instance.Unlock()
+
+	mutex_port.Lock()
+	resources.Network.ServicePorts = make(map[string]Ports)
+	mutex_port.Unlock()
 }
 
 func GetResources() *Resource {
 	return &resources
-}
-
-func GetInstanceCores(id string) string {
-	if cores, ok := instanceCores[id]; ok {
-		return cores
-	}
-
-	return ""
 }
 
 func ComputeUsedResources() {
@@ -192,6 +188,16 @@ func AvailableResourcesService(name string) float64 {
 	return 1.0
 }
 
+// ############### CPU ######################
+
+func GetInstanceCores(id string) string {
+	if cores, ok := instanceCores[id]; ok {
+		return cores
+	}
+
+	return ""
+}
+
 func CheckCoresAvailable(number int) bool {
 	defer runtime.Gosched()
 
@@ -235,42 +241,42 @@ func GetCoresAvailable(number int) (string, bool) {
 }
 
 //DEPRECATED
-func CheckAndSetCores(number int, id string) (string, bool) {
-	defer runtime.Gosched()
+// func CheckAndSetCores(number int, id string) (string, bool) {
+// 	defer runtime.Gosched()
 
-	cores_int := make([]int, 0, number)
-	cores_str := make([]string, 0, number)
-	mutex_cpu.Lock()
-	for i := 0; i < len(resources.CPU.Cores); i++ {
-		if resources.CPU.Cores[i] == true {
-			cores_int = append(cores_int, i)
-		}
+// 	cores_int := make([]int, 0, number)
+// 	cores_str := make([]string, 0, number)
+// 	mutex_cpu.Lock()
+// 	for i := 0; i < len(resources.CPU.Cores); i++ {
+// 		if resources.CPU.Cores[i] == true {
+// 			cores_int = append(cores_int, i)
+// 		}
 
-		if len(cores_int) >= number {
-			break
-		}
-	}
+// 		if len(cores_int) >= number {
+// 			break
+// 		}
+// 	}
 
-	if len(cores_int) < number {
-		log.Errorln("Error assigning cores: number of free cores < ", number)
-		mutex_cpu.Unlock()
-		return "", false
-	}
+// 	if len(cores_int) < number {
+// 		log.Errorln("Error assigning cores: number of free cores < ", number)
+// 		mutex_cpu.Unlock()
+// 		return "", false
+// 	}
 
-	for _, core := range cores_int {
-		resources.CPU.Cores[core] = false
-		cores_str = append(cores_str, strconv.Itoa(core))
-	}
-	mutex_cpu.Unlock()
+// 	for _, core := range cores_int {
+// 		resources.CPU.Cores[core] = false
+// 		cores_str = append(cores_str, strconv.Itoa(core))
+// 	}
+// 	mutex_cpu.Unlock()
 
-	// Record assigned cores to instance
-	cores := strings.Join(cores_str, ",")
-	mutex_instance.Lock()
-	instanceCores[id] = cores
-	mutex_instance.Unlock()
+// 	// Record assigned cores to instance
+// 	cores := strings.Join(cores_str, ",")
+// 	mutex_instance.Lock()
+// 	instanceCores[id] = cores
+// 	mutex_instance.Unlock()
 
-	return cores, true
-}
+// 	return cores, true
+// }
 
 func CheckSpecificCoresAvailable(cpusetcpus string) bool {
 	defer runtime.Gosched()
@@ -378,54 +384,71 @@ func getCoresNumber(cores string) ([]int, error) {
 	return cores_int, nil
 }
 
-func setServiceAvailablePorts(name string, ports []string) {
+// ############## NETWORK ################
+
+func InitializeServiceAvailablePorts(name string, ports map[string]string) {
 	defer runtime.Gosched()
 	mutex_port.Lock()
-	servicePorts := resources.Network.ServicePorts[name]
-	servicePorts.Available = ports
-	resources.Network.ServicePorts[name] = servicePorts
-	mutex_port.Unlock()
-}
 
-func getServiceAvailablePorts(name string) []string {
-	defer runtime.Gosched()
-	mutex_port.RLock()
-	available := resources.Network.ServicePorts[name].Available
-	mutex_port.RUnlock()
-	return available
-}
-
-func AssignPortToService(name string) error {
-	defer runtime.Gosched()
-	mutex_port.Lock()
 	servicePorts := resources.Network.ServicePorts[name]
-	available := servicePorts.Available
-	occupied := servicePorts.Occupied
-	if len(available) < 1 {
-		mutex_port.Unlock()
-		return ErrNoAvailablePorts
+
+	for guest, host := range ports {
+		servicePorts.LastAssigned = make(map[string]string)
+		servicePorts.Status = make(map[string]PortStatus)
+
+		hostRange, err := utils.GetCompleteRange(host)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": name,
+				"guest":   guest,
+				"host":    host,
+			}).Warnln("Cannot compute host port range for guest port")
+		}
+
+		status := PortStatus{
+			Available: hostRange,
+			Occupied:  []string{},
+		}
+
+		servicePorts.Status[guest] = status
 	}
-	available, occupied = moveItem(available, occupied)
-	servicePorts.LastAssigned = occupied[len(occupied)-1]
-	servicePorts.Available = available
-	servicePorts.Occupied = occupied
 	resources.Network.ServicePorts[name] = servicePorts
-	mutex_port.Unlock()
 
-	return nil
+	mutex_port.Unlock()
 }
 
-func FreePortFromService(name string) {
+func AssignPortsToService(name string) (map[string]string, error) {
 	defer runtime.Gosched()
 	mutex_port.Lock()
 	servicePorts := resources.Network.ServicePorts[name]
-	available := servicePorts.Available
-	occupied := servicePorts.Occupied
-	occupied, available = moveItem(occupied, available)
-	servicePorts.Available = available
-	servicePorts.Occupied = occupied
+
+	for guest, host := range servicePorts.Status {
+		if len(host.Available) < 1 {
+			servicePorts.LastAssigned = make(map[string]string)
+			resources.Network.ServicePorts[name] = servicePorts
+
+			mutex_port.Unlock()
+			return servicePorts.LastAssigned, ErrNoAvailablePorts
+		}
+
+		status := PortStatus{}
+		status.Available, status.Occupied = moveItem(host.Available, host.Occupied)
+		servicePorts.Status[guest] = status
+		servicePorts.LastAssigned[guest] = status.Occupied[len(status.Occupied)-1]
+	}
+
 	resources.Network.ServicePorts[name] = servicePorts
+
 	mutex_port.Unlock()
+	return servicePorts.LastAssigned, nil
+}
+
+func FreePortsFromService(name string) {
+	// TODO
+	// This is required if an instance is removed from the node.
+	// Since by now I just stop them, this is not needed.
+	// However in the future I may need this.
 }
 
 func moveItem(source []string, dest []string) ([]string, []string) {
@@ -445,6 +468,6 @@ func moveItem(source []string, dest []string) ([]string, []string) {
 	return source, dest
 }
 
-func GetAssignedPort(name string) string {
+func GetAssignedPorts(name string) map[string]string {
 	return resources.Network.ServicePorts[name].LastAssigned
 }

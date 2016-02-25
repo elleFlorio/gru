@@ -10,6 +10,6 @@ func (p *NoAction) Type() enum.Action {
 	return enum.NOACTION
 }
 
-func (p *NoAction) Run(config GruActionConfig) error {
+func (p *NoAction) Run(config Action) error {
 	return nil
 }

@@ -6,26 +6,26 @@ import (
 	"github.com/elleFlorio/gru/enum"
 )
 
-type GruAction interface {
+type ActionExecutor interface {
 	Type() enum.Action
-	Run(GruActionConfig) error
+	Run(Action) error
 }
 
 var (
-	actions         []GruAction
+	actions         []ActionExecutor
 	ErrNotSupported = errors.New("action not supported")
 )
 
 func init() {
-	actions = []GruAction{
+	actions = []ActionExecutor{
 		&NoAction{},
 		&Start{},
 		&Stop{},
 	}
 }
 
-func Get(aType enum.Action) GruAction {
-	var act GruAction
+func Get(aType enum.Action) ActionExecutor {
+	var act ActionExecutor
 	for _, action := range actions {
 		if action.Type() == aType {
 			act = action

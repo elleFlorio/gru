@@ -17,7 +17,7 @@ func (p *Stop) Type() enum.Action {
 	return enum.STOP
 }
 
-func (p *Stop) Run(config GruActionConfig) error {
+func (p *Stop) Run(config Action) error {
 	var err error
 	running := config.Instances.Running
 

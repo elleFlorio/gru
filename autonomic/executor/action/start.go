@@ -6,6 +6,7 @@ import (
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
+	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/utils"
 )
 
@@ -15,7 +16,7 @@ func (p *Start) Type() enum.Action {
 	return enum.START
 }
 
-func (p *Start) Run(config GruActionConfig) error {
+func (p *Start) Run(config Action) error {
 	var toStart string
 	var err error
 	paused := config.Instances.Paused
@@ -66,7 +67,7 @@ func (p *Start) Run(config GruActionConfig) error {
 
 }
 
-func createNewContainer(config GruActionConfig) (string, error) {
+func createNewContainer(config Action) (string, error) {
 	uuid, err := utils.GenerateUUID()
 	name := config.Service + "_" + uuid
 	id, err := container.Docker().Client.CreateContainer(config.ContainerConfig, name)
@@ -74,6 +75,6 @@ func createNewContainer(config GruActionConfig) (string, error) {
 		log.WithField("err", err).Errorln("Cannot create a new container for service ", config.Service)
 		return "", err
 	}
-
+	service.SaveInstanceAddress(id, config.Parameters.DiscoveryPort)
 	return id, nil
 }

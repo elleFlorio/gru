@@ -14,8 +14,11 @@ func GetCompleteRange(shortRange string) ([]string, error) {
 	var err error
 
 	from_to := strings.Split(shortRange, "-")
-	if len(from_to) != 2 {
+	if len(from_to) < 1 {
 		return []string{}, errInvalidRange
+	}
+	if len(from_to) == 1 {
+		return from_to, nil
 	}
 
 	from, err := strconv.Atoi(from_to[0])

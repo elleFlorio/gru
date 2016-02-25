@@ -21,8 +21,7 @@ func listen() {
 		select {
 		case msg := <-ch_action:
 			log.Debugln("Received action message")
-			config := buildConfig(msg.Target)
-			executeActions(msg.Actions, config)
+			executeActions(msg.Target, msg.Actions)
 		}
 	}
 }
@@ -36,8 +35,7 @@ func Run(chosenPolicy *policy.Policy) {
 	} else {
 		for target, actions := range chosenPolicy.Targets {
 			srv := getTargetService(target)
-			config := buildConfig(srv)
-			executeActions(actions, config)
+			executeActions(srv, actions)
 		}
 	}
 }
@@ -52,33 +50,22 @@ func getTargetService(name string) *cfg.Service {
 	return srv
 }
 
-func buildConfig(srv *cfg.Service) action.GruActionConfig {
-	actConfig := action.GruActionConfig{}
-	actConfig.Service = srv.Name
-	actConfig.Instances = srv.Instances
-	actConfig.HostConfig = action.CreateHostConfig(srv.Name, srv.Docker)
-	actConfig.ContainerConfig = action.CreateContainerConfig(srv.name, srv.Docker)
-	actConfig.ContainerConfig.Image = srv.Image
-	actConfig.Parameters.StopTimeout = srv.Docker.StopTimeout
-
-	return actConfig
-}
-
-func executeActions(actions []enum.Action, config action.GruActionConfig) {
+func executeActions(target *cfg.Service, actions []enum.Action) {
 	var err error
 	for _, actionType := range actions {
-		act := action.Get(actionType)
-		err = act.Run(config)
+		config := buildConfig(target, actionType)
+		actExecutor := action.Get(actionType)
+		err = actExecutor.Run(config)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"err":    err,
-				"action": act.Type().ToString(),
+				"action": actionType.ToString(),
 			}).Errorln("Action not executed")
 		}
 
 		log.WithFields(log.Fields{
-			"target": config.Service,
-			"action": act.Type().ToString(),
+			"target": target.Name,
+			"action": actionType.ToString(),
 		}).Infoln("Action executed")
 	}
 }
