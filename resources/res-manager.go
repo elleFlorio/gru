@@ -22,9 +22,11 @@ var (
 	mutex_instance = sync.RWMutex{}
 	mutex_port     = sync.RWMutex{}
 
-	ErrTooManyCores     = errors.New("Number of requested cores exceeds the total number of available ones")
-	ErrWrongCoreNumber  = errors.New("The number of the specified core is not correct")
-	ErrNoAvailablePorts = errors.New("No available ports for service")
+	ErrTooManyCores        = errors.New("Number of requested cores exceeds the total number of available ones")
+	ErrWrongCoreNumber     = errors.New("The number of the specified core is not correct")
+	errCPUsAlreadyOccupied = errors.New("CPUs already occupied")
+	ErrNoAvailablePorts    = errors.New("No available ports for service")
+	errPortAlreadyOccupied = errors.New("Port already occupied")
 )
 
 func init() {
@@ -299,13 +301,13 @@ func CheckSpecificCoresAvailable(cpusetcpus string) bool {
 	return available
 }
 
-func CheckAndSetSpecificCores(cpusetcpus string, id string) bool {
+func CheckAndSetSpecificCores(cpusetcpus string, id string) error {
 	defer runtime.Gosched()
 
 	request, err := getCoresNumber(cpusetcpus)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error Checking available cores")
-		return false
+		return err
 	}
 
 	mutex_cpu.Lock()
@@ -314,7 +316,7 @@ func CheckAndSetSpecificCores(cpusetcpus string, id string) bool {
 	for _, req := range request {
 		if resources.CPU.Cores[req] == false {
 			mutex_cpu.Unlock()
-			return false
+			return errCPUsAlreadyOccupied
 		}
 	}
 
@@ -333,10 +335,10 @@ func CheckAndSetSpecificCores(cpusetcpus string, id string) bool {
 		"cores": cpusetcpus,
 	}).Debugln("Assigned cores to instance")
 
-	return true
+	return nil
 }
 
-func FreeInstanceCores(id string) bool {
+func FreeInstanceCores(id string) {
 	defer runtime.Gosched()
 	if cores, ok := instanceCores[id]; ok {
 		toFree, _ := getCoresNumber(cores)
@@ -355,12 +357,10 @@ func FreeInstanceCores(id string) bool {
 			"cores": cores,
 		}).Debugln("Released cores of instance")
 
-		return true
 	}
 
 	log.Errorln("Error freeing cores: unrecognized instance ", id)
 
-	return false
 }
 
 func getCoresNumber(cores string) ([]int, error) {
@@ -444,11 +444,71 @@ func AssignPortsToService(name string) (map[string]string, error) {
 	return servicePorts.LastAssigned, nil
 }
 
-func FreePortsFromService(name string) {
-	// TODO
-	// This is required if an instance is removed from the node.
-	// Since by now I just stop them, this is not needed.
-	// However in the future I may need this.
+func AssignSpecifiPortsToService(name string, portBindings map[string][]string) error {
+	defer runtime.Gosched()
+	mutex_port.Lock()
+	servicePorts := resources.Network.ServicePorts[name]
+
+	for guest, bindings := range portBindings {
+		status := servicePorts.Status[guest]
+		for _, binding := range bindings {
+			if contains(binding, status.Occupied) {
+				mutex_port.Unlock()
+				return errPortAlreadyOccupied
+			}
+
+			if contains(binding, status.Available) {
+				status.Available, status.Occupied = moveSpecificItem(binding, status.Available, status.Occupied)
+			} else {
+				// TODO Log message
+				status.Occupied = append(status.Occupied, binding)
+			}
+		}
+
+		servicePorts.Status[guest] = status
+	}
+
+	resources.Network.ServicePorts[name] = servicePorts
+
+	mutex_port.Unlock()
+	return nil
+}
+
+func contains(item string, slice []string) bool {
+	for _, element := range slice {
+		if element == item {
+			return true
+		}
+	}
+
+	return false
+}
+
+func FreePortsFromService(name string, portBindings map[string][]string) {
+	defer runtime.Gosched()
+	mutex_port.Lock()
+	servicePorts := resources.Network.ServicePorts[name]
+
+	for guest, bindings := range portBindings {
+		status := servicePorts.Status[guest]
+		for _, binding := range bindings {
+			if contains(binding, status.Occupied) {
+				status.Occupied, status.Available = moveSpecificItem(binding, status.Occupied, status.Available)
+			} else {
+				log.WithFields(log.Fields{
+					"service": name,
+					"guest":   guest,
+					"host":    binding,
+				}).Warnln("Cannot find port in occupied list")
+			}
+
+		}
+		servicePorts.Status[guest] = status
+	}
+
+	resources.Network.ServicePorts[name] = servicePorts
+
+	mutex_port.Unlock()
 }
 
 func moveItem(source []string, dest []string) ([]string, []string) {
@@ -466,6 +526,25 @@ func moveItem(source []string, dest []string) ([]string, []string) {
 	dest = append(dest, item)
 
 	return source, dest
+}
+
+func moveSpecificItem(item string, source []string, dest []string) ([]string, []string) {
+	if len(source) == 0 {
+		return source, dest
+	}
+
+	index := 0
+	for i := 0; i < len(source); i++ {
+		if item == source[i] {
+			index = i
+		}
+	}
+
+	source = append(source[:index], source[index+1:]...)
+	dest = append(dest, item)
+
+	return source, dest
+
 }
 
 func GetAssignedPorts(name string) map[string]string {

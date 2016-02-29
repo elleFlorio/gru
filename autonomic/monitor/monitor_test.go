@@ -121,7 +121,7 @@ func TestResetEventsStats(t *testing.T) {
 	assert.Equal(t, 0, len(mockStats.Service[srvName].Events.Stop))
 }
 
-func TestAddResource(t *testing.T) {
+func TestaddInstance(t *testing.T) {
 	defer resetMockServices()
 
 	mockStats := CreateMockStats()
@@ -136,14 +136,14 @@ func TestAddResource(t *testing.T) {
 
 	srv, _ := service.GetServiceByName(srvName)
 	// check add stopped
-	addResource(id2_s, srvName, status2_s, &mockStats, &mockHist)
+	addInstance(id2_s, srvName, status2_s, &mockStats, &mockHist)
 	assert.Contains(t, srv.Instances.All, id2_s,
 		"(new -> stopped) Service 2 - instances - all, should contain added instance")
 	assert.Contains(t, srv.Instances.Stopped, id2_s,
 		"(new -> stopped) Service 2 - instances - stopped, should contain added instance")
 
 	// check add pending
-	addResource(id2_p, srvName, status2_p, &mockStats, &mockHist)
+	addInstance(id2_p, srvName, status2_p, &mockStats, &mockHist)
 	assert.Contains(t, srv.Instances.All, id2_p,
 		"(new -> pending) Service 2 - instances - all, should contain added instance")
 	assert.Contains(t, srv.Instances.Pending, id2_p,
@@ -152,14 +152,14 @@ func TestAddResource(t *testing.T) {
 		"(new -> pending) Service 2 - events - start, should contain added instance")
 
 	// check add running
-	addResource(id2_r, srvName, status2_r, &mockStats, &mockHist)
+	addInstance(id2_r, srvName, status2_r, &mockStats, &mockHist)
 	assert.Contains(t, srv.Instances.All, id2_r,
 		"(new -> running) Service 2 - instances - all, should contain added instance")
 	assert.Contains(t, srv.Instances.Running, id2_r,
 		"(new -> running) Service 2 - instances - running, should contain added instance")
 
 	//check stopped -> pending
-	addResource(id2_s, srvName, status2_p, &mockStats, &mockHist)
+	addInstance(id2_s, srvName, status2_p, &mockStats, &mockHist)
 	assert.Contains(t, srv.Instances.Pending, id2_s,
 		"(stopped -> pending) Service 2 - instances - pending, should contain added instance")
 	assert.Contains(t, mockStats.Service[srvName].Events.Start, id2_s,
@@ -168,14 +168,14 @@ func TestAddResource(t *testing.T) {
 		"(stopped -> pending) Service 2 - instances - stopped, should not contain added instance")
 
 	//check pending -> running
-	addResource(id2_s, srvName, status2_r, &mockStats, &mockHist)
+	addInstance(id2_s, srvName, status2_r, &mockStats, &mockHist)
 	assert.Contains(t, srv.Instances.Running, id2_s,
 		"(pending -> running) Service 2 - instances - running, should contain added instance")
 	assert.NotContains(t, srv.Instances.Pending, id2_s,
 		"(pending -> running) Service 2 - instances - pending, should not contain added instance")
 }
 
-func TestRemoveResource(t *testing.T) {
+func TestremoveInstance(t *testing.T) {
 	defer resetMockServices()
 
 	mockStats := CreateMockStats()
@@ -186,10 +186,10 @@ func TestRemoveResource(t *testing.T) {
 	srv, _ := service.GetServiceByName(serviceName)
 
 	// check error
-	removeResource("pippo", &mockStats, &mockHist)
+	removeInstance("pippo", &mockStats, &mockHist)
 
 	// check running
-	removeResource(mockInstId_r, &mockStats, &mockHist)
+	removeInstance(mockInstId_r, &mockStats, &mockHist)
 	serviceStatsInst := srv.Instances.Running
 	instancesStats := []string{}
 	for k, _ := range mockStats.Instance {
@@ -204,7 +204,7 @@ func TestRemoveResource(t *testing.T) {
 		"(running) Events Stop should contain 'instance2_1'")
 
 	// check pending
-	removeResource(mockInstId_p, &mockStats, &mockHist)
+	removeInstance(mockInstId_p, &mockStats, &mockHist)
 	serviceStatsInst = srv.Instances.Pending
 	instancesStats = []string{}
 	for k, _ := range mockStats.Instance {

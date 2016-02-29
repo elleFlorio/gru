@@ -46,7 +46,7 @@ func (p *Start) Run(config Action) error {
 		if err != nil {
 			return err
 		}
-		res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
+		//res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
 
 		return nil
 
@@ -61,7 +61,7 @@ func (p *Start) Run(config Action) error {
 	if err != nil {
 		return err
 	}
-	res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
+	//res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
 
 	return nil
 

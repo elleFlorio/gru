@@ -79,7 +79,7 @@ func updateRunningInstances(name string, stats *GruStats, wsize int) {
 
 	for _, inst := range pending {
 		if len(history.instance[inst].cpu.sysUsage.Slice()) >= wsize {
-			addResource(inst, name, "running", stats, &history)
+			addInstance(inst, name, "running", stats, &history)
 
 			log.WithFields(log.Fields{
 				"service": name,
