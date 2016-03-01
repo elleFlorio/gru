@@ -186,8 +186,13 @@ func addInstance(id string, srvName string, status string, stats *GruStats, hist
 		}
 		mem := window.New(W_SIZE, W_MULT)
 		hist.instance[id] = instanceHistory{cpu, mem}
+
+		service.RegisterServiceInstanceId(srvName, id)
+		service.KeepAlive(srvName, id)
+
 	case "stopped":
 		srv.Instances.Stopped = append(srv.Instances.Stopped, id)
+		service.UnregisterServiceInstance(srvName, id)
 		log.Debugln("services stopped: ", srv.Instances.Stopped)
 	case "paused":
 		srv.Instances.Paused = append(srv.Instances.Paused, id)

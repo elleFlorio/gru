@@ -5,7 +5,7 @@ import (
 
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/enum"
-	res "github.com/elleFlorio/gru/resources"
+	//res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/utils"
 )
