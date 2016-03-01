@@ -423,7 +423,9 @@ func AssignPortsToService(name string) (map[string]string, error) {
 	mutex_port.Lock()
 	servicePorts := resources.Network.ServicePorts[name]
 
-	for guest, host := range servicePorts.Status {
+	// Check if all the ports can be assigned
+	// otherwise "abort" the operation
+	for _, host := range servicePorts.Status {
 		if len(host.Available) < 1 {
 			servicePorts.LastAssigned = make(map[string]string)
 			resources.Network.ServicePorts[name] = servicePorts
@@ -431,7 +433,9 @@ func AssignPortsToService(name string) (map[string]string, error) {
 			mutex_port.Unlock()
 			return servicePorts.LastAssigned, ErrNoAvailablePorts
 		}
+	}
 
+	for guest, host := range servicePorts.Status {
 		status := PortStatus{}
 		status.Available, status.Occupied = moveItem(host.Available, host.Occupied)
 		servicePorts.Status[guest] = status
@@ -448,6 +452,18 @@ func AssignSpecifiPortsToService(name string, portBindings map[string][]string) 
 	defer runtime.Gosched()
 	mutex_port.Lock()
 	servicePorts := resources.Network.ServicePorts[name]
+
+	// Check if ALL the bindings are possible
+	// Otherwise "abort" the operation
+	for guest, bindings := range portBindings {
+		status := servicePorts.Status[guest]
+		for _, binding := range bindings {
+			if contains(binding, status.Occupied) {
+				mutex_port.Unlock()
+				return errPortAlreadyOccupied
+			}
+		}
+	}
 
 	for guest, bindings := range portBindings {
 		status := servicePorts.Status[guest]
@@ -521,7 +537,7 @@ func moveItem(source []string, dest []string) ([]string, []string) {
 	if index == 0 {
 		source = []string{}
 	} else {
-		source = source[0 : index-1]
+		source = source[:index]
 	}
 	dest = append(dest, item)
 

@@ -18,17 +18,26 @@ func GetCompleteRange(shortRange string) ([]string, error) {
 		return []string{}, errInvalidRange
 	}
 	if len(from_to) == 1 {
+		_, err := strconv.Atoi(from_to[0])
+		if err != nil {
+			return []string{}, errInvalidRange
+		}
+
 		return from_to, nil
 	}
 
 	from, err := strconv.Atoi(from_to[0])
-	to, err := strconv.Atoi(from_to[1])
-
 	if err != nil {
 		return []string{}, errInvalidLimit
 	}
 
-	completeRange = make([]string, to-from, to-from)
+	to, err := strconv.Atoi(from_to[1])
+	if err != nil {
+		return []string{}, errInvalidLimit
+	}
+
+	delta := to - from
+	completeRange = make([]string, delta+1, delta+1)
 	for i := from; i <= to; i++ {
 		value := strconv.Itoa(i)
 		index := i - from
