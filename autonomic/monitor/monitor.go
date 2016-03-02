@@ -46,7 +46,6 @@ func Run() GruStats {
 	computeSystemCpu(&gruStats)
 	updateSystemInstances(&gruStats)
 	makeSnapshot(&gruStats, &snapshot)
-	//updateServicesInstances(&snapshot)
 	err := saveStats(snapshot)
 	if err != nil {
 		log.WithField("err", "Stats data not saved").Errorln("Running monitor")

@@ -242,44 +242,6 @@ func GetCoresAvailable(number int) (string, bool) {
 	return cores, true
 }
 
-//DEPRECATED
-// func CheckAndSetCores(number int, id string) (string, bool) {
-// 	defer runtime.Gosched()
-
-// 	cores_int := make([]int, 0, number)
-// 	cores_str := make([]string, 0, number)
-// 	mutex_cpu.Lock()
-// 	for i := 0; i < len(resources.CPU.Cores); i++ {
-// 		if resources.CPU.Cores[i] == true {
-// 			cores_int = append(cores_int, i)
-// 		}
-
-// 		if len(cores_int) >= number {
-// 			break
-// 		}
-// 	}
-
-// 	if len(cores_int) < number {
-// 		log.Errorln("Error assigning cores: number of free cores < ", number)
-// 		mutex_cpu.Unlock()
-// 		return "", false
-// 	}
-
-// 	for _, core := range cores_int {
-// 		resources.CPU.Cores[core] = false
-// 		cores_str = append(cores_str, strconv.Itoa(core))
-// 	}
-// 	mutex_cpu.Unlock()
-
-// 	// Record assigned cores to instance
-// 	cores := strings.Join(cores_str, ",")
-// 	mutex_instance.Lock()
-// 	instanceCores[id] = cores
-// 	mutex_instance.Unlock()
-
-// 	return cores, true
-// }
-
 func CheckSpecificCoresAvailable(cpusetcpus string) bool {
 	defer runtime.Gosched()
 

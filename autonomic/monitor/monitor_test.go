@@ -3,33 +3,25 @@ package monitor
 import (
 	"testing"
 
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/discovery"
 	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
 
 func init() {
-	//Initialize storage
 	storage.New("internal")
+	discovery.New("noservice", "")
+	cfg.GetAgentDiscovery().TTL = 5
 	metric.Manager().Start()
 	res.CreateMockResources(1, "1G", 0, "0G")
-	// n := cfg.Node{
-	// 	Resources: cfg.NodeResources{
-	// 		TotalCpus: 1,
-	// 	},
-	// }
-	// cfg.SetNode(n)
 	cfg.SetNode(cfg.Node{})
 	resetMockServices()
-}
-
-func resetMockServices() {
-	mockServices := service.CreateMockServices()
-	cfg.SetServices(mockServices)
 }
 
 func TestUpdateRunningInstances(t *testing.T) {
@@ -121,7 +113,7 @@ func TestResetEventsStats(t *testing.T) {
 	assert.Equal(t, 0, len(mockStats.Service[srvName].Events.Stop))
 }
 
-func TestaddInstance(t *testing.T) {
+func TestAddInstance(t *testing.T) {
 	defer resetMockServices()
 
 	mockStats := CreateMockStats()
@@ -175,7 +167,7 @@ func TestaddInstance(t *testing.T) {
 		"(pending -> running) Service 2 - instances - pending, should not contain added instance")
 }
 
-func TestremoveInstance(t *testing.T) {
+func TestRemoveInstance(t *testing.T) {
 	defer resetMockServices()
 
 	mockStats := CreateMockStats()
@@ -265,4 +257,41 @@ func TestRun(t *testing.T) {
 	resetMockServices()
 
 	assert.NotEmpty(t, Run())
+}
+
+func resetMockServices() {
+	mockServices := service.CreateMockServices()
+	cfg.SetServices(mockServices)
+}
+
+func TestCreatePortBindings(t *testing.T) {
+	dockerBindings := createDockerBindings()
+	portBindings := createPortBindings(dockerBindings)
+
+	assert.Len(t, portBindings, 2)
+	assert.Equal(t, "50100", portBindings["50100"][0])
+	assert.Equal(t, "50200", portBindings["50200"][0])
+
+}
+
+func createDockerBindings() map[string][]dockerclient.PortBinding {
+	port1 := "50100/tcp"
+	host1 := dockerclient.PortBinding{
+		HostIp:   "0.0.0.0",
+		HostPort: "50100",
+	}
+	bindings1 := []dockerclient.PortBinding{host1}
+	port2 := "50200/tcp"
+	host2 := dockerclient.PortBinding{
+		HostIp:   "0.0.0.0",
+		HostPort: "50200",
+	}
+	bindings2 := []dockerclient.PortBinding{host2}
+
+	dockerBindings := map[string][]dockerclient.PortBinding{
+		port1: bindings1,
+		port2: bindings2,
+	}
+
+	return dockerBindings
 }

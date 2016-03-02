@@ -76,37 +76,6 @@ func TestCheckSpecificCoresAvailable(t *testing.T) {
 	assert.False(t, CheckSpecificCoresAvailable(req))
 }
 
-// func TestCheckAndSetCores(t *testing.T) {
-// 	defer freeCores()
-
-// 	var assigned string
-// 	var ok bool
-
-// 	req := 2
-// 	id := "pippo"
-// 	assigned, ok = CheckAndSetCores(req, id)
-// 	assert.True(t, ok)
-// 	assert.Equal(t, "0,1", assigned)
-// 	assert.Equal(t, c_NCORES-req, getAvailableCores())
-// 	_, ok = instanceCores[id]
-// 	assert.True(t, ok)
-
-// 	freeCores()
-// 	assignSpecificCores([]int{1, 3}, id)
-// 	assigned, ok = CheckAndSetCores(req, id)
-// 	assert.True(t, ok)
-// 	assert.Equal(t, "0,2", assigned)
-// 	assert.Equal(t, 0, getAvailableCores())
-
-// 	freeCores()
-// 	req_wrong := c_NCORES + 1
-// 	assigned, ok = CheckAndSetCores(req_wrong, id)
-// 	assert.False(t, ok)
-// 	assert.Equal(t, "", assigned)
-// 	assert.Equal(t, c_NCORES, getAvailableCores())
-
-// }
-
 func TestGetCoresAvailable(t *testing.T) {
 	defer freeCores()
 
