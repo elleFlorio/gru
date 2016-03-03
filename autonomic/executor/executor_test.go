@@ -40,6 +40,9 @@ func TestCreateCpusetCpus(t *testing.T) {
 
 	cpusetcpus = createCpusetCpus(core0, 1)
 	assert.Equal(t, "0", cpusetcpus)
+
+	cpusetcpus = createCpusetCpus(empty, 0)
+	assert.Equal(t, "0", cpusetcpus)
 }
 
 func TestCreateMemory(t *testing.T) {
@@ -127,20 +130,6 @@ func TestCreateExposedPorts(t *testing.T) {
 	exposed := createExposedPorts(service1)
 	assert.Len(t, exposed, 1)
 	assert.Equal(t, exposed["50100/tcp"], struct{}{})
-}
-
-func TestCreateCommands(t *testing.T) {
-	cmds := map[string]string{
-		"cmd1": "pippo",
-		"cmd2": "topolino",
-	}
-
-	commands := createCommands(cmds)
-	assert.Len(t, commands, 4)
-	assert.Equal(t, commands[0], "cmd1")
-	assert.Equal(t, commands[1], "pippo")
-	assert.Equal(t, commands[2], "cmd2")
-	assert.Equal(t, commands[3], "topolino")
 }
 
 func TestGetDiscoveryPort(t *testing.T) {

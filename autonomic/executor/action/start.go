@@ -70,7 +70,7 @@ func (p *Start) Run(config Action) error {
 func createNewContainer(config Action) (string, error) {
 	uuid, err := utils.GenerateUUID()
 	name := config.Service + "_" + uuid
-	id, err := container.Docker().Client.CreateContainer(config.ContainerConfig, name)
+	id, err := container.Docker().Client.CreateContainer(config.ContainerConfig, name, nil)
 	if err != nil {
 		log.WithField("err", err).Errorln("Cannot create a new container for service ", config.Service)
 		return "", err

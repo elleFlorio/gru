@@ -22,8 +22,9 @@ type NetworkResource struct {
 }
 
 type Ports struct {
-	Status       map[string]PortStatus `json:"status"`
-	LastAssigned map[string]string     `json:lastassigned`
+	Status        map[string]PortStatus `json:"status"`
+	LastRequested map[string]string     `json:lastrequested`
+	LastAssigned  map[string][]string   `json:lastassigned`
 }
 
 type PortStatus struct {

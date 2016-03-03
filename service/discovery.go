@@ -11,8 +11,6 @@ import (
 	net "github.com/elleFlorio/gru/network"
 )
 
-var discoveryConf = cfg.GetAgentDiscovery()
-var hostIp = net.Config().IpAddress
 var addressMap map[string]string
 
 func init() {
@@ -20,6 +18,7 @@ func init() {
 }
 
 func SaveInstanceAddress(id string, port string) {
+	hostIp := net.Config().IpAddress
 	address := "http://" + hostIp + ":" + port
 	addressMap[id] = address
 }
@@ -30,6 +29,7 @@ func RemoveInstanceAddress(id string) {
 
 func RegisterServiceInstanceId(name string, id string) {
 	var err error
+	discoveryConf := cfg.GetAgentDiscovery()
 	opt := discovery.Options{
 		"TTL": time.Duration(discoveryConf.TTL) * time.Second,
 	}
@@ -54,6 +54,7 @@ func KeepAlive(name string, id string) {
 
 func keepAlive(name string, id string) {
 	var err error
+	discoveryConf := cfg.GetAgentDiscovery()
 	ticker := time.NewTicker(time.Duration(discoveryConf.TTL-1) * time.Second)
 	opt := discovery.Options{
 		"TTL": time.Duration(discoveryConf.TTL) * time.Second,
@@ -83,6 +84,7 @@ func keepAlive(name string, id string) {
 }
 
 func UnregisterServiceInstance(name string, id string) {
+	discoveryConf := cfg.GetAgentDiscovery()
 	isntanceKey := discoveryConf.AppRoot + "/" + name + "/" + id
 	discovery.Delete(isntanceKey)
 	ch_stop, err := ch.GetInstanceChannel(id)

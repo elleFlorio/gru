@@ -63,6 +63,7 @@ func initializeNetwork(address string, port string) {
 	if err != nil {
 		log.WithField("err", err).Fatalln("Error initializing the network")
 	}
+	log.WithField(network.Config().IpAddress+":"+network.Config().Port, "ok").Infoln("Network initialized")
 }
 
 func initializeDiscovery(name string, address string) {

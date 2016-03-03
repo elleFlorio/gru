@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"strings"
+	"time"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
@@ -77,30 +78,38 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 
 // Events are: attach, commit, copy, create, destroy, die, exec_create, exec_start, export, kill, oom, pause, rename, resize, restart, start, stop, top, unpause, update
 func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}) {
+	// By now we do not handle events with type != container
+	if event.Type != "container" {
+		log.WithField("type", event.Type).Debugln("Received event with type different from 'container'")
+		return
+	}
 	c_evntstart := args[0].(chan string)
 	srv, err := service.GetServiceByImage(event.From)
 	if err != nil {
-		log.WithField("err", err).Warnln("Cannot handle event")
+		log.WithFields(log.Fields{
+			"err":   err,
+			"event": event,
+		}).Warnln("Cannot handle event")
 		return
 	}
 
 	switch event.Status {
 	case "create":
 		log.WithField("image", event.From).Debugln("Created new container")
-		setServiceInstanceResources(srv.Name, event.Id)
+		setServiceInstanceResources(srv.Name, event.ID)
 	case "start":
-		addInstance(event.Id, srv.Name, "pending", &gruStats, &history)
-		startMonitorLog(event.Id)
-		c_evntstart <- event.Id
+		addInstance(event.ID, srv.Name, "pending", &gruStats, &history)
+		startMonitorLog(event.ID)
+		c_evntstart <- event.ID
 	case "stop":
 		log.WithField("image", event.From).Debugln("Received stop signal")
 	case "kill":
 		log.WithField("image", event.From).Debugln("Received kill signal")
 	case "die":
-		removeInstance(event.Id, &gruStats, &history)
+		removeInstance(event.ID, &gruStats, &history)
 	case "destroy":
-		log.WithField("id", event.Id).Debugln("Received destroy signal")
-		freeServiceInstanceResources(srv.Name, event.Id)
+		log.WithField("id", event.ID).Debugln("Received destroy signal")
+		freeServiceInstanceResources(srv.Name, event.ID)
 	default:
 		log.WithFields(log.Fields{
 			"err":   "event not handled",
@@ -114,6 +123,11 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 func setServiceInstanceResources(name string, id string) {
 	var err error
 
+	log.Debugln("Setting new instance resources")
+	// This is needed otherwise dockerclient does not
+	// return the correct container information
+	time.Sleep(100 * time.Millisecond)
+
 	info, err := container.Docker().Client.InspectContainer(id)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -123,7 +137,13 @@ func setServiceInstanceResources(name string, id string) {
 	}
 
 	cpusetcpus := info.HostConfig.CpusetCpus
-	portBindings := createPortBindings(info.NetworkSettings.Ports)
+	portBindings := createPortBindings(info.HostConfig.PortBindings)
+
+	log.WithFields(log.Fields{
+		"service":      name,
+		"cpusetcpus":   cpusetcpus,
+		"portbindings": portBindings,
+	}).Debugln("New instance respources")
 
 	err = res.CheckAndSetSpecificCores(cpusetcpus, id)
 	if err != nil {
@@ -135,7 +155,7 @@ func setServiceInstanceResources(name string, id string) {
 		}).Errorln("Error assigning CPU resources to new instance")
 	}
 
-	err = res.AssignSpecifiPortsToService(name, portBindings)
+	err = res.AssignSpecifiPortsToService(name, id, portBindings)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"service":  name,
@@ -210,6 +230,7 @@ func addInstance(id string, srvName string, status string, stats *GruStats, hist
 	}).Infoln("Added resource to monitor")
 }
 
+// TODO this should be 'stopInstance', then I need a function called 'removeInstance'
 func removeInstance(id string, stats *GruStats, hist *statsHistory) {
 	srv, err := service.GetServiceById(id)
 	if err != nil {
@@ -264,20 +285,8 @@ func findIdIndex(id string, instances []string) (int, error) {
 }
 
 func freeServiceInstanceResources(name string, id string) {
-	var err error
-
-	info, err := container.Docker().Client.InspectContainer(id)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"id":  id,
-			"err": err,
-		}).Errorln("Error setting instance resources")
-	}
-
-	portBindings := createPortBindings(info.NetworkSettings.Ports)
-
 	res.FreeInstanceCores(id)
-	res.FreePortsFromService(name, portBindings)
+	res.FreePortsFromService(name, id)
 }
 
 func createPortBindings(dockerBindings map[string][]dockerclient.PortBinding) map[string][]string {

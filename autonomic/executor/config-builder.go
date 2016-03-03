@@ -44,6 +44,10 @@ func createHostConfig(srv *cfg.Service, act enum.Action) *dockerclient.HostConfi
 
 func createCpusetCpus(cpusetcpus string, cores int) string {
 	if cpusetcpus == "" {
+		if cores < 1 {
+			log.Warnln("Number of requested CPUs = 0. Setting to 1")
+			cores = 1
+		}
 		if assigned, ok := res.GetCoresAvailable(cores); ok {
 			cpusetcpus = assigned
 		} else {
@@ -67,7 +71,7 @@ func createMemory(memory string) int64 {
 func createPortBindings(name string) map[string][]dockerclient.PortBinding {
 	portBindings_dckr := make(map[string][]dockerclient.PortBinding)
 
-	assigned, err := res.AssignPortsToService(name)
+	assigned, err := res.RequestPortsForService(name)
 	if err != nil {
 		log.Errorln("Error creating port bindings")
 		return portBindings_dckr
@@ -94,7 +98,7 @@ func createContainerConfig(srv *cfg.Service, act enum.Action) *dockerclient.Cont
 		containerConfig.Memory = createMemory(conf.Memory)
 		containerConfig.Env = createEnvVars(conf.Env)
 		containerConfig.ExposedPorts = createExposedPorts(srv.Name)
-		containerConfig.Cmd = createCommands(conf.Cmd)
+		containerConfig.Cmd = conf.Cmd
 		containerConfig.Volumes = conf.Volumes
 		containerConfig.Entrypoint = conf.Entrypoint
 		containerConfig.CpuShares = conf.CpuShares
@@ -130,20 +134,11 @@ func createExposedPorts(name string) map[string]struct{} {
 	return exposed
 }
 
-func createCommands(cmds map[string]string) []string {
-	commands := make([]string, 0, len(cmds))
-	for cmd, value := range cmds {
-		commands = append(commands, cmd, value)
-	}
-
-	return commands
-}
-
 // The discovery port is the first set by the user
 // in port bindings.
 func getDiscoveryPort(srv *cfg.Service, act enum.Action) string {
 	if act == enum.START {
-		assigned := res.GetResources().Network.ServicePorts[srv.Name].LastAssigned
+		assigned := res.GetResources().Network.ServicePorts[srv.Name].LastRequested
 		for _, host := range assigned {
 			return host
 		}

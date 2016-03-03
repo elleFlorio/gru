@@ -16,7 +16,8 @@ var docker DockerConfig
 
 //TODO implement tls config
 func Connect(daemonUrl string, timeout int) error {
-	client, err := dockerclient.NewDockerClientTimeout(daemonUrl, nil, time.Duration(timeout)*time.Second)
+
+	client, err := dockerclient.NewDockerClientTimeout(daemonUrl, nil, time.Duration(timeout)*time.Second, nil)
 	if err != nil {
 		return err
 	}

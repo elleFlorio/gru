@@ -329,7 +329,7 @@ func TestInitializeServiceAvailablePorts(t *testing.T) {
 	assert.Empty(t, status3.Available)
 }
 
-func TestAssignPortsToService(t *testing.T) {
+func TestRequestPortsForService(t *testing.T) {
 	defer clearServicePorts()
 	var err error
 	createServicePorts()
@@ -337,48 +337,80 @@ func TestAssignPortsToService(t *testing.T) {
 	port1 := "50100"
 	port2 := "50200"
 
-	result, err := AssignPortsToService(service)
+	result, err := RequestPortsForService(service)
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
+	assert.Len(t, resources.Network.ServicePorts[service].LastRequested, 2)
 	available1 := resources.Network.ServicePorts[service].Status[port1].Available
 	occupied1 := resources.Network.ServicePorts[service].Status[port1].Occupied
-	assert.Len(t, available1, 3)
-	assert.Len(t, occupied1, 1)
+	assert.Len(t, available1, 4)
+	assert.Len(t, occupied1, 0)
 	available2 := resources.Network.ServicePorts[service].Status[port2].Available
 	occupied2 := resources.Network.ServicePorts[service].Status[port2].Occupied
-	assert.Len(t, available2, 1)
-	assert.Len(t, occupied2, 1)
+	assert.Len(t, available2, 2)
+	assert.Len(t, occupied2, 0)
 
-	result, err = AssignPortsToService(service)
-	assert.NoError(t, err)
-	assert.Len(t, result, 2)
-	available1 = resources.Network.ServicePorts[service].Status[port1].Available
-	occupied1 = resources.Network.ServicePorts[service].Status[port1].Occupied
-	assert.Len(t, available1, 2)
-	assert.Len(t, occupied1, 2)
-	available2 = resources.Network.ServicePorts[service].Status[port2].Available
-	occupied2 = resources.Network.ServicePorts[service].Status[port2].Occupied
-	assert.Len(t, available2, 0)
-	assert.Len(t, occupied2, 2)
-
-	result, err = AssignPortsToService(service)
+	ports := resources.Network.ServicePorts[service]
+	status := ports.Status[port1]
+	status.Available = []string{}
+	ports.Status[port1] = status
+	resources.Network.ServicePorts[service] = ports
+	_, err = RequestPortsForService(service)
 	assert.Error(t, err)
-	assert.Empty(t, result)
-	available1 = resources.Network.ServicePorts[service].Status[port1].Available
-	occupied1 = resources.Network.ServicePorts[service].Status[port1].Occupied
-	assert.Len(t, available1, 2)
-	assert.Len(t, occupied1, 2)
-	available2 = resources.Network.ServicePorts[service].Status[port2].Available
-	occupied2 = resources.Network.ServicePorts[service].Status[port2].Occupied
-	assert.Len(t, available2, 0)
-	assert.Len(t, occupied2, 2)
+	assert.Empty(t, resources.Network.ServicePorts[service].LastRequested)
 }
+
+// func TestAssignPortsToService(t *testing.T) {
+// 	defer clearServicePorts()
+// 	var err error
+// 	createServicePorts()
+// 	service := "pippo"
+// 	port1 := "50100"
+// 	port2 := "50200"
+
+// 	result, err := AssignPortsToService(service)
+// 	assert.NoError(t, err)
+// 	assert.Len(t, result, 2)
+// 	available1 := resources.Network.ServicePorts[service].Status[port1].Available
+// 	occupied1 := resources.Network.ServicePorts[service].Status[port1].Occupied
+// 	assert.Len(t, available1, 3)
+// 	assert.Len(t, occupied1, 1)
+// 	available2 := resources.Network.ServicePorts[service].Status[port2].Available
+// 	occupied2 := resources.Network.ServicePorts[service].Status[port2].Occupied
+// 	assert.Len(t, available2, 1)
+// 	assert.Len(t, occupied2, 1)
+
+// 	result, err = AssignPortsToService(service)
+// 	assert.NoError(t, err)
+// 	assert.Len(t, result, 2)
+// 	available1 = resources.Network.ServicePorts[service].Status[port1].Available
+// 	occupied1 = resources.Network.ServicePorts[service].Status[port1].Occupied
+// 	assert.Len(t, available1, 2)
+// 	assert.Len(t, occupied1, 2)
+// 	available2 = resources.Network.ServicePorts[service].Status[port2].Available
+// 	occupied2 = resources.Network.ServicePorts[service].Status[port2].Occupied
+// 	assert.Len(t, available2, 0)
+// 	assert.Len(t, occupied2, 2)
+
+// 	result, err = AssignPortsToService(service)
+// 	assert.Error(t, err)
+// 	assert.Empty(t, result)
+// 	available1 = resources.Network.ServicePorts[service].Status[port1].Available
+// 	occupied1 = resources.Network.ServicePorts[service].Status[port1].Occupied
+// 	assert.Len(t, available1, 2)
+// 	assert.Len(t, occupied1, 2)
+// 	available2 = resources.Network.ServicePorts[service].Status[port2].Available
+// 	occupied2 = resources.Network.ServicePorts[service].Status[port2].Occupied
+// 	assert.Len(t, available2, 0)
+// 	assert.Len(t, occupied2, 2)
+// }
 
 func TestAssignSpecificPortsToService(t *testing.T) {
 	defer clearServicePorts()
 	var err error
 	createServicePorts()
 	service := "pippo"
+	id := "123456789"
 	port1 := "50100"
 	port2 := "50200"
 	bindings := map[string][]string{
@@ -386,7 +418,7 @@ func TestAssignSpecificPortsToService(t *testing.T) {
 		port2: []string{"50200"},
 	}
 
-	err = AssignSpecifiPortsToService(service, bindings)
+	err = AssignSpecifiPortsToService(service, id, bindings)
 	assert.NoError(t, err)
 	available1 := resources.Network.ServicePorts[service].Status[port1].Available
 	occupied1 := resources.Network.ServicePorts[service].Status[port1].Occupied
@@ -396,8 +428,9 @@ func TestAssignSpecificPortsToService(t *testing.T) {
 	occupied2 := resources.Network.ServicePorts[service].Status[port2].Occupied
 	assert.Len(t, available2, 1)
 	assert.Len(t, occupied2, 1)
+	assert.NotEmpty(t, instanceBindings)
 
-	err = AssignSpecifiPortsToService(service, bindings)
+	err = AssignSpecifiPortsToService(service, id, bindings)
 	assert.Error(t, err)
 	available1 = resources.Network.ServicePorts[service].Status[port1].Available
 	occupied1 = resources.Network.ServicePorts[service].Status[port1].Occupied
@@ -410,7 +443,7 @@ func TestAssignSpecificPortsToService(t *testing.T) {
 
 	bindings[port1] = []string{"50000"}
 	bindings[port2] = []string{"50201"}
-	err = AssignSpecifiPortsToService(service, bindings)
+	err = AssignSpecifiPortsToService(service, id, bindings)
 	assert.NoError(t, err)
 	available1 = resources.Network.ServicePorts[service].Status[port1].Available
 	occupied1 = resources.Network.ServicePorts[service].Status[port1].Occupied
@@ -427,23 +460,21 @@ func TestFreePortsFromService(t *testing.T) {
 	defer clearServicePorts()
 	createServicePorts()
 	service := "pippo"
+	id := "123456789"
 	port1 := "50100"
-	assignPort(service, port1, []string{"50100"})
+	assignPort(service, id, port1, []string{"50100"})
 	available1 := resources.Network.ServicePorts[service].Status[port1].Available
 	occupied1 := resources.Network.ServicePorts[service].Status[port1].Occupied
 	assert.Len(t, available1, 3)
 	assert.Len(t, occupied1, 1)
 
-	bindings := map[string][]string{
-		port1: []string{"50100"},
-	}
-	FreePortsFromService(service, bindings)
+	FreePortsFromService(service, id)
 	available1 = resources.Network.ServicePorts[service].Status[port1].Available
 	occupied1 = resources.Network.ServicePorts[service].Status[port1].Occupied
 	assert.Len(t, available1, 4)
 	assert.Len(t, occupied1, 0)
 
-	FreePortsFromService(service, bindings)
+	FreePortsFromService(service, id)
 	assert.Len(t, available1, 4)
 	assert.Len(t, occupied1, 0)
 
@@ -470,14 +501,19 @@ func createServicePorts() {
 		port2: status2,
 	}
 	servicePorts := Ports{
-		Status:       portStatus,
-		LastAssigned: make(map[string]string),
+		Status:        portStatus,
+		LastAssigned:  make(map[string][]string),
+		LastRequested: make(map[string]string),
 	}
 	resources.Network.ServicePorts[service] = servicePorts
 
 }
 
-func assignPort(service string, guest string, host []string) {
+func assignPort(service string, id string, guest string, host []string) {
+	ports := portBindings{
+		guest: host,
+	}
+	instanceBindings[id] = ports
 	servicePorts := resources.Network.ServicePorts[service]
 	status := servicePorts.Status[guest]
 	for _, p := range host {

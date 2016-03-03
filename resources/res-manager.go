@@ -14,9 +14,12 @@ import (
 	"github.com/elleFlorio/gru/utils"
 )
 
+type portBindings map[string][]string
+
 var (
-	resources     Resource
-	instanceCores map[string]string
+	resources        Resource
+	instanceCores    map[string]string
+	instanceBindings map[string]portBindings
 
 	mutex_cpu      = sync.RWMutex{}
 	mutex_instance = sync.RWMutex{}
@@ -35,10 +38,12 @@ func init() {
 	resources.Network.ServicePorts = make(map[string]Ports)
 
 	instanceCores = make(map[string]string)
+	instanceBindings = make(map[string]portBindings)
 }
 
 func Initialize() {
 	computeTotalResources()
+	initializeNetworkResources()
 }
 
 func computeTotalResources() {
@@ -53,6 +58,13 @@ func computeTotalResources() {
 
 	for i := 0; i < int(resources.CPU.Total); i++ {
 		resources.CPU.Cores[i] = true
+	}
+}
+
+func initializeNetworkResources() {
+	for _, name := range service.List() {
+		srv, _ := service.GetServiceByName(name)
+		InitializeServiceAvailablePorts(name, srv.Docker.Ports)
 	}
 }
 
@@ -239,6 +251,10 @@ func GetCoresAvailable(number int) (string, bool) {
 	mutex_cpu.RUnlock()
 
 	cores := strings.Join(cores_str, ",")
+	log.WithFields(log.Fields{
+		"number": number,
+		"cores":  cores,
+	}).Debugln("Getting available cores")
 	return cores, true
 }
 
@@ -259,7 +275,10 @@ func CheckSpecificCoresAvailable(cpusetcpus string) bool {
 		}
 	}
 	mutex_cpu.RUnlock()
-
+	log.WithFields(log.Fields{
+		"cores":     cpusetcpus,
+		"available": available,
+	}).Debugln("Checking available cores")
 	return available
 }
 
@@ -319,9 +338,9 @@ func FreeInstanceCores(id string) {
 			"cores": cores,
 		}).Debugln("Released cores of instance")
 
+	} else {
+		log.Errorln("Error freeing cores: unrecognized instance ", id)
 	}
-
-	log.Errorln("Error freeing cores: unrecognized instance ", id)
 
 }
 
@@ -355,7 +374,7 @@ func InitializeServiceAvailablePorts(name string, ports map[string]string) {
 	servicePorts := resources.Network.ServicePorts[name]
 
 	for guest, host := range ports {
-		servicePorts.LastAssigned = make(map[string]string)
+		servicePorts.LastAssigned = make(map[string][]string)
 		servicePorts.Status = make(map[string]PortStatus)
 
 		hostRange, err := utils.GetCompleteRange(host)
@@ -378,9 +397,14 @@ func InitializeServiceAvailablePorts(name string, ports map[string]string) {
 	resources.Network.ServicePorts[name] = servicePorts
 
 	mutex_port.Unlock()
+
+	log.WithFields(log.Fields{
+		"service": name,
+		"ports":   ports,
+	}).Debugln("Initialed service ports")
 }
 
-func AssignPortsToService(name string) (map[string]string, error) {
+func RequestPortsForService(name string) (map[string]string, error) {
 	defer runtime.Gosched()
 	mutex_port.Lock()
 	servicePorts := resources.Network.ServicePorts[name]
@@ -389,66 +413,76 @@ func AssignPortsToService(name string) (map[string]string, error) {
 	// otherwise "abort" the operation
 	for _, host := range servicePorts.Status {
 		if len(host.Available) < 1 {
-			servicePorts.LastAssigned = make(map[string]string)
+			servicePorts.LastRequested = make(map[string]string)
 			resources.Network.ServicePorts[name] = servicePorts
-
 			mutex_port.Unlock()
-			return servicePorts.LastAssigned, ErrNoAvailablePorts
+			return make(map[string]string), ErrNoAvailablePorts
 		}
 	}
 
+	requestedPorts := make(map[string]string)
 	for guest, host := range servicePorts.Status {
-		status := PortStatus{}
-		status.Available, status.Occupied = moveItem(host.Available, host.Occupied)
-		servicePorts.Status[guest] = status
-		servicePorts.LastAssigned[guest] = status.Occupied[len(status.Occupied)-1]
+		requestedPorts[guest] = host.Available[len(host.Available)-1]
 	}
-
+	servicePorts.LastRequested = requestedPorts
 	resources.Network.ServicePorts[name] = servicePorts
 
 	mutex_port.Unlock()
-	return servicePorts.LastAssigned, nil
+
+	log.WithFields(log.Fields{
+		"service":        name,
+		"requestedPorts": requestedPorts,
+	}).Debugln("Requested ports for service")
+	return requestedPorts, nil
 }
 
-func AssignSpecifiPortsToService(name string, portBindings map[string][]string) error {
+func AssignSpecifiPortsToService(name string, id string, ports map[string][]string) error {
 	defer runtime.Gosched()
 	mutex_port.Lock()
 	servicePorts := resources.Network.ServicePorts[name]
 
 	// Check if ALL the bindings are possible
 	// Otherwise "abort" the operation
-	for guest, bindings := range portBindings {
+	for guest, bindings := range ports {
 		status := servicePorts.Status[guest]
 		for _, binding := range bindings {
 			if contains(binding, status.Occupied) {
+				servicePorts.LastAssigned = make(map[string][]string)
 				mutex_port.Unlock()
 				return errPortAlreadyOccupied
 			}
 		}
 	}
 
-	for guest, bindings := range portBindings {
+	for guest, bindings := range ports {
 		status := servicePorts.Status[guest]
 		for _, binding := range bindings {
-			if contains(binding, status.Occupied) {
-				mutex_port.Unlock()
-				return errPortAlreadyOccupied
-			}
-
 			if contains(binding, status.Available) {
 				status.Available, status.Occupied = moveSpecificItem(binding, status.Available, status.Occupied)
 			} else {
-				// TODO Log message
+				log.WithFields(log.Fields{
+					"service": name,
+					"guest":   guest,
+					"port":    binding,
+				}).Warnln("Cannot find port in available ones. Adding it to occupied")
 				status.Occupied = append(status.Occupied, binding)
 			}
 		}
 
 		servicePorts.Status[guest] = status
+		servicePorts.LastAssigned = ports
 	}
 
 	resources.Network.ServicePorts[name] = servicePorts
+	instanceBindings[id] = ports
 
 	mutex_port.Unlock()
+
+	log.WithFields(log.Fields{
+		"service":  name,
+		"instance": id,
+		"ports":    ports,
+	}).Debugln("Assigned ports to service instance")
 	return nil
 }
 
@@ -462,29 +496,43 @@ func contains(item string, slice []string) bool {
 	return false
 }
 
-func FreePortsFromService(name string, portBindings map[string][]string) {
+func FreePortsFromService(name string, id string) {
 	defer runtime.Gosched()
 	mutex_port.Lock()
 	servicePorts := resources.Network.ServicePorts[name]
+	if ports, ok := instanceBindings[id]; ok {
+		for guest, bindings := range ports {
+			status := servicePorts.Status[guest]
+			for _, binding := range bindings {
+				if contains(binding, status.Occupied) {
+					status.Occupied, status.Available = moveSpecificItem(binding, status.Occupied, status.Available)
+				} else {
+					log.WithFields(log.Fields{
+						"service":  name,
+						"instance": id,
+						"guest":    guest,
+						"host":     binding,
+					}).Warnln("Cannot find port in occupied list")
+				}
 
-	for guest, bindings := range portBindings {
-		status := servicePorts.Status[guest]
-		for _, binding := range bindings {
-			if contains(binding, status.Occupied) {
-				status.Occupied, status.Available = moveSpecificItem(binding, status.Occupied, status.Available)
-			} else {
-				log.WithFields(log.Fields{
-					"service": name,
-					"guest":   guest,
-					"host":    binding,
-				}).Warnln("Cannot find port in occupied list")
 			}
 
+			servicePorts.Status[guest] = status
 		}
-		servicePorts.Status[guest] = status
-	}
 
-	resources.Network.ServicePorts[name] = servicePorts
+		resources.Network.ServicePorts[name] = servicePorts
+		delete(instanceBindings, id)
+		log.WithFields(log.Fields{
+			"service":  name,
+			"instance": id,
+			"ports":    ports,
+		}).Debugln("Released ports of service instance")
+	} else {
+		log.WithFields(log.Fields{
+			"service":  name,
+			"instance": id,
+		}).Warnln("Cannot find instance id in port map")
+	}
 
 	mutex_port.Unlock()
 }
@@ -525,6 +573,6 @@ func moveSpecificItem(item string, source []string, dest []string) ([]string, []
 
 }
 
-func GetAssignedPorts(name string) map[string]string {
+func GetAssignedPorts(name string) map[string][]string {
 	return resources.Network.ServicePorts[name].LastAssigned
 }

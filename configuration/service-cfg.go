@@ -32,7 +32,7 @@ type ServiceDocker struct {
 	CpuShares   int64               `json:"cpushares"`
 	CpusetCpus  string              `json:"cpusetcpus"`
 	Links       []string            `json:"links"`
-	Ports       map[string][]string `json:"ports"`
-	Cmd         map[string]string   `json:"cmd"`
+	Ports       map[string]string   `json:"ports"`
+	Cmd         []string            `json:"cmd"`
 	StopTimeout int                 `json:"stoptimeout"`
 }
