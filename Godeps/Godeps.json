@@ -31,9 +31,13 @@
 			"Rev": "c082488e23781c3c19c0de7563e3c47d06c0d987"
 		},
 		{
-			"ImportPath": "github.com/docker/docker/pkg/units",
-			"Comment": "v1.4.1-4249-g4ab8b88",
-			"Rev": "4ab8b8828666c8d0651e96d61b5c616d26c5e229"
+			"ImportPath": "github.com/davecgh/go-spew/spew",
+			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+		},
+		{
+			"ImportPath": "github.com/docker/go-units",
+			"Comment": "v0.1.0-23-g5d2041e",
+			"Rev": "5d2041e26a699eaca682e2ea41c8f891e1060444"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -67,12 +71,17 @@
 			"Rev": "4d47685ab2fd2dbb46c66b831344d558bc4be5b9"
 		},
 		{
+			"ImportPath": "github.com/pmezard/go-difflib/difflib",
+			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
+		},
+		{
 			"ImportPath": "github.com/samalba/dockerclient",
-			"Rev": "12570e600d71374233e5056ba315f657ced496c7"
+			"Rev": "f274bbd0e2eb35ad1444dc6e6660214f9fbbc08c"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
-			"Rev": "5ab65693f48b284b3f7a83114dd7b166b45f0193"
+			"Comment": "v1.1.3-4-g1f4a164",
+			"Rev": "1f4a1643a57e798696635ea4c126e9127adb7d3c"
 		},
 		{
 			"ImportPath": "github.com/ugorji/go/codec",
