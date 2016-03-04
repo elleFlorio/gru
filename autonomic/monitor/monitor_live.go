@@ -18,11 +18,14 @@ import (
 const W_SIZE = 100
 const W_MULT = 1000
 
-// TODO temp solution to test if
-// a fix works.
-// Try to separate the error channel for stats and events
-var c_mntrerr chan error
-var c_evntstart chan string
+// Manage channels using the proper package
+var ch_mnt_stats_err chan error
+var ch_mnt_events_err chan error
+
+func init() {
+	ch_mnt_stats_err = make(chan error)
+	ch_mnt_events_err = make(chan error)
+}
 
 func Start(cError chan error, cStop chan struct{}) {
 	go startMonitoring(cError, cStop)
@@ -35,10 +38,8 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 	monitorActive = true
 	c_err = cError
 	cStop = cStop
-	c_mntrerr = make(chan error)
-	c_evntstart = make(chan string)
 
-	container.Docker().Client.StartMonitorEvents(eventCallback, c_mntrerr, c_evntstart)
+	container.Docker().Client.StartMonitorEvents(eventCallback, ch_mnt_events_err)
 
 	// Get the list of containers (running or not) to monitor
 	containers, err := container.Docker().Client.ListContainers(true, false, "")
@@ -65,7 +66,7 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 			}
 			setServiceInstanceResources(srv.Name, c.Id)
 			addInstance(c.Id, srv.Name, status, &gruStats, &history)
-			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, c_mntrerr)
+			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, ch_mnt_stats_err)
 			if status == "pending" {
 				startMonitorLog(c.Id)
 			}
@@ -74,10 +75,12 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 
 	for monitorActive {
 		select {
-		case err := <-c_mntrerr:
-			monitorError(err)
-		case newId := <-c_evntstart:
-			container.Docker().Client.StartMonitorStats(newId, statCallBack, c_mntrerr)
+		case err := <-ch_mnt_events_err:
+			log.WithField("err", err).Debugln("Error monitoring containers events")
+			c_err <- err
+		case err := <-ch_mnt_stats_err:
+			log.WithField("err", err).Debugln("Error monitoring containers stats")
+			c_err <- err
 		}
 	}
 }
@@ -90,7 +93,7 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		log.WithField("type", event.Type).Debugln("Received event with type different from 'container'")
 		return
 	}
-	c_evntstart := args[0].(chan string)
+
 	srv, err := service.GetServiceByImage(event.From)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -104,11 +107,11 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 	case "create":
 		log.WithField("image", event.From).Debugln("Received create signal")
 		setServiceInstanceResources(srv.Name, event.ID)
+		container.Docker().Client.StartMonitorStats(event.ID, statCallBack, ch_mnt_stats_err)
 	case "start":
 		log.WithField("image", event.From).Debugln("Received start signal")
 		addInstance(event.ID, srv.Name, "pending", &gruStats, &history)
 		startMonitorLog(event.ID)
-		c_evntstart <- event.ID
 	case "stop":
 		log.WithField("image", event.From).Debugln("Received stop signal")
 	case "kill":
@@ -304,6 +307,8 @@ func removeInstance(id string, stats *GruStats, hist *statsHistory) {
 	}
 	stopped = append(stopped[:index], stopped[index+1:]...)
 	srv.Instances.Stopped = stopped
+
+	service.RemoveInstanceAddress(id)
 }
 
 func findIdIndex(id string, instances []string) (int, error) {

@@ -97,5 +97,4 @@ func UnregisterServiceInstance(name string, id string) {
 		return
 	}
 	ch_stop <- struct{}{}
-	RemoveInstanceAddress(id)
 }
