@@ -160,11 +160,6 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 		}
 	}
 
-	log.WithFields(log.Fields{
-		"nValues": nValues,
-		"valid":   valid,
-	}).Debugln("INSTANCE CPU USAGE")
-
 	return math.Min(1.0, sum/float64(valid))
 }
 

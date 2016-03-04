@@ -49,7 +49,7 @@ func RunLoop(loopTimeInterval int) {
 			log.Infoln("-------------------------")
 
 		case <-ch_err:
-			log.Errorln("Error running autonomic loop")
+			log.Debugln("Error running autonomic loop")
 		case <-ch_stop:
 			ticker.Stop()
 		}

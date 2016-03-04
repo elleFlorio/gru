@@ -3,6 +3,7 @@ package monitor
 import (
 	"testing"
 
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
@@ -15,6 +16,7 @@ import (
 )
 
 func init() {
+	log.SetLevel(log.ErrorLevel)
 	storage.New("internal")
 	discovery.New("noservice", "")
 	cfg.GetAgentDiscovery().TTL = 5
@@ -113,6 +115,19 @@ func TestResetEventsStats(t *testing.T) {
 	assert.Equal(t, 0, len(mockStats.Service[srvName].Events.Stop))
 }
 
+func TestFindIdIndex(t *testing.T) {
+	instances := []string{
+		"instance1_1",
+		"instance1_2",
+		"instance1_3",
+		"instance1_4",
+		"instance2_1",
+	}
+
+	index, _ := findIdIndex("instance1_3", instances)
+	assert.Equal(t, 2, index, "index of 'instance3' should be 2")
+}
+
 func TestAddInstance(t *testing.T) {
 	defer resetMockServices()
 
@@ -167,7 +182,7 @@ func TestAddInstance(t *testing.T) {
 		"(pending -> running) Service 2 - instances - pending, should not contain added instance")
 }
 
-func TestRemoveInstance(t *testing.T) {
+func TeststopInstance(t *testing.T) {
 	defer resetMockServices()
 
 	mockStats := CreateMockStats()
@@ -178,10 +193,10 @@ func TestRemoveInstance(t *testing.T) {
 	srv, _ := service.GetServiceByName(serviceName)
 
 	// check error
-	removeInstance("pippo", &mockStats, &mockHist)
+	stopInstance("pippo", &mockStats, &mockHist)
 
 	// check running
-	removeInstance(mockInstId_r, &mockStats, &mockHist)
+	stopInstance(mockInstId_r, &mockStats, &mockHist)
 	serviceStatsInst := srv.Instances.Running
 	instancesStats := []string{}
 	for k, _ := range mockStats.Instance {
@@ -196,7 +211,7 @@ func TestRemoveInstance(t *testing.T) {
 		"(running) Events Stop should contain 'instance2_1'")
 
 	// check pending
-	removeInstance(mockInstId_p, &mockStats, &mockHist)
+	stopInstance(mockInstId_p, &mockStats, &mockHist)
 	serviceStatsInst = srv.Instances.Pending
 	instancesStats = []string{}
 	for k, _ := range mockStats.Instance {
@@ -211,17 +226,34 @@ func TestRemoveInstance(t *testing.T) {
 		"(running) Events Stop should contain 'instance1_3'")
 }
 
-func TestFindIdIndex(t *testing.T) {
-	instances := []string{
-		"instance1_1",
-		"instance1_2",
-		"instance1_3",
-		"instance1_4",
-		"instance2_1",
-	}
+func TestRemoveInstance(t *testing.T) {
+	defer resetMockServices()
+	defer log.SetLevel(log.ErrorLevel)
 
-	index, _ := findIdIndex("instance1_3", instances)
-	assert.Equal(t, 2, index, "index of 'instance3' should be 2")
+	mockStats := CreateMockStats()
+	mockHist := CreateMockHistory()
+	service1 := "service1"
+	mockInstId_s := "instance1_0"
+	service2 := "service2"
+	mockInstId_r := "instance2_1"
+	mockInstId_wrong := "pippo"
+
+	removeInstance(mockInstId_s, &mockStats, &mockHist)
+	srv1, _ := service.GetServiceByName(service1)
+	assert.NotContains(t, srv1.Instances.Running, mockInstId_r)
+	assert.NotContains(t, srv1.Instances.Pending, mockInstId_r)
+	assert.NotContains(t, srv1.Instances.Stopped, mockInstId_r)
+
+	removeInstance(mockInstId_r, &mockStats, &mockHist)
+	srv2, _ := service.GetServiceByName(service2)
+	assert.NotContains(t, srv2.Instances.Running, mockInstId_r)
+	assert.NotContains(t, srv2.Instances.Pending, mockInstId_r)
+	assert.NotContains(t, srv2.Instances.Stopped, mockInstId_r)
+
+	// Check the log for this test
+	log.SetLevel(log.DebugLevel)
+	removeInstance(mockInstId_wrong, &mockStats, &mockHist)
+
 }
 
 func TestConvertStatsToData(t *testing.T) {

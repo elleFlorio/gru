@@ -18,6 +18,12 @@ import (
 const W_SIZE = 100
 const W_MULT = 1000
 
+// TODO temp solution to test if
+// a fix works.
+// Try to separate the error channel for stats and events
+var c_mntrerr chan error
+var c_evntstart chan string
+
 func Start(cError chan error, cStop chan struct{}) {
 	go startMonitoring(cError, cStop)
 }
@@ -29,8 +35,8 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 	monitorActive = true
 	c_err = cError
 	cStop = cStop
-	c_mntrerr := make(chan error)
-	c_evntstart := make(chan string)
+	c_mntrerr = make(chan error)
+	c_evntstart = make(chan string)
 
 	container.Docker().Client.StartMonitorEvents(eventCallback, c_mntrerr, c_evntstart)
 
@@ -78,6 +84,7 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 
 // Events are: attach, commit, copy, create, destroy, die, exec_create, exec_start, export, kill, oom, pause, rename, resize, restart, start, stop, top, unpause, update
 func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}) {
+	log.Debugln("Received event")
 	// By now we do not handle events with type != container
 	if event.Type != "container" {
 		log.WithField("type", event.Type).Debugln("Received event with type different from 'container'")
@@ -95,9 +102,10 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 
 	switch event.Status {
 	case "create":
-		log.WithField("image", event.From).Debugln("Created new container")
+		log.WithField("image", event.From).Debugln("Received create signal")
 		setServiceInstanceResources(srv.Name, event.ID)
 	case "start":
+		log.WithField("image", event.From).Debugln("Received start signal")
 		addInstance(event.ID, srv.Name, "pending", &gruStats, &history)
 		startMonitorLog(event.ID)
 		c_evntstart <- event.ID
@@ -106,10 +114,12 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 	case "kill":
 		log.WithField("image", event.From).Debugln("Received kill signal")
 	case "die":
-		removeInstance(event.ID, &gruStats, &history)
+		log.WithField("image", event.From).Debugln("Received die signal")
+		stopInstance(event.ID, &gruStats, &history)
 	case "destroy":
 		log.WithField("id", event.ID).Debugln("Received destroy signal")
 		freeServiceInstanceResources(srv.Name, event.ID)
+		removeInstance(event.ID, &gruStats, &history)
 	default:
 		log.WithFields(log.Fields{
 			"err":   "event not handled",
@@ -230,11 +240,10 @@ func addInstance(id string, srvName string, status string, stats *GruStats, hist
 	}).Infoln("Added resource to monitor")
 }
 
-// TODO this should be 'stopInstance', then I need a function called 'removeInstance'
-func removeInstance(id string, stats *GruStats, hist *statsHistory) {
+func stopInstance(id string, stats *GruStats, hist *statsHistory) {
 	srv, err := service.GetServiceById(id)
 	if err != nil {
-		log.Warningln("Cannor remove resource: service unknown")
+		log.Warningln("Cannor stop instance: service unknown")
 		return
 	}
 
@@ -246,7 +255,7 @@ func removeInstance(id string, stats *GruStats, hist *statsHistory) {
 		// If it is not runnig it should be pending
 		index, err = findIdIndex(id, pending)
 		if err != nil {
-			log.WithField("id", id).Errorln("Cannot find pending container to stop")
+			log.WithField("id", id).Debugln("Cannot find pending container to stop")
 			return
 		}
 		pending = append(pending[:index], pending[index+1:]...)
@@ -266,12 +275,35 @@ func removeInstance(id string, stats *GruStats, hist *statsHistory) {
 	delete(stats.Instance, id)
 	delete(hist.instance, id)
 
-	//res.FreeInstanceCores(id)
+	service.UnregisterServiceInstance(srv.Name, id)
 
 	log.WithFields(log.Fields{
 		"service": srv.Name,
 		"id":      id,
-	}).Infoln("Removed instance")
+	}).Infoln("stopped instance")
+}
+
+func freeServiceInstanceResources(name string, id string) {
+	res.FreeInstanceCores(id)
+	res.FreePortsFromService(name, id)
+}
+
+func removeInstance(id string, stats *GruStats, hist *statsHistory) {
+	srv, err := service.GetServiceById(id)
+	if err != nil {
+		log.Warnln("Cannor remove instance: service unknown")
+		return
+	}
+
+	stopInstance(id, stats, hist)
+	stopped := srv.Instances.Stopped
+	index, err := findIdIndex(id, stopped)
+	if err != nil {
+		log.Warnln("Cannot find stopped container to remove")
+		return
+	}
+	stopped = append(stopped[:index], stopped[index+1:]...)
+	srv.Instances.Stopped = stopped
 }
 
 func findIdIndex(id string, instances []string) (int, error) {
@@ -282,11 +314,6 @@ func findIdIndex(id string, instances []string) (int, error) {
 	}
 
 	return -1, ErrNoIndexById
-}
-
-func freeServiceInstanceResources(name string, id string) {
-	res.FreeInstanceCores(id)
-	res.FreePortsFromService(name, id)
 }
 
 func createPortBindings(dockerBindings map[string][]dockerclient.PortBinding) map[string][]string {
@@ -346,7 +373,7 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 }
 
 func monitorError(err error) {
-	log.WithField("err", err).Errorln("Error monitoring containers")
+	log.WithField("err", err).Debugln("Error monitoring containers")
 	c_err <- err
 }
 

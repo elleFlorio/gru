@@ -243,7 +243,7 @@ func GetCoresAvailable(number int) (string, bool) {
 	}
 
 	if len(cores_str) < number {
-		log.Errorln("Error getting available cores: number of free cores < ", number)
+		log.Debugln("Error getting available cores: number of free cores < ", number)
 		mutex_cpu.RUnlock()
 		return "", false
 	}

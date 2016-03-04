@@ -51,7 +51,7 @@ func createCpusetCpus(cpusetcpus string, cores int) string {
 		if assigned, ok := res.GetCoresAvailable(cores); ok {
 			cpusetcpus = assigned
 		} else {
-			log.Errorln("Error setting cpusetcpus in hostconfig")
+			log.Debugln("Error setting cpusetcpus in hostconfig")
 		}
 	}
 
