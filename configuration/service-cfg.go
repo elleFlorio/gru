@@ -1,13 +1,14 @@
 package configuration
 
 type Service struct {
-	Name        string             `json:"name"`
-	Type        string             `json:"type"`
-	Image       string             `json:"image"`
-	Remote      string             `json:"remote"`
-	Instances   ServiceStatus      `json:"instances"`
-	Constraints ServiceConstraints `json:"constraints"`
-	Docker      ServiceDocker      `json:"configuration"`
+	Name          string             `json:"name"`
+	Type          string             `json:"type"`
+	Image         string             `json:"image"`
+	Remote        string             `json:"remote"`
+	DiscoveryPort string             `json:discoveryport`
+	Instances     ServiceStatus      `json:"instances"`
+	Constraints   ServiceConstraints `json:"constraints"`
+	Docker        ServiceDocker      `json:"configuration"`
 }
 
 type ServiceStatus struct {

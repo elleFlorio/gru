@@ -576,3 +576,7 @@ func moveSpecificItem(item string, source []string, dest []string) ([]string, []
 func GetAssignedPorts(name string) map[string][]string {
 	return resources.Network.ServicePorts[name].LastAssigned
 }
+
+func GetRequestedPorts(name string) map[string]string {
+	return resources.Network.ServicePorts[name].LastRequested
+}

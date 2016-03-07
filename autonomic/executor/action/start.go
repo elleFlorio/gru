@@ -5,8 +5,6 @@ import (
 
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/enum"
-	//res "github.com/elleFlorio/gru/resources"
-	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/utils"
 )
 
@@ -46,7 +44,6 @@ func (p *Start) Run(config Action) error {
 		if err != nil {
 			return err
 		}
-		//res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
 
 		return nil
 
@@ -61,7 +58,6 @@ func (p *Start) Run(config Action) error {
 	if err != nil {
 		return err
 	}
-	//res.CheckAndSetSpecificCores(config.HostConfig.CpusetCpus, toStart)
 
 	return nil
 
@@ -75,6 +71,5 @@ func createNewContainer(config Action) (string, error) {
 		log.WithField("err", err).Errorln("Cannot create a new container for service ", config.Service)
 		return "", err
 	}
-	service.SaveInstanceAddress(id, config.Parameters.DiscoveryPort)
 	return id, nil
 }

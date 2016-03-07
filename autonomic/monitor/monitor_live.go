@@ -39,13 +39,13 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 	c_err = cError
 	cStop = cStop
 
-	container.Docker().Client.StartMonitorEvents(eventCallback, ch_mnt_events_err)
-
 	// Get the list of containers (running or not) to monitor
 	containers, err := container.Docker().Client.ListContainers(true, false, "")
 	if err != nil {
 		monitorError(err)
 	}
+
+	container.Docker().Client.StartMonitorEvents(eventCallback, ch_mnt_events_err)
 
 	// Start the monitor for each configured service
 	for _, c := range containers {
@@ -177,6 +177,35 @@ func setServiceInstanceResources(name string, id string) {
 			"err":      err,
 		}).Errorln("Error assigning port resources to new instance")
 	}
+
+	guestPort := service.GetDiscoveryPort(name)
+	if hostPorts, ok := portBindings[guestPort]; ok {
+		if len(hostPorts) > 0 {
+			service.SaveInstanceAddress(id, hostPorts[0])
+
+			log.WithFields(log.Fields{
+				"service":  name,
+				"instance": id,
+				"guest":    guestPort,
+				"host":     hostPorts[0],
+			}).Debugln("Saved instance address")
+
+		} else {
+			log.WithFields(log.Fields{
+				"service":  name,
+				"instance": id,
+				"guest":    guestPort,
+			}).Debugln("Cannot register instance address: host ports < 0")
+		}
+
+	} else {
+		log.WithFields(log.Fields{
+			"service":  name,
+			"instance": id,
+			"guest":    guestPort,
+		}).Debugln("Cannot register instance address: no bindings")
+	}
+
 }
 
 func addInstance(id string, srvName string, status string, stats *GruStats, hist *statsHistory) {
@@ -225,7 +254,6 @@ func addInstance(id string, srvName string, status string, stats *GruStats, hist
 
 	case "stopped":
 		srv.Instances.Stopped = append(srv.Instances.Stopped, id)
-		service.UnregisterServiceInstance(srvName, id)
 		log.Debugln("services stopped: ", srv.Instances.Stopped)
 	case "paused":
 		srv.Instances.Paused = append(srv.Instances.Paused, id)

@@ -17,7 +17,6 @@ func buildConfig(srv *cfg.Service, act enum.Action) action.Action {
 	actConfig := action.Action{}
 	actConfig.HostConfig = createHostConfig(srv, act)
 	actConfig.ContainerConfig = createContainerConfig(srv, act)
-	actConfig.Parameters.DiscoveryPort = getDiscoveryPort(srv, act)
 	actConfig.Service = srv.Name
 	actConfig.Instances = srv.Instances
 	actConfig.ContainerConfig.Image = srv.Image
@@ -125,24 +124,11 @@ func createEnvVars(vars map[string]string) []string {
 
 func createExposedPorts(name string) map[string]struct{} {
 	exposed := make(map[string]struct{})
-	assigned := res.GetAssignedPorts(name)
+	assigned := res.GetRequestedPorts(name)
 	for guest, _ := range assigned {
 		guestTcp := guest + "/tcp"
 		exposed[guestTcp] = struct{}{}
 	}
 
 	return exposed
-}
-
-// The discovery port is the first set by the user
-// in port bindings.
-func getDiscoveryPort(srv *cfg.Service, act enum.Action) string {
-	if act == enum.START {
-		assigned := res.GetResources().Network.ServicePorts[srv.Name].LastRequested
-		for _, host := range assigned {
-			return host
-		}
-	}
-
-	return ""
 }

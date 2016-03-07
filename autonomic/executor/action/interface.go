@@ -21,6 +21,7 @@ func init() {
 		&NoAction{},
 		&Start{},
 		&Stop{},
+		&Remove{},
 	}
 }
 

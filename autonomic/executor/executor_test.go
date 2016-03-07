@@ -121,34 +121,20 @@ func TestCreateEnvVars(t *testing.T) {
 
 func TestCreateExposedPorts(t *testing.T) {
 	service1 := "service1"
-	ports1 := map[string]string{
+	id1 := "pippo"
+	availablePorts1 := map[string]string{
 		"50100": "50100",
 	}
-	resources.InitializeServiceAvailablePorts(service1, ports1)
-	resources.AssignPortsToService(service1)
+	ports1 := map[string][]string{
+		"50100": []string{"50100"},
+	}
+
+	resources.InitializeServiceAvailablePorts(service1, availablePorts1)
+	resources.AssignSpecifiPortsToService(service1, id1, ports1)
 
 	exposed := createExposedPorts(service1)
 	assert.Len(t, exposed, 1)
 	assert.Equal(t, exposed["50100/tcp"], struct{}{})
-}
-
-func TestGetDiscoveryPort(t *testing.T) {
-	defer cfg.CleanServices()
-	services := service.CreateMockServices()
-	cfg.SetServices(services)
-	resources.CreateMockResources(2, "1G", 0, "0G")
-	ports1 := map[string]string{
-		"50100": "50100",
-	}
-	resources.InitializeServiceAvailablePorts("service1", ports1)
-	resources.AssignPortsToService("service1")
-	service1, _ := service.GetServiceByName("service1")
-	var port string
-
-	port = getDiscoveryPort(service1, enum.STOP)
-	assert.Equal(t, "", port)
-	port = getDiscoveryPort(service1, enum.START)
-	assert.Equal(t, "50100", port)
 }
 
 func TestCreateContainerConfig(t *testing.T) {
@@ -156,16 +142,21 @@ func TestCreateContainerConfig(t *testing.T) {
 	services := service.CreateMockServices()
 	cfg.SetServices(services)
 	resources.CreateMockResources(2, "1G", 0, "0G")
-	ports1 := map[string]string{
+	service1 := "service1"
+	id1 := "pippo"
+	availablePorts1 := map[string]string{
 		"50100": "50100",
 	}
-	resources.InitializeServiceAvailablePorts("service1", ports1)
-	resources.AssignPortsToService("service1")
-	service1, _ := service.GetServiceByName("service1")
+	ports1 := map[string][]string{
+		"50100": []string{"50100"},
+	}
+	resources.InitializeServiceAvailablePorts(service1, availablePorts1)
+	resources.AssignSpecifiPortsToService(service1, id1, ports1)
+	srv1, _ := service.GetServiceByName(service1)
 
-	containerConfigStop := createContainerConfig(service1, enum.STOP)
+	containerConfigStop := createContainerConfig(srv1, enum.STOP)
 	assert.Empty(t, containerConfigStop.ExposedPorts)
-	containerConfigStart := createContainerConfig(service1, enum.START)
+	containerConfigStart := createContainerConfig(srv1, enum.START)
 	assert.NotEmpty(t, containerConfigStart.ExposedPorts)
 }
 
@@ -182,5 +173,4 @@ func TestBuildConfig(t *testing.T) {
 
 	config := buildConfig(service1, enum.START)
 	assert.Equal(t, "0", config.HostConfig.CpusetCpus)
-	assert.Equal(t, "50100", config.Parameters.DiscoveryPort)
 }

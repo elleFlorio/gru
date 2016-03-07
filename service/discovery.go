@@ -17,6 +17,21 @@ func init() {
 	addressMap = make(map[string]string)
 }
 
+func GetDiscoveryPort(name string) string {
+	srv, err := GetServiceByName(name)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err":     err,
+			"service": name,
+		}).Debugln("Error getting discovery port")
+
+		return ""
+	}
+
+	return srv.DiscoveryPort
+
+}
+
 func SaveInstanceAddress(id string, port string) {
 	hostIp := net.Config().IpAddress
 	address := "http://" + hostIp + ":" + port

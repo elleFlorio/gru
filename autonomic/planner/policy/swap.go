@@ -18,7 +18,7 @@ func (p *swapCreator) getPolicyName() string {
 }
 
 func (p *swapCreator) listActions() []string {
-	return []string{"stop", "start"}
+	return []string{"stop", "remove", "start"}
 }
 
 func (p *swapCreator) createPolicies(srvList []string, analytics analyzer.GruAnalytics) []Policy {
@@ -30,7 +30,7 @@ func (p *swapCreator) createPolicies(srvList []string, analytics analyzer.GruAna
 			policyName := p.getPolicyName()
 			policyWeight := p.computeWeight(running, inactive, analytics)
 			policyTargets := map[string][]enum.Action{
-				running:  []enum.Action{enum.STOP},
+				running:  []enum.Action{enum.STOP, enum.REMOVE},
 				inactive: []enum.Action{enum.START},
 			}
 
@@ -70,8 +70,9 @@ func (p *swapCreator) createSwapPairs(srvList []string) map[string][]string {
 }
 
 func (p *swapCreator) computeWeight(running string, candidate string, analytics analyzer.GruAnalytics) float64 {
-	srv, _ := service.GetServiceByName(running)
-	nRun := len(srv.Instances.Running)
+	srv_run, _ := service.GetServiceByName(running)
+	srv_cand, _ := service.GetServiceByName(candidate)
+	nRun := len(srv_run.Instances.Running)
 	baseServices := cfg.GetNodeConstraints().BaseServices
 
 	if p.contains(baseServices, running) && nRun < 2 {
@@ -84,6 +85,17 @@ func (p *swapCreator) computeWeight(running string, candidate string, analytics 
 	// If the service has the resources to start without stopping the other
 	// there is no reason to swap them
 	if candAnalytics.Resources.Available > 0 {
+		return 0.0
+	}
+
+	// TODO now this works only with homogeneous containers
+	// and taking into account only the CPUs. This is not a
+	// a good thing, so in the feuture the swap policy should
+	// be able to compare the resources needed by each containers
+	// and evaulte if it is possible to swap a container with
+	// more than one that is active, in order to obtain
+	// the requested amount of resources.
+	if srv_run.Docker.CPUnumber != srv_cand.Docker.CPUnumber {
 		return 0.0
 	}
 

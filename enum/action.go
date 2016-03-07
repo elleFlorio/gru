@@ -7,6 +7,7 @@ const (
 	NOACTION Action = iota
 	START    Action = iota
 	STOP     Action = iota
+	REMOVE   Action = iota
 )
 
 func (a Action) Value() float64 {
@@ -18,6 +19,8 @@ func (a Action) Value() float64 {
 		v = 1.0
 	case a == STOP:
 		v = 2.0
+	case a == REMOVE:
+		v = 3.0
 	}
 
 	return v
@@ -32,6 +35,8 @@ func (a Action) ToString() string {
 		s = "START"
 	case a == STOP:
 		s = "STOP"
+	case a == REMOVE:
+		s = "REMOVE"
 	}
 
 	return s

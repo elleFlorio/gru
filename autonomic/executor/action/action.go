@@ -15,6 +15,5 @@ type Action struct {
 }
 
 type ActionParameters struct {
-	StopTimeout   int
-	DiscoveryPort string
+	StopTimeout int
 }
