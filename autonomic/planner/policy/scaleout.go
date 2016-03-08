@@ -49,9 +49,9 @@ func (p *scaleoutCreator) computeWeight(name string, analytics analyzer.GruAnaly
 	inst_run := len(srv.Instances.Running)
 	inst_pen := len(srv.Instances.Pending)
 
-	if (inst_pen + inst_run) > 0 {
-		return 0.0
-	}
+	// if (inst_pen + inst_run) > 0 {
+	// 	return 0.0
+	// }
 
 	srvAnalytics := analytics.Service[name]
 	if srvAnalytics.Resources.Available < 1.0 {
