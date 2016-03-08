@@ -46,8 +46,8 @@ func (p *scaleoutCreator) createPolicies(srvList []string, analytics analyzer.Gr
 
 func (p *scaleoutCreator) computeWeight(name string, analytics analyzer.GruAnalytics) float64 {
 	srv, _ := service.GetServiceByName(name)
-	inst_run := len(srv.Instances.Running)
-	inst_pen := len(srv.Instances.Pending)
+	// inst_run := len(srv.Instances.Running)
+	// inst_pen := len(srv.Instances.Pending)
 
 	// if (inst_pen + inst_run) > 0 {
 	// 	return 0.0
