@@ -160,7 +160,11 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 		}
 	}
 
-	return math.Min(1.0, sum/float64(valid))
+	if valid > 0.0 {
+		return math.Min(1.0, sum/float64(valid))
+	}
+
+	return 0.0
 }
 
 func computeServiceMemory(name string, stats *GruStats) {

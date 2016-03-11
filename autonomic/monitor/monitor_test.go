@@ -46,8 +46,12 @@ func TestComputeInstanceCpuPerc(t *testing.T) {
 	mockSysCpus := []float64{1000000, 1100000, 1200000, 1300000, 1400000, 1500000}
 
 	mockPerc := computeInstanceCpuPerc(mockInstCpus, mockSysCpus)
-
 	assert.Equal(t, 0.1, mockPerc)
+
+	mockInstCpus = []float64{10000, 10000, 10000, 10000, 10000, 10000}
+
+	mockPerc = computeInstanceCpuPerc(mockInstCpus, mockSysCpus)
+	assert.Equal(t, 0.0, mockPerc)
 }
 
 func TestComputeServiceCpuPerc(t *testing.T) {
