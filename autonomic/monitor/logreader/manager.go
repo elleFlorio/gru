@@ -28,6 +28,7 @@ type MetricManager struct {
 }
 
 const sep string = ":"
+const c_CH_BUFFER_SIZE int = 10
 
 var (
 	manager         *MetricManager
@@ -40,7 +41,7 @@ func newManager() *MetricManager {
 		make(map[string]metricsMap),
 		make(chan struct{}),
 		make(chan servicesMap),
-		make(chan logEntry),
+		make(chan logEntry, c_CH_BUFFER_SIZE),
 		make(chan struct{}),
 	}
 
