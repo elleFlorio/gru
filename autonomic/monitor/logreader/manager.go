@@ -69,7 +69,8 @@ func (m *MetricManager) startLogReaderManager() {
 		case e = <-m.ch_data:
 			m.addValue(e)
 		case <-m.ch_notify:
-			m.ch_get <- m.ServiceMetrics
+			metricsCopy := m.copyMetrics()
+			m.ch_get <- metricsCopy
 			m.cleanMetrics()
 		case <-m.ch_stop:
 			return
@@ -93,6 +94,15 @@ func (m *MetricManager) addValue(entry logEntry) {
 	metric = append(metric, entry.value)
 	srv[entry.metric] = metric
 	m.ServiceMetrics[entry.service] = srv
+}
+
+func (m *MetricManager) copyMetrics() servicesMap {
+	metricsCopy := make(servicesMap)
+	for k, v := range m.ServiceMetrics {
+		metricsCopy[k] = v
+	}
+
+	return metricsCopy
 }
 
 func (m *MetricManager) cleanMetrics() {
