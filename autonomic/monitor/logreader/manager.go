@@ -84,6 +84,15 @@ func (m *MetricManager) addValue(entry logEntry) {
 	var metric []float64
 	var exists bool
 
+	if entry.value < 0.0 {
+		log.WithFields(log.Fields{
+			"service": entry.service,
+			"metric":  entry.metric,
+			"value":   entry.value,
+		}).Warnln("Metric value < 0")
+		return
+	}
+
 	if srv, exists = m.ServiceMetrics[entry.service]; !exists {
 		srv = make(metricsMap)
 	}
