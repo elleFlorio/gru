@@ -33,17 +33,17 @@ func TestList(t *testing.T) {
 
 func TestMakeDecision(t *testing.T) {
 	var plc *policy.Policy
-
-	targets := map[string][]enum.Action{
+	targets := []string{"pippo"}
+	actions := map[string][]enum.Action{
 		"pippo": []enum.Action{enum.START},
 	}
 
 	policies := []policy.Policy{
-		policy.CreateMockPolicy("p", 0.0, targets),
-		policy.CreateMockPolicy("p", 0.2, targets),
-		policy.CreateMockPolicy("p", 0.5, targets),
-		policy.CreateMockPolicy("p", 0.8, targets),
-		policy.CreateMockPolicy("p", 1.0, targets),
+		policy.CreateMockPolicy("p", 0.0, targets, actions),
+		policy.CreateMockPolicy("p", 0.2, targets, actions),
+		policy.CreateMockPolicy("p", 0.5, targets, actions),
+		policy.CreateMockPolicy("p", 0.8, targets, actions),
+		policy.CreateMockPolicy("p", 1.0, targets, actions),
 	}
 
 	New("dummy")
@@ -51,10 +51,10 @@ func TestMakeDecision(t *testing.T) {
 	assert.Equal(t, plc.Weight, 1.0)
 
 	policies = []policy.Policy{
-		policy.CreateMockPolicy("p", 0.0, targets),
-		policy.CreateMockPolicy("p", 0.0, targets),
-		policy.CreateMockPolicy("p", 0.0, targets),
-		policy.CreateMockPolicy("p", 0.2, targets),
+		policy.CreateMockPolicy("p", 0.0, targets, actions),
+		policy.CreateMockPolicy("p", 0.0, targets, actions),
+		policy.CreateMockPolicy("p", 0.0, targets, actions),
+		policy.CreateMockPolicy("p", 0.2, targets, actions),
 	}
 
 	New("probabilistic")

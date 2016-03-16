@@ -48,7 +48,7 @@ func TestUpdateMetrics(t *testing.T) {
 
 	monitor.StoreMockStats()
 	analyzer.StoreMockAnalytics()
-	plc := policy.CreateMockPolicy("policy", 1.0, map[string][]enum.Action{})
+	plc := policy.CreateMockPolicy("policy", 1.0, []string{"pippo"}, map[string][]enum.Action{})
 	planner.StoreMockPolicy(plc)
 	UpdateMetrics()
 	assert.Equal(t, 0.7, Metrics().Service["service1"].Stats.CpuTot)

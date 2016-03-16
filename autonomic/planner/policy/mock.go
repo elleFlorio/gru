@@ -16,8 +16,8 @@ func init() {
 	gen = rand.New(source)
 }
 
-func CreateMockPolicy(name string, weight float64, targets map[string][]enum.Action) Policy {
-	return Policy{name, weight, targets}
+func CreateMockPolicy(name string, weight float64, targets []string, actions map[string][]enum.Action) Policy {
+	return Policy{name, weight, targets, actions}
 }
 
 func CreateRandomMockPolicies(nServices int) []Policy {
@@ -37,8 +37,9 @@ func createRandomScalePolicies(srvList []string) []Policy {
 		for _, srv := range srvList {
 			name := inOut
 			weight := randUniform(0, 1)
-			targets := map[string][]enum.Action{srv: []enum.Action{enum.STOP}}
-			policies = append(policies, CreateMockPolicy(name, weight, targets))
+			targets := []string{srv}
+			actions := map[string][]enum.Action{srv: []enum.Action{enum.STOP}}
+			policies = append(policies, CreateMockPolicy(name, weight, targets, actions))
 		}
 	}
 

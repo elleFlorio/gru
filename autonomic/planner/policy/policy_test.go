@@ -50,9 +50,9 @@ func TestScaleIn(t *testing.T) {
 	w1 := creator.computeWeight("service1", analytics)
 	w2 := creator.computeWeight("service2", analytics)
 	w3 := creator.computeWeight("service3", analytics)
-	assert.InEpsilon(t, 0.0, w1, c_EPSILON)
-	assert.InEpsilon(t, 0.16, w2, c_EPSILON)
-	assert.InEpsilon(t, 0.0, w3, c_EPSILON)
+	assert.InDelta(t, 0.0, w1, c_EPSILON)
+	assert.InDelta(t, 0.16, w2, c_EPSILON)
+	assert.InDelta(t, 0.0, w3, c_EPSILON)
 }
 
 func TestScaleOut(t *testing.T) {
@@ -63,10 +63,10 @@ func TestScaleOut(t *testing.T) {
 	w2 := creator.computeWeight("service2", analytics)
 	w3 := creator.computeWeight("service3", analytics)
 	w4 := creator.computeWeight("service4", analytics)
-	assert.InEpsilon(t, 0.0, w1, c_EPSILON)
-	assert.InEpsilon(t, 0.0, w2, c_EPSILON)
-	assert.InEpsilon(t, 0.0, w3, c_EPSILON)
-	assert.InEpsilon(t, 0.25, w4, c_EPSILON)
+	assert.InDelta(t, 0.5, w1, c_EPSILON)
+	assert.InDelta(t, 0.0, w2, c_EPSILON)
+	assert.InDelta(t, 0.0, w3, c_EPSILON)
+	assert.InDelta(t, 0.25, w4, c_EPSILON)
 }
 
 func TestSwap(t *testing.T) {
@@ -96,14 +96,14 @@ func TestSwap(t *testing.T) {
 	w13 := creator.computeWeight("service1", "service3", analytics)
 	w14 := creator.computeWeight("service1", "service4", analytics)
 	w15 := creator.computeWeight("service1", "service5", analytics)
-	assert.InEpsilon(t, 0.16, w13, c_EPSILON)
+	assert.InDelta(t, 0.16, w13, c_EPSILON)
 	assert.Equal(t, 0.0, w14)
 	assert.Equal(t, 0.0, w15)
 
 	w23 := creator.computeWeight("service2", "service3", analytics)
 	w24 := creator.computeWeight("service2", "service4", analytics)
 	w25 := creator.computeWeight("service2", "service5", analytics)
-	assert.InEpsilon(t, 0.8, w23, c_EPSILON)
+	assert.InDelta(t, 0.8, w23, c_EPSILON)
 	assert.Equal(t, 0.0, w24)
 	assert.Equal(t, 0.0, w25)
 }

@@ -88,7 +88,7 @@ func convertPolicyToData(chosenPolicy *policy.Policy) ([]byte, error) {
 
 func displayPolicy(chosenPolicy *policy.Policy) {
 	targets := make([]string, 0, len(chosenPolicy.Targets))
-	for target, _ := range chosenPolicy.Targets {
+	for _, target := range chosenPolicy.Targets {
 		targets = append(targets, target)
 	}
 

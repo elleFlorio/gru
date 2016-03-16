@@ -33,7 +33,8 @@ func Run(chosenPolicy *policy.Policy) {
 	if chosenPolicy == nil {
 		log.WithField("err", "No policy to execute").Warnln("Cannot execute actions")
 	} else {
-		for target, actions := range chosenPolicy.Targets {
+		for _, target := range chosenPolicy.Targets {
+			actions := chosenPolicy.Actions[target]
 			srv := getTargetService(target)
 			executeActions(srv, actions)
 		}
