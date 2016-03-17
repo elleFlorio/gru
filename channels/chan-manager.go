@@ -11,12 +11,16 @@ var (
 	ch_action    chan ActionMessage
 	ch_instances map[string]chan struct{}
 	ch_removal   chan struct{}
+
+	needsRemovalNotification bool
 )
 
 func init() {
 	ch_action = make(chan ActionMessage)
 	ch_instances = make(map[string]chan struct{})
 	ch_removal = make(chan struct{})
+
+	needsRemovalNotification = false
 }
 
 func GetActionChannel() chan ActionMessage {
@@ -36,6 +40,14 @@ func getChannel(name string) interface{} {
 	}
 
 	return nil
+}
+
+func SetRemovalNotification(value bool) {
+	needsRemovalNotification = value
+}
+
+func NeedsRemovalNotification() bool {
+	return needsRemovalNotification
 }
 
 func SendActionStartMessage(target *cfg.Service) {

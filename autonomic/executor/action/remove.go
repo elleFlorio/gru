@@ -30,6 +30,8 @@ func (p *Remove) Run(config Action) error {
 		return errNoContainerToRemove
 	}
 
+	ch.SetRemovalNotification(true)
+
 	toRemove := stopped[0]
 	// Assumption: I remove only stopped containers; containers have no volume
 	err = container.Docker().Client.RemoveContainer(toRemove, false, false)
@@ -54,5 +56,6 @@ func (p *Remove) Run(config Action) error {
 }
 
 func waitForRemoval() {
+	log.Debugln("Waiting for removal confirmation...")
 	<-ch.GetRemovalChannel()
 }

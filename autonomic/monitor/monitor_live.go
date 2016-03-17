@@ -28,6 +28,12 @@ func init() {
 	ch_mnt_events_err = make(chan error)
 }
 
+func Stop() {
+	monitorActive = false
+	log.Warnln("Autonomic monitor stopped")
+	c_stop <- struct{}{}
+}
+
 func Start(cError chan error, cStop chan struct{}) {
 	go startMonitoring(cError, cStop)
 }
@@ -82,8 +88,6 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 		case err := <-ch_mnt_stats_err:
 			log.WithField("err", err).Debugln("Error monitoring containers stats")
 			c_err <- err
-		case <-ch.GetRemovalChannel():
-			log.Debugln("Removal notification sent")
 		}
 	}
 }
@@ -134,6 +138,8 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 			"image": event.From,
 		}).Debugln("Received unknown signal")
 	}
+
+	log.Debugln("Event handled")
 
 }
 
@@ -354,7 +360,10 @@ func findIdIndex(id string, instances []string) (int, error) {
 }
 
 func notifyRemoval() {
-	ch.GetRemovalChannel() <- struct{}{}
+	if ch.NeedsRemovalNotification() {
+		ch.GetRemovalChannel() <- struct{}{}
+		ch.SetRemovalNotification(false)
+	}
 }
 
 func createPortBindings(dockerBindings map[string][]dockerclient.PortBinding) map[string][]string {
@@ -416,10 +425,4 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 func monitorError(err error) {
 	log.WithField("err", err).Debugln("Error monitoring containers")
 	c_err <- err
-}
-
-func Stop() {
-	monitorActive = false
-	log.Warnln("Autonomic monitor stopped")
-	c_stop <- struct{}{}
 }
