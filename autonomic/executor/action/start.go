@@ -40,7 +40,12 @@ func (p *Start) Run(config Action) error {
 			"service": config.Service,
 		}).Debugln("Starting a stopped container")
 		toStart = stopped[0]
-		err = container.Docker().Client.StartContainer(toStart, config.HostConfig)
+		info, err := container.Docker().Client.InspectContainer(toStart)
+		if err != nil {
+			return err
+		}
+
+		err = container.Docker().Client.StartContainer(toStart, info.HostConfig)
 		if err != nil {
 			return err
 		}
