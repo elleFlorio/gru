@@ -5,6 +5,7 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
+	ch "github.com/elleFlorio/gru/channels"
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/enum"
 )
@@ -42,10 +43,16 @@ func (p *Remove) Run(config Action) error {
 		return err
 	}
 
+	waitForRemoval()
+
 	log.WithFields(log.Fields{
 		"service":  config.Service,
 		"instance": toRemove,
 	}).Debugln("Removed container")
 
 	return nil
+}
+
+func waitForRemoval() {
+	<-ch.GetRemovalChannel()
 }

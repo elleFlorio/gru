@@ -10,21 +10,29 @@ import (
 var (
 	ch_action    chan ActionMessage
 	ch_instances map[string]chan struct{}
+	ch_removal   chan struct{}
 )
 
 func init() {
 	ch_action = make(chan ActionMessage)
 	ch_instances = make(map[string]chan struct{})
+	ch_removal = make(chan struct{})
 }
 
 func GetActionChannel() chan ActionMessage {
 	return getChannel("action").(chan ActionMessage)
 }
 
+func GetRemovalChannel() chan struct{} {
+	return getChannel("removal").(chan struct{})
+}
+
 func getChannel(name string) interface{} {
 	switch name {
 	case "action":
 		return ch_action
+	case "removal":
+		return ch_removal
 	}
 
 	return nil

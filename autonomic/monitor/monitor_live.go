@@ -9,6 +9,7 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 
 	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
+	ch "github.com/elleFlorio/gru/channels"
 	"github.com/elleFlorio/gru/container"
 	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
@@ -81,6 +82,8 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 		case err := <-ch_mnt_stats_err:
 			log.WithField("err", err).Debugln("Error monitoring containers stats")
 			c_err <- err
+		case <-ch.GetRemovalChannel():
+			log.Debugln("Removal notification sent")
 		}
 	}
 }
@@ -123,6 +126,7 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		log.WithField("id", event.ID).Debugln("Received destroy signal")
 		freeServiceInstanceResources(srv.Name, event.ID)
 		removeInstance(event.ID, &gruStats, &history)
+		notifyRemoval()
 	default:
 		log.WithFields(log.Fields{
 			"err":   "event not handled",
@@ -347,6 +351,10 @@ func findIdIndex(id string, instances []string) (int, error) {
 	}
 
 	return -1, ErrNoIndexById
+}
+
+func notifyRemoval() {
+	ch.GetRemovalChannel() <- struct{}{}
 }
 
 func createPortBindings(dockerBindings map[string][]dockerclient.PortBinding) map[string][]string {
