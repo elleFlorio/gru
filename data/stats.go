@@ -1,4 +1,4 @@
-package monitor
+package data
 
 import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"

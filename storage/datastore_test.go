@@ -42,6 +42,8 @@ func TestStoreData(t *testing.T) {
 	assert.NoError(t, err)
 	err = StoreData(key, data, enum.POLICIES)
 	assert.NoError(t, err)
+	err = StoreData(key, data, enum.INFO)
+	assert.NoError(t, err)
 }
 
 func TestGetData(t *testing.T) {
@@ -56,11 +58,14 @@ func TestGetData(t *testing.T) {
 	StoreData(key, data, enum.STATS)
 	StoreData(key, data, enum.ANALYTICS)
 	StoreData(key, data, enum.POLICIES)
+	StoreData(key, data, enum.INFO)
 	value, _ = GetData(key, enum.STATS)
 	assert.Equal(t, data, value)
 	value, _ = GetData(key, enum.ANALYTICS)
 	assert.Equal(t, data, value)
 	value, _ = GetData(key, enum.POLICIES)
+	assert.Equal(t, data, value)
+	value, _ = GetData(key, enum.INFO)
 	assert.Equal(t, data, value)
 }
 
@@ -75,6 +80,8 @@ func TestGetAllData(t *testing.T) {
 	_, err = GetAllData(enum.ANALYTICS)
 	assert.NoError(t, err)
 	_, err = GetAllData(enum.POLICIES)
+	assert.NoError(t, err)
+	_, err = GetAllData(enum.INFO)
 	assert.NoError(t, err)
 }
 
@@ -91,6 +98,7 @@ func TestDeleteData(t *testing.T) {
 	StoreData(key, data, enum.STATS)
 	StoreData(key, data, enum.ANALYTICS)
 	StoreData(key, data, enum.POLICIES)
+	StoreData(key, data, enum.INFO)
 
 	err = DeleteData(key, enum.STATS)
 	assert.NoError(t, err)
@@ -103,6 +111,10 @@ func TestDeleteData(t *testing.T) {
 	err = DeleteData(key, enum.POLICIES)
 	assert.NoError(t, err)
 	value, _ = GetData(key, enum.POLICIES)
+	assert.Nil(t, value)
+	err = DeleteData(key, enum.INFO)
+	assert.NoError(t, err)
+	value, _ = GetData(key, enum.INFO)
 	assert.Nil(t, value)
 }
 
@@ -119,6 +131,7 @@ func TestDeleteAllData(t *testing.T) {
 	StoreData(key, data, enum.STATS)
 	StoreData(key, data, enum.ANALYTICS)
 	StoreData(key, data, enum.POLICIES)
+	StoreData(key, data, enum.INFO)
 
 	err = DeleteAllData(enum.STATS)
 	assert.NoError(t, err)
@@ -131,6 +144,10 @@ func TestDeleteAllData(t *testing.T) {
 	err = DeleteAllData(enum.POLICIES)
 	assert.NoError(t, err)
 	value, _ = GetAllData(enum.POLICIES)
+	assert.Empty(t, value)
+	err = DeleteAllData(enum.INFO)
+	assert.NoError(t, err)
+	value, _ = GetAllData(enum.INFO)
 	assert.Empty(t, value)
 }
 

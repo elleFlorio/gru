@@ -1,4 +1,4 @@
-package analyzer
+package data
 
 import (
 	cfg "github.com/elleFlorio/gru/configuration"

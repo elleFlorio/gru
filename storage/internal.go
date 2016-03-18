@@ -12,6 +12,7 @@ var (
 	mutex_s                  = sync.RWMutex{}
 	mutex_a                  = sync.RWMutex{}
 	mutex_p                  = sync.RWMutex{}
+	mutex_i                  = sync.RWMutex{}
 	ErrInvalidDataType error = errors.New("Invalid data type")
 	ErrNoData          error = errors.New("No such data")
 )
@@ -20,6 +21,7 @@ type internal struct {
 	statsData     map[string][]byte
 	analyticsData map[string][]byte
 	policiesData  map[string][]byte
+	infoData      map[string][]byte
 }
 
 func (p *internal) Name() string {
@@ -30,6 +32,7 @@ func (p *internal) Initialize() error {
 	p.statsData = make(map[string][]byte)
 	p.analyticsData = make(map[string][]byte)
 	p.policiesData = make(map[string][]byte)
+	p.infoData = make(map[string][]byte)
 	return nil
 }
 
@@ -47,6 +50,10 @@ func (p *internal) StoreData(key string, data []byte, dataType enum.Datatype) er
 		mutex_p.Lock()
 		p.policiesData[key] = data
 		mutex_p.Unlock()
+	case enum.INFO:
+		mutex_i.Lock()
+		p.infoData[key] = data
+		mutex_i.Unlock()
 	}
 	runtime.Gosched()
 
@@ -69,6 +76,10 @@ func (p *internal) GetData(key string, dataType enum.Datatype) ([]byte, error) {
 		mutex_p.RLock()
 		data, ok = p.policiesData[key]
 		mutex_p.RUnlock()
+	case enum.INFO:
+		mutex_i.RLock()
+		data, ok = p.infoData[key]
+		mutex_i.RUnlock()
 	}
 	runtime.Gosched()
 
@@ -94,6 +105,10 @@ func (p *internal) GetAllData(dataType enum.Datatype) (map[string][]byte, error)
 		mutex_p.RLock()
 		data = p.policiesData
 		mutex_p.RUnlock()
+	case enum.INFO:
+		mutex_i.RLock()
+		data = p.infoData
+		mutex_i.RUnlock()
 	}
 	runtime.Gosched()
 
@@ -114,6 +129,10 @@ func (p *internal) DeleteData(key string, dataType enum.Datatype) error {
 		mutex_p.Lock()
 		delete(p.policiesData, key)
 		mutex_p.Unlock()
+	case enum.INFO:
+		mutex_i.Lock()
+		delete(p.infoData, key)
+		mutex_i.Unlock()
 	}
 
 	return nil
@@ -133,6 +152,10 @@ func (p *internal) DeleteAllData(dataType enum.Datatype) error {
 		mutex_p.Lock()
 		p.policiesData = make(map[string][]byte)
 		mutex_p.Unlock()
+	case enum.INFO:
+		mutex_i.Lock()
+		p.infoData = make(map[string][]byte)
+		mutex_i.Unlock()
 	}
 	runtime.Gosched()
 
