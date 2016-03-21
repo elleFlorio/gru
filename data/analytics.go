@@ -32,7 +32,7 @@ type SystemAnalytics struct {
 }
 
 type ClusterAnalytics struct {
-	Services           []string           `json:"services"`
-	ResourcesAnalytics ResourcesAnalytics `json:"resources"`
-	Health             float64            `json:"health"`
+	Services  []string           `json:"services"`
+	Resources ResourcesAnalytics `json:"resources"`
+	Health    float64            `json:"health"`
 }

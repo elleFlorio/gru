@@ -1,32 +1,31 @@
 package analyzer
 
 import (
-	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/storage"
+	"github.com/elleFlorio/gru/data"
 )
 
-func getAnalytics() GruAnalytics {
-	data, _ := storage.GetClusterData(enum.ANALYTICS)
-	analytics, _ := convertDataToAnalytics(data)
+func getAnalytics() data.GruAnalytics {
+	analytics, _ := data.GetAnalytics()
+
 	return analytics
 }
 
-func GetNodeAnalytics() GruAnalytics {
+func GetNodeAnalytics() data.GruAnalytics {
 	return getAnalytics()
 }
 
-func GetServiceAnalytics(name string) ServiceAnalytics {
+func GetServiceAnalytics(name string) data.ServiceAnalytics {
 	return getAnalytics().Service[name]
 }
 
-func GetServicesAnalytics() map[string]ServiceAnalytics {
+func GetServicesAnalytics() map[string]data.ServiceAnalytics {
 	return getAnalytics().Service
 }
 
-func GetSystemAnalytics() SystemAnalytics {
+func GetSystemAnalytics() data.SystemAnalytics {
 	return getAnalytics().System
 }
 
-func GetClusterAnalytics() ClusterAnalytics {
+func GetClusterAnalytics() data.ClusterAnalytics {
 	return getAnalytics().Cluster
 }

@@ -1,10 +1,12 @@
-package monitor
+package data
 
 import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
 )
 
 const maxHistory = 6
+const c_W_SIZE = 100
+const c_W_MULT = 1000
 
 func ListMockServices() []string {
 	return []string{
@@ -15,7 +17,7 @@ func ListMockServices() []string {
 
 func StoreMockStats() {
 	stats := CreateMockStats()
-	saveStats(stats)
+	SaveStats(stats)
 }
 
 func MaxNumberOfEntryInHistory() int {
@@ -106,9 +108,9 @@ func CreateMockStats() GruStats {
 	return mockStats
 }
 
-func CreateMockHistory() statsHistory {
+func CreateMockHistory() StatsHistory {
 
-	cpuSysAll := window.New(W_SIZE, W_MULT)
+	cpuSysAll := window.New(c_W_SIZE, c_W_MULT)
 	cpuSysAll.PushBack(float64(1000000))
 	cpuSysAll.PushBack(float64(1100000))
 	cpuSysAll.PushBack(float64(1200000))
@@ -116,14 +118,14 @@ func CreateMockHistory() statsHistory {
 	cpuSysAll.PushBack(float64(1400000))
 	cpuSysAll.PushBack(float64(1500000))
 
-	cpuTot1_1 := window.New(W_SIZE, W_MULT)
+	cpuTot1_1 := window.New(c_W_SIZE, c_W_MULT)
 	cpuTot1_1.PushBack(float64(10000))
 	cpuTot1_1.PushBack(float64(20000))
 	cpuTot1_1.PushBack(float64(30000))
 	cpuTot1_1.PushBack(float64(40000))
 	cpuTot1_1.PushBack(float64(50000))
 	cpuTot1_1.PushBack(float64(60000))
-	mem1_1 := window.New(W_SIZE, W_MULT)
+	mem1_1 := window.New(c_W_SIZE, c_W_MULT)
 	mem1_1.PushBack(100000)
 	mem1_1.PushBack(200000)
 	mem1_1.PushBack(300000)
@@ -131,14 +133,14 @@ func CreateMockHistory() statsHistory {
 	mem1_1.PushBack(500000)
 	mem1_1.PushBack(600000)
 
-	cpuTot1_2 := window.New(W_SIZE, W_MULT)
+	cpuTot1_2 := window.New(c_W_SIZE, c_W_MULT)
 	cpuTot1_2.PushBack(float64(60000))
 	cpuTot1_2.PushBack(float64(120000))
 	cpuTot1_2.PushBack(float64(180000))
 	cpuTot1_2.PushBack(float64(240000))
 	cpuTot1_2.PushBack(float64(300000))
 	cpuTot1_2.PushBack(float64(360000))
-	mem1_2 := window.New(W_SIZE, W_MULT)
+	mem1_2 := window.New(c_W_SIZE, c_W_MULT)
 	mem1_2.PushBack(150000)
 	mem1_2.PushBack(250000)
 	mem1_2.PushBack(350000)
@@ -146,14 +148,14 @@ func CreateMockHistory() statsHistory {
 	mem1_2.PushBack(550000)
 	mem1_2.PushBack(650000)
 
-	cpuTot1_3 := window.New(W_SIZE, W_MULT)
+	cpuTot1_3 := window.New(c_W_SIZE, c_W_MULT)
 	cpuTot1_3.PushBack(float64(50000))
 	cpuTot1_3.PushBack(float64(52000))
 	cpuTot1_3.PushBack(float64(72000))
 	cpuTot1_3.PushBack(float64(75000))
 	cpuTot1_3.PushBack(float64(80000))
 	cpuTot1_3.PushBack(float64(85000))
-	mem1_3 := window.New(W_SIZE, W_MULT)
+	mem1_3 := window.New(c_W_SIZE, c_W_MULT)
 	mem1_3.PushBack(150000)
 	mem1_3.PushBack(250000)
 	mem1_3.PushBack(850000)
@@ -161,19 +163,19 @@ func CreateMockHistory() statsHistory {
 	mem1_3.PushBack(750000)
 	mem1_3.PushBack(1200000)
 
-	cpuTot1_4 := window.New(W_SIZE, W_MULT)
+	cpuTot1_4 := window.New(c_W_SIZE, c_W_MULT)
 	cpuTot1_4.PushBack(float64(70000))
-	mem1_4 := window.New(W_SIZE, W_MULT)
+	mem1_4 := window.New(c_W_SIZE, c_W_MULT)
 	mem1_4.PushBack(400000)
 
-	cpuTot2_1 := window.New(W_SIZE, W_MULT)
+	cpuTot2_1 := window.New(c_W_SIZE, c_W_MULT)
 	cpuTot2_1.PushBack(float64(40000))
 	cpuTot2_1.PushBack(float64(80000))
 	cpuTot2_1.PushBack(float64(120000))
 	cpuTot2_1.PushBack(float64(160000))
 	cpuTot2_1.PushBack(float64(200000))
 	cpuTot2_1.PushBack(float64(240000))
-	mem2_1 := window.New(W_SIZE, W_MULT)
+	mem2_1 := window.New(c_W_SIZE, c_W_MULT)
 	mem2_1.PushBack(1000000)
 	mem2_1.PushBack(1250000)
 	mem2_1.PushBack(1500000)
@@ -181,34 +183,34 @@ func CreateMockHistory() statsHistory {
 	mem2_1.PushBack(2000000)
 	mem2_1.PushBack(2250000)
 
-	cpuHist1_1 := cpuHistory{
+	cpuHist1_1 := CpuHistory{
 		cpuTot1_1,
 		cpuSysAll,
 	}
-	cpuHist1_2 := cpuHistory{
+	cpuHist1_2 := CpuHistory{
 		cpuTot1_2,
 		cpuSysAll,
 	}
-	cpuHist1_3 := cpuHistory{
+	cpuHist1_3 := CpuHistory{
 		cpuTot1_3,
 		cpuSysAll,
 	}
-	cpuHist1_4 := cpuHistory{
+	cpuHist1_4 := CpuHistory{
 		cpuTot1_4,
 		cpuSysAll,
 	}
-	cpuHist2_1 := cpuHistory{
+	cpuHist2_1 := CpuHistory{
 		cpuTot2_1,
 		cpuSysAll,
 	}
 
-	instHist1_1 := instanceHistory{cpuHist1_1, mem1_1}
-	instHist1_2 := instanceHistory{cpuHist1_2, mem1_2}
-	instHist1_3 := instanceHistory{cpuHist1_3, mem1_3}
-	instHist1_4 := instanceHistory{cpuHist1_4, mem1_4}
-	instHist2_1 := instanceHistory{cpuHist2_1, mem2_1}
+	instHist1_1 := InstanceHistory{cpuHist1_1, mem1_1}
+	instHist1_2 := InstanceHistory{cpuHist1_2, mem1_2}
+	instHist1_3 := InstanceHistory{cpuHist1_3, mem1_3}
+	instHist1_4 := InstanceHistory{cpuHist1_4, mem1_4}
+	instHist2_1 := InstanceHistory{cpuHist2_1, mem2_1}
 
-	instancesHist := map[string]instanceHistory{
+	instancesHist := map[string]InstanceHistory{
 		"instance1_1": instHist1_1,
 		"instance1_2": instHist1_2,
 		"instance1_3": instHist1_3,
@@ -216,7 +218,7 @@ func CreateMockHistory() statsHistory {
 		"instance2_1": instHist2_1,
 	}
 
-	mockHist := statsHistory{instancesHist}
+	mockHist := StatsHistory{instancesHist}
 
 	return mockHist
 

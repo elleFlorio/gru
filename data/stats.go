@@ -45,16 +45,16 @@ type SystemStats struct {
 	Cpu float64 `json:"cpu"`
 }
 
-type statsHistory struct {
-	instance map[string]instanceHistory
+type StatsHistory struct {
+	Instance map[string]InstanceHistory
 }
 
-type instanceHistory struct {
-	cpu cpuHistory
-	mem *window.MovingWindow
+type InstanceHistory struct {
+	Cpu CpuHistory
+	Mem *window.MovingWindow
 }
 
-type cpuHistory struct {
-	totalUsage *window.MovingWindow
-	sysUsage   *window.MovingWindow
+type CpuHistory struct {
+	TotalUsage *window.MovingWindow
+	SysUsage   *window.MovingWindow
 }

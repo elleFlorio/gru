@@ -52,7 +52,7 @@ func saveData(data interface{}, dataType enum.Datatype) {
 		return
 	}
 
-	storage.StoreLocalData(encoded, dataType)
+	storage.StoreClusterData(encoded, dataType)
 }
 
 func ByteToStats(data []byte) (GruStats, error) {

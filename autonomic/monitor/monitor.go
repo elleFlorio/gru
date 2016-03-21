@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -10,46 +9,42 @@ import (
 
 	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
 	cfg "github.com/elleFlorio/gru/configuration"
-	"github.com/elleFlorio/gru/enum"
+	"github.com/elleFlorio/gru/data"
 	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
-	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
 )
 
 var (
 	monitorActive  bool
-	gruStats       GruStats
-	history        statsHistory
+	gruStats       data.GruStats
+	history        data.StatsHistory
 	c_stop         chan struct{}
 	c_err          chan error
 	ErrNoIndexById error = errors.New("No index for such Id")
 )
 
 func init() {
-	gruStats = GruStats{
-		Service:  make(map[string]ServiceStats),
-		Instance: make(map[string]InstanceStats),
+	gruStats = data.GruStats{
+		Service:  make(map[string]data.ServiceStats),
+		Instance: make(map[string]data.InstanceStats),
 	}
-	history = statsHistory{make(map[string]instanceHistory)}
+	history = data.StatsHistory{make(map[string]data.InstanceHistory)}
 }
 
-func Run() GruStats {
+func Run() data.GruStats {
 	log.WithField("status", "init").Debugln("Gru Monitor")
 	defer log.WithField("status", "done").Debugln("Gru Monitor")
-	snapshot := GruStats{
-		Service:  make(map[string]ServiceStats),
-		Instance: make(map[string]InstanceStats),
+	snapshot := data.GruStats{
+		Service:  make(map[string]data.ServiceStats),
+		Instance: make(map[string]data.InstanceStats),
 	}
 
 	computeServicesStats(&gruStats)
 	computeSystemCpu(&gruStats)
 	updateSystemInstances(&gruStats)
 	makeSnapshot(&gruStats, &snapshot)
-	err := saveStats(snapshot)
-	if err != nil {
-		log.WithField("err", "Stats data not saved").Errorln("Running monitor")
-	}
+	data.SaveStats(snapshot)
 
 	services := service.List()
 	for _, name := range services {
@@ -61,7 +56,7 @@ func Run() GruStats {
 	return snapshot
 }
 
-func computeServicesStats(stats *GruStats) {
+func computeServicesStats(stats *data.GruStats) {
 	metrics := metric.Manager().GetMetrics()
 	for name, _ := range gruStats.Service {
 		updateRunningInstances(name, &gruStats, 25)
@@ -72,12 +67,12 @@ func computeServicesStats(stats *GruStats) {
 }
 
 //FIXME need to check if all the windows are actually ready
-func updateRunningInstances(name string, stats *GruStats, wsize int) {
+func updateRunningInstances(name string, stats *data.GruStats, wsize int) {
 	srv, _ := service.GetServiceByName(name)
 	pending := srv.Instances.Pending
 
 	for _, inst := range pending {
-		if len(history.instance[inst].cpu.sysUsage.Slice()) >= wsize {
+		if len(history.Instance[inst].Cpu.SysUsage.Slice()) >= wsize {
 			addInstance(inst, name, "running", stats, &history)
 
 			log.WithFields(log.Fields{
@@ -88,7 +83,7 @@ func updateRunningInstances(name string, stats *GruStats, wsize int) {
 	}
 }
 
-func computeServiceCpuPerc(name string, stats *GruStats) {
+func computeServiceCpuPerc(name string, stats *data.GruStats) {
 	sum := 0.0
 	avg := 0.0
 	srvStats := stats.Service[name]
@@ -96,8 +91,8 @@ func computeServiceCpuPerc(name string, stats *GruStats) {
 
 	if len(srv.Instances.Running) > 0 {
 		for _, id := range srv.Instances.Running {
-			instCpus := history.instance[id].cpu.totalUsage.Slice()
-			sysCpus := history.instance[id].cpu.sysUsage.Slice()
+			instCpus := history.Instance[id].Cpu.TotalUsage.Slice()
+			sysCpus := history.Instance[id].Cpu.SysUsage.Slice()
 			instCpuAvg := computeInstanceCpuPerc(instCpus, sysCpus)
 			inst := stats.Instance[id]
 			inst.Cpu = instCpuAvg
@@ -167,7 +162,7 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 	return 0.0
 }
 
-func computeServiceMemory(name string, stats *GruStats) {
+func computeServiceMemory(name string, stats *data.GruStats) {
 	sum := 0.0
 	avg := 0.0
 	srv, _ := service.GetServiceByName(name)
@@ -176,7 +171,7 @@ func computeServiceMemory(name string, stats *GruStats) {
 
 	if len(srv.Instances.Running) > 0 {
 		for _, id := range srv.Instances.Running {
-			instMem := history.instance[id].mem.Slice()
+			instMem := history.Instance[id].Mem.Slice()
 			instMemPerc := computeInstaceMemPerc(instMem, memLimit)
 			inst := stats.Instance[id]
 			inst.Memory = instMemPerc
@@ -234,7 +229,7 @@ func computeInstaceMemPerc(instMem []float64, limit string) float64 {
 	return avg / float64(limitBytes)
 }
 
-func updateServiceMetrics(name string, metrics map[string][]float64, stats *GruStats) {
+func updateServiceMetrics(name string, metrics map[string][]float64, stats *data.GruStats) {
 	if len(metrics) == 0 {
 		log.Debugln("No metrics to update for service ", name)
 		return
@@ -255,7 +250,7 @@ func updateServiceMetrics(name string, metrics map[string][]float64, stats *GruS
 	stats.Service[name] = srv
 }
 
-func computeSystemCpu(stats *GruStats) {
+func computeSystemCpu(stats *data.GruStats) {
 	sum := 0.0
 	for _, value := range stats.Service {
 		sum += value.Cpu.Tot
@@ -263,7 +258,7 @@ func computeSystemCpu(stats *GruStats) {
 	stats.System.Cpu = math.Min(1.0, sum)
 }
 
-func updateSystemInstances(stats *GruStats) {
+func updateSystemInstances(stats *data.GruStats) {
 	cfg.ClearNodeInstances()
 	instances := cfg.GetNodeInstances()
 	for name, _ := range stats.Service {
@@ -279,7 +274,7 @@ func updateSystemInstances(stats *GruStats) {
 //TODO maybe I can just compute historical data without make a deep copy
 // since now I'm serializing the structure in a string of bytes...
 // check this possibility.
-func makeSnapshot(src *GruStats, dst *GruStats) {
+func makeSnapshot(src *data.GruStats, dst *data.GruStats) {
 	// Copy service stats
 	for name, stats := range src.Service {
 		srv_src := stats
@@ -289,59 +284,59 @@ func makeSnapshot(src *GruStats, dst *GruStats) {
 		start_dst := make([]string, len(events_src.Start), len(events_src.Start))
 		copy(start_dst, events_src.Start)
 		copy(stop_dst, events_src.Stop)
-		events_dst := EventStats{
+		events_dst := data.EventStats{
 			start_dst,
 			stop_dst,
 		}
 
 		// Copy cpu
-		cpu_dst := CpuStats{stats.Cpu.Avg, stats.Cpu.Tot}
+		cpu_dst := data.CpuStats{stats.Cpu.Avg, stats.Cpu.Tot}
 
 		// Copy memory
-		mem_dst := MemoryStats{stats.Memory.Avg, stats.Memory.Tot}
+		mem_dst := data.MemoryStats{stats.Memory.Avg, stats.Memory.Tot}
 
 		// Copy metrics
 		metrics_src := srv_src.Metrics
 		respTime_dst := make([]float64, len(metrics_src.ResponseTime), len(metrics_src.ResponseTime))
 		copy(respTime_dst, metrics_src.ResponseTime)
-		metrics_dst := MetricStats{respTime_dst}
+		metrics_dst := data.MetricStats{respTime_dst}
 
-		srv_dst := ServiceStats{ /*status_dst, */ events_dst, cpu_dst, mem_dst, metrics_dst}
+		srv_dst := data.ServiceStats{ /*status_dst, */ events_dst, cpu_dst, mem_dst, metrics_dst}
 		dst.Service[name] = srv_dst
 	}
 
 	//Copy instance stats
 	for id, value := range src.Instance {
-		inst_dst := InstanceStats{value.Cpu, value.Memory}
+		inst_dst := data.InstanceStats{value.Cpu, value.Memory}
 		dst.Instance[id] = inst_dst
 	}
 
 	dst.System.Cpu = src.System.Cpu
 }
 
-func saveStats(stats GruStats) error {
-	data, err := convertStatsToData(stats)
-	if err != nil {
-		log.WithField("err", err).Debugln("Cannot convert stats to data")
-		return err
-	} else {
-		storage.StoreLocalData(data, enum.STATS)
-	}
+// func saveStats(stats data.GruStats) error {
+// 	data, err := convertStatsToData(stats)
+// 	if err != nil {
+// 		log.WithField("err", err).Debugln("Cannot convert stats to data")
+// 		return err
+// 	} else {
+// 		storage.StoreLocalData(data, enum.STATS)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func convertStatsToData(stats GruStats) ([]byte, error) {
-	data, err := json.Marshal(stats)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error marshaling stats data")
-		return nil, err
-	}
+// func convertStatsToData(stats data.GruStats) ([]byte, error) {
+// 	data, err := json.Marshal(stats)
+// 	if err != nil {
+// 		log.WithField("err", err).Errorln("Error marshaling stats data")
+// 		return nil, err
+// 	}
 
-	return data, nil
-}
+// 	return data, nil
+// }
 
-func resetEventsStats(srvName string, stats *GruStats) {
+func resetEventsStats(srvName string, stats *data.GruStats) {
 	srvStats := stats.Service[srvName]
 
 	log.WithFields(log.Fields{
@@ -350,17 +345,17 @@ func resetEventsStats(srvName string, stats *GruStats) {
 		"stop":    srvStats.Events.Stop,
 	}).Debugln("Monitored events")
 
-	srvStats.Events = EventStats{}
+	srvStats.Events = data.EventStats{}
 	stats.Service[srvName] = srvStats
 }
 
-func resetMetricStats(srvName string, stats *GruStats) {
+func resetMetricStats(srvName string, stats *data.GruStats) {
 	srvStats := stats.Service[srvName]
-	srvStats.Metrics = MetricStats{}
+	srvStats.Metrics = data.MetricStats{}
 	stats.Service[srvName] = srvStats
 }
 
-func displayStatsOfServices(stats GruStats) {
+func displayStatsOfServices(stats data.GruStats) {
 	for name, value := range stats.Service {
 		srv, _ := service.GetServiceByName(name)
 		log.WithFields(log.Fields{
@@ -376,24 +371,24 @@ func displayStatsOfServices(stats GruStats) {
 	}
 }
 
-func GetMonitorData() (GruStats, error) {
-	stats := GruStats{}
-	dataStats, err := storage.GetLocalData(enum.STATS)
-	if err != nil {
-		log.WithField("err", err).Errorln("Cannot retrieve stats data.")
-	} else {
-		stats, err = convertDataToStats(dataStats)
-	}
+// func GetMonitorData() (data.GruStats, error) {
+// 	stats := data.GruStats{}
+// 	dataStats, err := storage.GetLocalData(enum.STATS)
+// 	if err != nil {
+// 		log.WithField("err", err).Errorln("Cannot retrieve stats data.")
+// 	} else {
+// 		stats, err = convertDataToStats(dataStats)
+// 	}
 
-	return stats, err
-}
+// 	return stats, err
+// }
 
-func convertDataToStats(data []byte) (GruStats, error) {
-	stats := GruStats{}
-	err := json.Unmarshal(data, &stats)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error unmarshaling stats data")
-	}
+// func convertDataToStats(data []byte) (data.GruStats, error) {
+// 	stats := data.GruStats{}
+// 	err := json.Unmarshal(data, &stats)
+// 	if err != nil {
+// 		log.WithField("err", err).Errorln("Error unmarshaling stats data")
+// 	}
 
-	return stats, err
-}
+// 	return stats, err
+// }

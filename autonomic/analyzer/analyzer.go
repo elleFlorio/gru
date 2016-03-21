@@ -7,8 +7,8 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	"github.com/elleFlorio/gru/autonomic/monitor"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
@@ -18,17 +18,17 @@ import (
 const overcommitratio float64 = 0.0
 
 var (
-	gruAnalytics          GruAnalytics
+	gruAnalytics          data.GruAnalytics
 	ErrNoRunningInstances error = errors.New("No active instance to analyze")
 )
 
 func init() {
-	gruAnalytics = GruAnalytics{
-		Service: make(map[string]ServiceAnalytics),
+	gruAnalytics = data.GruAnalytics{
+		Service: make(map[string]data.ServiceAnalytics),
 	}
 }
 
-func Run(stats monitor.GruStats) GruAnalytics {
+func Run(stats data.GruStats) data.GruAnalytics {
 	log.WithField("status", "init").Debugln("Gru Analyzer")
 	defer log.WithField("status", "done").Debugln("Gru Analyzer")
 
@@ -40,11 +40,7 @@ func Run(stats monitor.GruStats) GruAnalytics {
 		analyzeSystem(&gruAnalytics, stats)
 		computeNodeHealth(&gruAnalytics)
 		analyzeCluster(&gruAnalytics)
-		err := saveAnalytics(gruAnalytics)
-		if err != nil {
-			log.WithField("err", "Cannot save analytics ").Errorln("Analytics data not saved")
-		}
-
+		data.SaveAnalytics(gruAnalytics)
 		displayAnalyticsOfServices(gruAnalytics)
 	}
 
@@ -62,7 +58,7 @@ func updateNodeResources() {
 	}).Debugln("Updated node resources")
 }
 
-func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
+func analyzeServices(analytics *data.GruAnalytics, stats data.GruStats) {
 	for name, value := range stats.Service {
 		load := analyzeServiceLoad(name, value.Metrics.ResponseTime)
 		cpu := value.Cpu.Tot
@@ -74,13 +70,13 @@ func analyzeServices(analytics *GruAnalytics, stats monitor.GruStats) {
 
 		health := 1 - ((load + mem + cpu - resAvailable) / 4) //I don't like this...
 
-		srvRes := ResourcesAnalytics{
+		srvRes := data.ResourcesAnalytics{
 			cpu,
 			mem,
 			resAvailable,
 		}
 
-		srvAnalytics := ServiceAnalytics{
+		srvAnalytics := data.ServiceAnalytics{
 			load,
 			srvRes,
 			instances,
@@ -134,7 +130,7 @@ func computeLoad(maxRt float64, avgRt float64) float64 {
 	return loadValue
 }
 
-func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
+func analyzeSystem(analytics *data.GruAnalytics, stats data.GruStats) {
 	sysSrvs := []string{}
 	for name, _ := range stats.Service {
 		sysSrvs = append(sysSrvs, name)
@@ -149,23 +145,23 @@ func analyzeSystem(analytics *GruAnalytics, stats monitor.GruStats) {
 
 	health := 1 - ((cpu + mem - resources) / 3) //Ok, maybe this is a bit... "mah"...
 
-	sysRes := ResourcesAnalytics{
+	sysRes := data.ResourcesAnalytics{
 		cpu,
 		mem,
 		resources,
 	}
 
-	SystemAnalytics := SystemAnalytics{
+	systemAnalytics := data.SystemAnalytics{
 		sysSrvs,
 		sysRes,
 		instances,
 		health,
 	}
 
-	gruAnalytics.System = SystemAnalytics
+	gruAnalytics.System = systemAnalytics
 }
 
-func computeNodeHealth(analytics *GruAnalytics) {
+func computeNodeHealth(analytics *data.GruAnalytics) {
 	nServices := len(analytics.Service)
 	sumHealth := 0.0
 	for _, value := range analytics.Service {
@@ -180,14 +176,14 @@ func computeNodeHealth(analytics *GruAnalytics) {
 	analytics.Health = totHealth
 }
 
-func analyzeCluster(analytics *GruAnalytics) {
+func analyzeCluster(analytics *data.GruAnalytics) {
 	peers := getPeersAnalytics()
 	computeServicesAvg(peers, analytics)
 	computeClusterAvg(peers, analytics)
 }
 
-func getPeersAnalytics() []GruAnalytics {
-	peers := make([]GruAnalytics, 0)
+func getPeersAnalytics() []data.GruAnalytics {
+	peers := make([]data.GruAnalytics, 0)
 	dataAn, _ := storage.GetAllData(enum.ANALYTICS)
 	delete(dataAn, enum.CLUSTER.ToString())
 	for _, data := range dataAn {
@@ -198,12 +194,12 @@ func getPeersAnalytics() []GruAnalytics {
 	return peers
 }
 
-func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
-	avg := make(map[string]ServiceAnalytics)
+func computeServicesAvg(peers []data.GruAnalytics, analytics *data.GruAnalytics) {
+	avg := make(map[string]data.ServiceAnalytics)
 
 	for _, name := range service.List() {
-		active := []ServiceAnalytics{}
-		var avgSa ServiceAnalytics
+		active := []data.ServiceAnalytics{}
+		var avgSa data.ServiceAnalytics
 		isLocal := false
 
 		if ls, ok := analytics.Service[name]; ok {
@@ -284,7 +280,7 @@ func computeServicesAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 	analytics.Service = avg
 }
 
-func computeClusterAvg(peers []GruAnalytics, analytics *GruAnalytics) {
+func computeClusterAvg(peers []data.GruAnalytics, analytics *data.GruAnalytics) {
 	clstrSrvs := []string{}
 	var sumCpu float64 = 0
 	var sumMem float64 = 0
@@ -304,8 +300,8 @@ func computeClusterAvg(peers []GruAnalytics, analytics *GruAnalytics) {
 	avgH := (analytics.System.Health + sumH) / total
 
 	analytics.Cluster.Services = clstrSrvs
-	analytics.Cluster.ResourcesAnalytics.Cpu = avgCpu
-	analytics.Cluster.ResourcesAnalytics.Memory = avgMem
+	analytics.Cluster.Resources.Cpu = avgCpu
+	analytics.Cluster.Resources.Memory = avgMem
 	analytics.Cluster.Health = avgH
 }
 
@@ -328,29 +324,29 @@ func checkAndAppend(slice []string, values []string) []string {
 }
 
 // This is trivial, but improve readability
-func saveAnalytics(analytics GruAnalytics) error {
-	data, err := convertAnalyticsToData(analytics)
-	if err != nil {
-		log.WithField("err", err).Errorln("Cannot convert analytics to data")
-		return err
-	} else {
-		storage.StoreData(enum.CLUSTER.ToString(), data, enum.ANALYTICS)
-	}
+// func saveAnalytics(analytics data.GruAnalytics) error {
+// 	data, err := convertAnalyticsToData(analytics)
+// 	if err != nil {
+// 		log.WithField("err", err).Errorln("Cannot convert analytics to data")
+// 		return err
+// 	} else {
+// 		storage.StoreData(enum.CLUSTER.ToString(), data, enum.ANALYTICS)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func convertAnalyticsToData(analytics GruAnalytics) ([]byte, error) {
-	data, err := json.Marshal(analytics)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error marshaling analytics data")
-		return nil, err
-	}
+// func convertAnalyticsToData(analytics data.GruAnalytics) ([]byte, error) {
+// 	data, err := json.Marshal(analytics)
+// 	if err != nil {
+// 		log.WithField("err", err).Errorln("Error marshaling analytics data")
+// 		return nil, err
+// 	}
 
-	return data, nil
-}
+// 	return data, nil
+// }
 
-func displayAnalyticsOfServices(analytics GruAnalytics) {
+func displayAnalyticsOfServices(analytics data.GruAnalytics) {
 	for srv, value := range analytics.Service {
 		log.WithFields(log.Fields{
 			"service":   srv,
@@ -363,24 +359,25 @@ func displayAnalyticsOfServices(analytics GruAnalytics) {
 	}
 }
 
-func GetAnalyzerData() (GruAnalytics, error) {
-	analytics := GruAnalytics{}
-	dataAnalyics, err := storage.GetData(enum.CLUSTER.ToString(), enum.ANALYTICS)
-	if err != nil {
-		log.WithField("err", err).Warnln("Cannot retrieve analytics data")
-	} else {
-		analytics, err = convertDataToAnalytics(dataAnalyics)
-	}
+// func GetAnalyzerData() (data.GruAnalytics, error) {
+// 	analytics := data.GruAnalytics{}
+// 	dataAnalyics, err := storage.GetData(enum.CLUSTER.ToString(), enum.ANALYTICS)
+// 	if err != nil {
+// 		log.WithField("err", err).Warnln("Cannot retrieve analytics data")
+// 	} else {
+// 		analytics, err = convertDataToAnalytics(dataAnalyics)
+// 	}
 
-	return analytics, err
-}
+// 	return analytics, err
+// }
 
-func convertDataToAnalytics(data []byte) (GruAnalytics, error) {
-	analytics := GruAnalytics{}
-	err := json.Unmarshal(data, &analytics)
+//TODO to be removed after data information integration
+func convertDataToAnalytics(dataByte []byte) (data.GruAnalytics, error) {
+	analytics := data.GruAnalytics{}
+	err := json.Unmarshal(dataByte, &analytics)
 	if err != nil {
 		log.WithField("err", err).Warnln("Error converting data to analytics")
-		return GruAnalytics{}, err
+		return data.GruAnalytics{}, err
 	}
 
 	return analytics, nil

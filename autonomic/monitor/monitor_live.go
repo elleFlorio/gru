@@ -11,6 +11,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
 	ch "github.com/elleFlorio/gru/channels"
 	"github.com/elleFlorio/gru/container"
+	"github.com/elleFlorio/gru/data"
 	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 )
@@ -218,7 +219,7 @@ func setServiceInstanceResources(name string, id string) {
 
 }
 
-func addInstance(id string, srvName string, status string, stats *GruStats, hist *statsHistory) {
+func addInstance(id string, srvName string, status string, stats *data.GruStats, hist *data.StatsHistory) {
 	srv, _ := service.GetServiceByName(srvName)
 
 	_, err := findIdIndex(id, srv.Instances.All)
@@ -252,12 +253,12 @@ func addInstance(id string, srvName string, status string, stats *GruStats, hist
 		servStats.Events.Start = append(servStats.Events.Start, id)
 		stats.Service[srvName] = servStats
 
-		cpu := cpuHistory{
-			totalUsage: window.New(W_SIZE, W_MULT),
-			sysUsage:   window.New(W_SIZE, W_MULT),
+		cpu := data.CpuHistory{
+			TotalUsage: window.New(W_SIZE, W_MULT),
+			SysUsage:   window.New(W_SIZE, W_MULT),
 		}
 		mem := window.New(W_SIZE, W_MULT)
-		hist.instance[id] = instanceHistory{cpu, mem}
+		hist.Instance[id] = data.InstanceHistory{cpu, mem}
 
 		service.RegisterServiceInstanceId(srvName, id)
 		service.KeepAlive(srvName, id)
@@ -281,7 +282,7 @@ func addInstance(id string, srvName string, status string, stats *GruStats, hist
 	}).Infoln("Added resource to monitor")
 }
 
-func stopInstance(id string, stats *GruStats, hist *statsHistory) {
+func stopInstance(id string, stats *data.GruStats, hist *data.StatsHistory) {
 	srv, err := service.GetServiceById(id)
 	if err != nil {
 		log.Warningln("Cannor stop instance: service unknown")
@@ -314,7 +315,7 @@ func stopInstance(id string, stats *GruStats, hist *statsHistory) {
 	stats.Service[srv.Name] = srvStats
 
 	delete(stats.Instance, id)
-	delete(hist.instance, id)
+	delete(hist.Instance, id)
 
 	service.UnregisterServiceInstance(srv.Name, id)
 
@@ -329,7 +330,7 @@ func freeServiceInstanceResources(name string, id string) {
 	res.FreePortsFromService(name, id)
 }
 
-func removeInstance(id string, stats *GruStats, hist *statsHistory) {
+func removeInstance(id string, stats *data.GruStats, hist *data.StatsHistory) {
 	srv, err := service.GetServiceById(id)
 	if err != nil {
 		log.Warnln("Cannor remove instance: service unknown")
@@ -402,20 +403,20 @@ func getContainerStatus(info *dockerclient.ContainerInfo) string {
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	if instHist, ok := history.instance[id]; ok {
+	if instHist, ok := history.Instance[id]; ok {
 		// Instance stats update
 
 		// Cpu history usage update
 		totCpu := float64(stats.CpuStats.CpuUsage.TotalUsage)
 		sysCpu := float64(stats.CpuStats.SystemUsage)
-		instHist.cpu.totalUsage.PushBack(totCpu)
-		instHist.cpu.sysUsage.PushBack(sysCpu)
+		instHist.Cpu.TotalUsage.PushBack(totCpu)
+		instHist.Cpu.SysUsage.PushBack(sysCpu)
 
 		// Memory usage update
 		mem := float64(stats.MemoryStats.Usage)
-		instHist.mem.PushBack(mem)
+		instHist.Mem.PushBack(mem)
 
-		history.instance[id] = instHist
+		history.Instance[id] = instHist
 	} else {
 		log.WithField("id", id).Debugln("Cannot find history of instance")
 	}
