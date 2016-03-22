@@ -22,8 +22,8 @@ func (p *scaleinCreator) listActions() []string {
 	return []string{"stop"}
 }
 
-func (p *scaleinCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []Policy {
-	scaleinPolicies := make([]Policy, 0, len(srvList))
+func (p *scaleinCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []data.Policy {
+	scaleinPolicies := make([]data.Policy, 0, len(srvList))
 
 	for _, name := range srvList {
 		policyName := p.getPolicyName()
@@ -33,7 +33,7 @@ func (p *scaleinCreator) createPolicies(srvList []string, analytics data.GruAnal
 			name: []enum.Action{enum.STOP, enum.REMOVE},
 		}
 
-		scaleinPolicy := Policy{
+		scaleinPolicy := data.Policy{
 			Name:    policyName,
 			Weight:  policyWeight,
 			Targets: policyTargets,

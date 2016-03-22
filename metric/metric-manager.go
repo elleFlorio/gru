@@ -5,7 +5,6 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	"github.com/elleFlorio/gru/autonomic/planner"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/service"
@@ -126,7 +125,7 @@ func UpdateMetrics() {
 		metrics.Service[name] = srv_metrics
 	}
 
-	plc, err := planner.GetPlannerData()
+	plc, err := data.GetPolicy()
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot update plans metrics")
 	} else {

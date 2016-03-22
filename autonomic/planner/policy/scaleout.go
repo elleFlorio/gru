@@ -22,8 +22,8 @@ func (p *scaleoutCreator) listActions() []string {
 	return []string{"start"}
 }
 
-func (p *scaleoutCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []Policy {
-	scaleoutPolicies := make([]Policy, 0, len(srvList))
+func (p *scaleoutCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []data.Policy {
+	scaleoutPolicies := make([]data.Policy, 0, len(srvList))
 
 	for _, name := range srvList {
 		policyName := p.getPolicyName()
@@ -33,7 +33,7 @@ func (p *scaleoutCreator) createPolicies(srvList []string, analytics data.GruAna
 			name: []enum.Action{enum.START},
 		}
 
-		scaleoutPolicy := Policy{
+		scaleoutPolicy := data.Policy{
 			Name:    policyName,
 			Weight:  policyWeight,
 			Targets: policyTargets,

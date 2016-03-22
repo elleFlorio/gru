@@ -1,4 +1,4 @@
-package policy
+package data
 
 import (
 	"github.com/elleFlorio/gru/enum"

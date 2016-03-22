@@ -7,7 +7,7 @@ import (
 
 type policyCreator interface {
 	getPolicyName() string
-	createPolicies([]string, data.GruAnalytics) []Policy
+	createPolicies([]string, data.GruAnalytics) []data.Policy
 	listActions() []string
 }
 
@@ -40,8 +40,8 @@ func ListPolicyActions(name string) []string {
 	return []string{}
 }
 
-func CreatePolicies(srvList []string, analytics data.GruAnalytics) []Policy {
-	policies := []Policy{}
+func CreatePolicies(srvList []string, analytics data.GruAnalytics) []data.Policy {
+	policies := []data.Policy{}
 
 	for _, creator := range creators {
 		creatorPolicies := creator.createPolicies(srvList, analytics)
@@ -54,7 +54,7 @@ func CreatePolicies(srvList []string, analytics data.GruAnalytics) []Policy {
 	return policies
 }
 
-func createNoActionPolicy(policies []Policy) Policy {
+func createNoActionPolicy(policies []data.Policy) data.Policy {
 	max := 0.0
 	for _, policy := range policies {
 		if policy.Weight > max {
@@ -69,7 +69,7 @@ func createNoActionPolicy(policies []Policy) Policy {
 		"noservice": []enum.Action{enum.NOACTION},
 	}
 
-	noactionPolicy := Policy{
+	noactionPolicy := data.Policy{
 		Name:    policyName,
 		Weight:  policyWeight,
 		Targets: policyTargets,

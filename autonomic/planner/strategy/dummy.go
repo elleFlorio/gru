@@ -1,7 +1,7 @@
 package strategy
 
 import (
-	"github.com/elleFlorio/gru/autonomic/planner/policy"
+	"github.com/elleFlorio/gru/data"
 )
 
 type dummyStrategy struct{}
@@ -14,8 +14,8 @@ func (p *dummyStrategy) Initialize() error {
 	return nil
 }
 
-func (p *dummyStrategy) MakeDecision(policies []policy.Policy) *policy.Policy {
-	var chosenPolicy *policy.Policy
+func (p *dummyStrategy) MakeDecision(policies []data.Policy) *data.Policy {
+	var chosenPolicy *data.Policy
 	maxWeight := 0.0
 	for _, plc := range policies {
 		if plc.Weight > maxWeight {

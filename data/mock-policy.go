@@ -1,4 +1,4 @@
-package policy
+package data
 
 import (
 	"math/rand"
@@ -56,4 +56,8 @@ func randStringBytes(n int) string {
 		b[i] = c_LETTERBYTES[rand.Intn(len(c_LETTERBYTES))]
 	}
 	return string(b)
+}
+
+func StoreRandomMockPolicy() {
+	SavePolicy(CreateRandomMockPolicies(1)[0])
 }

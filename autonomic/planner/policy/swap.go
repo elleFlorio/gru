@@ -21,8 +21,8 @@ func (p *swapCreator) listActions() []string {
 	return []string{"stop", "remove", "start"}
 }
 
-func (p *swapCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []Policy {
-	swapPolicies := []Policy{}
+func (p *swapCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []data.Policy {
+	swapPolicies := []data.Policy{}
 
 	swapPairs := p.createSwapPairs(srvList)
 	for running, inactives := range swapPairs {
@@ -35,7 +35,7 @@ func (p *swapCreator) createPolicies(srvList []string, analytics data.GruAnalyti
 				inactive: []enum.Action{enum.START},
 			}
 
-			swapPolicy := Policy{
+			swapPolicy := data.Policy{
 				Name:    policyName,
 				Weight:  policyWeight,
 				Targets: policyTargets,

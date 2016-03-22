@@ -39,6 +39,18 @@ func TestSaveAnalytics(t *testing.T) {
 	assert.Equal(t, analytics, decoded)
 }
 
+func TestSavePolicy(t *testing.T) {
+	defer storage.DeleteAllData(enum.POLICIES)
+	policy := CreateRandomMockPolicies(1)[0]
+	SavePolicy(policy)
+
+	encoded, _ := storage.GetClusterData(enum.POLICIES)
+	decoded := Policy{}
+	json.Unmarshal(encoded, &decoded)
+
+	assert.Equal(t, policy, decoded)
+}
+
 func TestSaveInfo(t *testing.T) {
 	//TODO
 }
@@ -78,6 +90,23 @@ func TestByteToAnalytics(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestByteToPolicy(t *testing.T) {
+	var encoded []byte
+	var decoded Policy
+	var err error
+
+	policy := CreateRandomMockPolicies(1)[0]
+	encoded, _ = json.Marshal(policy)
+	decoded, err = ByteToPolicy(encoded)
+	assert.NoError(t, err)
+	assert.Equal(t, policy, decoded)
+
+	bad := 0
+	encoded, _ = json.Marshal(bad)
+	decoded, err = ByteToPolicy(encoded)
+	assert.Error(t, err)
+}
+
 func TestByteToInfo(t *testing.T) {
 	//TODO
 }
@@ -108,4 +137,18 @@ func TestGetAnalytics(t *testing.T) {
 	analytics, err := GetAnalytics()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, analytics)
+}
+
+func TestGetPolicy(t *testing.T) {
+	defer storage.DeleteAllData(enum.POLICIES)
+	var err error
+
+	_, err = GetPolicy()
+	assert.Error(t, err)
+
+	expected := CreateRandomMockPolicies(1)[0]
+	SavePolicy(expected)
+	policy, err := GetPolicy()
+	assert.NoError(t, err)
+	assert.Equal(t, expected, policy)
 }

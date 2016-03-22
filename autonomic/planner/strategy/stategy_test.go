@@ -5,7 +5,7 @@ import (
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
-	"github.com/elleFlorio/gru/autonomic/planner/policy"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 )
 
@@ -32,29 +32,29 @@ func TestList(t *testing.T) {
 }
 
 func TestMakeDecision(t *testing.T) {
-	var plc *policy.Policy
+	var plc *data.Policy
 	targets := []string{"pippo"}
 	actions := map[string][]enum.Action{
 		"pippo": []enum.Action{enum.START},
 	}
 
-	policies := []policy.Policy{
-		policy.CreateMockPolicy("p", 0.0, targets, actions),
-		policy.CreateMockPolicy("p", 0.2, targets, actions),
-		policy.CreateMockPolicy("p", 0.5, targets, actions),
-		policy.CreateMockPolicy("p", 0.8, targets, actions),
-		policy.CreateMockPolicy("p", 1.0, targets, actions),
+	policies := []data.Policy{
+		data.CreateMockPolicy("p", 0.0, targets, actions),
+		data.CreateMockPolicy("p", 0.2, targets, actions),
+		data.CreateMockPolicy("p", 0.5, targets, actions),
+		data.CreateMockPolicy("p", 0.8, targets, actions),
+		data.CreateMockPolicy("p", 1.0, targets, actions),
 	}
 
 	New("dummy")
 	plc = MakeDecision(policies)
 	assert.Equal(t, plc.Weight, 1.0)
 
-	policies = []policy.Policy{
-		policy.CreateMockPolicy("p", 0.0, targets, actions),
-		policy.CreateMockPolicy("p", 0.0, targets, actions),
-		policy.CreateMockPolicy("p", 0.0, targets, actions),
-		policy.CreateMockPolicy("p", 0.2, targets, actions),
+	policies = []data.Policy{
+		data.CreateMockPolicy("p", 0.0, targets, actions),
+		data.CreateMockPolicy("p", 0.0, targets, actions),
+		data.CreateMockPolicy("p", 0.0, targets, actions),
+		data.CreateMockPolicy("p", 0.2, targets, actions),
 	}
 
 	New("probabilistic")

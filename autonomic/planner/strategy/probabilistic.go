@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/elleFlorio/gru/autonomic/planner/policy"
+	"github.com/elleFlorio/gru/data"
 )
 
 func init() {
@@ -29,12 +29,12 @@ func (p *probabilisticStrategy) Initialize() error {
 	return nil
 }
 
-func (p *probabilisticStrategy) MakeDecision(policies []policy.Policy) *policy.Policy {
+func (p *probabilisticStrategy) MakeDecision(policies []data.Policy) *data.Policy {
 	return weightedRandomElement(policies)
 }
 
-func weightedRandomElement(policies []policy.Policy) *policy.Policy {
-	var chosenPolicy *policy.Policy
+func weightedRandomElement(policies []data.Policy) *data.Policy {
+	var chosenPolicy *data.Policy
 	totalWeight := 0.0
 	threshold := randUniform(0, 1)
 	normalizedCumulative := 0.0
@@ -61,7 +61,7 @@ func randUniform(min, max float64) float64 {
 	return gen.Float64()*(max-min) + min
 }
 
-func shuffle(policies []policy.Policy) {
+func shuffle(policies []data.Policy) {
 	for i := range policies {
 		j := gen.Intn(i + 1)
 		policies[i], policies[j] = policies[j], policies[i]

@@ -2,7 +2,6 @@ package data
 
 import (
 	"encoding/json"
-	"errors"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -17,6 +16,10 @@ func SaveStats(stats GruStats) {
 
 func SaveAnalytics(analytics GruAnalytics) {
 	saveData(analytics, enum.ANALYTICS)
+}
+
+func SavePolicy(policy Policy) {
+	saveData(policy, enum.POLICIES)
 }
 
 func SaveInfo(info Info) {
@@ -41,6 +44,13 @@ func saveData(data interface{}, dataType enum.Datatype) {
 			log.WithField("err", err).Debugln("Cannot convert analytics to data")
 			return
 		}
+	case enum.POLICIES:
+		policy := data.(Policy)
+		encoded, err = json.Marshal(policy)
+		if err != nil {
+			log.WithField("err", err).Debugln("Cannot convert policy to data")
+			return
+		}
 	case enum.INFO:
 		info := data.(Info)
 		encoded, err = json.Marshal(info)
@@ -54,42 +64,6 @@ func saveData(data interface{}, dataType enum.Datatype) {
 	}
 
 	storage.StoreClusterData(encoded, dataType)
-}
-
-func ByteToStats(data []byte) (GruStats, error) {
-	stats := GruStats{}
-	err := byteToType(data, &stats, enum.STATS)
-	if err != nil {
-		log.WithField("err", err).Warnln("Cannot convert byte to stats")
-		return GruStats{}, err
-	}
-
-	return stats, nil
-
-}
-
-func ByteToAnalytics(data []byte) (GruAnalytics, error) {
-	analytics := GruAnalytics{}
-	err := byteToType(data, &analytics, enum.ANALYTICS)
-	if err != nil {
-		log.WithField("err", err).Warnln("Cannot conver byte to analytics")
-		return GruAnalytics{}, err
-	}
-
-	return analytics, nil
-
-}
-
-func ByteToInfo(data []byte) (Info, error) {
-	info := Info{}
-	err := byteToType(data, &info, enum.INFO)
-	if err != nil {
-		log.WithField("err", err).Warnln("Cannot conver byte to info")
-		return Info{}, err
-	}
-
-	return info, nil
-
 }
 
 func GetStats() (GruStats, error) {
@@ -110,6 +84,16 @@ func GetAnalytics() (GruAnalytics, error) {
 	}
 
 	return analytics.(GruAnalytics), nil
+}
+
+func GetPolicy() (Policy, error) {
+	policy, err := getData(enum.POLICIES)
+	if err != nil {
+		log.WithField("err", err).Warnln("Cannot get policy data")
+		return Policy{}, err
+	}
+
+	return policy.(Policy), nil
 }
 
 func getData(dataType enum.Datatype) (interface{}, error) {
@@ -137,6 +121,17 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 				return nil, err
 			}
 		}
+	case enum.POLICIES:
+		data = Policy{}
+		dataPolicy, err := storage.GetClusterData(dataType)
+		if err != nil {
+			return nil, err
+		} else {
+			data, err = ByteToPolicy(dataPolicy)
+			if err != nil {
+				return nil, err
+			}
+		}
 	case enum.INFO:
 		data = Info{}
 		dataInfo, err := storage.GetClusterData(dataType)
@@ -154,29 +149,52 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 
 }
 
-func byteToType(data []byte, myStruct interface{}, dataType enum.Datatype) error {
-	var err error
-	switch dataType {
-	case enum.STATS:
-		err = json.Unmarshal(data, myStruct)
-		if err != nil {
-			return err
-		}
-	case enum.ANALYTICS:
-		err = json.Unmarshal(data, myStruct)
-		if err != nil {
-			return err
-		}
-	case enum.INFO:
-		err = json.Unmarshal(data, myStruct)
-		if err != nil {
-			return err
-		}
-	default:
-		return errors.New("Unknown data type")
+func ByteToStats(data []byte) (GruStats, error) {
+	stats := GruStats{}
+	err := json.Unmarshal(data, &stats)
+	if err != nil {
+		log.WithField("err", err).Warnln("Cannot convert byte to stats")
+		return GruStats{}, err
 	}
 
-	return nil
+	return stats, nil
+
+}
+
+func ByteToAnalytics(data []byte) (GruAnalytics, error) {
+	analytics := GruAnalytics{}
+	err := json.Unmarshal(data, &analytics)
+	if err != nil {
+		log.WithField("err", err).Warnln("Cannot conver byte to analytics")
+		return GruAnalytics{}, err
+	}
+
+	return analytics, nil
+
+}
+
+func ByteToPolicy(data []byte) (Policy, error) {
+	policy := Policy{}
+	err := json.Unmarshal(data, &policy)
+	if err != nil {
+		log.WithField("err", err).Warnln("Cannot conver byte to policy")
+		return Policy{}, err
+	}
+
+	return policy, nil
+
+}
+
+func ByteToInfo(data []byte) (Info, error) {
+	info := Info{}
+	err := json.Unmarshal(data, &info)
+	if err != nil {
+		log.WithField("err", err).Warnln("Cannot conver byte to info")
+		return Info{}, err
+	}
+
+	return info, nil
+
 }
 
 func mergeInfo(toMerge []Info) Info {

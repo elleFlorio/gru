@@ -1,7 +1,6 @@
 package planner
 
 import (
-	"encoding/json"
 	"fmt"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
@@ -9,8 +8,6 @@ import (
 	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
 	"github.com/elleFlorio/gru/data"
-	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/storage"
 )
 
 var currentStrategy strategy.GruStrategy
@@ -19,7 +16,6 @@ func SetPlannerStrategy(strategyName string) {
 	strtg, err := strategy.New(strategyName)
 	if err != nil {
 		log.WithField("err", err).Errorln("Strategy cannot be set")
-
 		// If error use default one
 		strtg, err = strategy.New("dummy")
 	}
@@ -29,10 +25,10 @@ func SetPlannerStrategy(strategyName string) {
 	log.WithField("strategy", strtg.Name()).Infoln("Strategy initialized")
 }
 
-func Run(analytics data.GruAnalytics) *policy.Policy {
+func Run(analytics data.GruAnalytics) *data.Policy {
 	log.WithField("status", "init").Debugln("Gru Planner")
 	defer log.WithField("status", "done").Debugln("Gru Planner")
-	var chosenPolicy *policy.Policy
+	var chosenPolicy *data.Policy
 
 	if len(analytics.Service) == 0 {
 		log.WithField("err", "No services analytics").Warnln("Cannot compute plans.")
@@ -40,13 +36,8 @@ func Run(analytics data.GruAnalytics) *policy.Policy {
 		srvList := getServicesListFromAnalytics(analytics)
 		policies := policy.CreatePolicies(srvList, analytics)
 		chosenPolicy = currentStrategy.MakeDecision(policies)
-		err := savePolicy(chosenPolicy)
-		if err != nil {
-			log.WithField("err", err).Errorln("Planner data not saved")
-		}
-
+		data.SavePolicy(*chosenPolicy)
 		displayPolicy(chosenPolicy)
-
 	}
 
 	return chosenPolicy
@@ -64,29 +55,29 @@ func getServicesListFromAnalytics(analytics data.GruAnalytics) []string {
 	return list
 }
 
-func savePolicy(chosenPolicy *policy.Policy) error {
-	data, err := convertPolicyToData(chosenPolicy)
-	if err != nil {
-		log.WithField("err", err).Debugln("Cannot convert policy to data")
-		return err
-	} else {
-		storage.StoreLocalData(data, enum.POLICIES)
-	}
+// func savePolicy(chosenPolicy *data.Policy) error {
+// 	data, err := convertPolicyToData(chosenPolicy)
+// 	if err != nil {
+// 		log.WithField("err", err).Debugln("Cannot convert policy to data")
+// 		return err
+// 	} else {
+// 		storage.StoreLocalData(data, enum.POLICIES)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func convertPolicyToData(chosenPolicy *policy.Policy) ([]byte, error) {
-	data, err := json.Marshal(*chosenPolicy)
-	if err != nil {
-		log.WithField("error", err).Errorln("Error marshaling plan data")
-		return nil, err
-	}
+// func convertPolicyToData(chosenPolicy *policy.Policy) ([]byte, error) {
+// 	data, err := json.Marshal(*chosenPolicy)
+// 	if err != nil {
+// 		log.WithField("error", err).Errorln("Error marshaling plan data")
+// 		return nil, err
+// 	}
 
-	return data, nil
-}
+// 	return data, nil
+// }
 
-func displayPolicy(chosenPolicy *policy.Policy) {
+func displayPolicy(chosenPolicy *data.Policy) {
 	targets := make([]string, 0, len(chosenPolicy.Targets))
 	for _, target := range chosenPolicy.Targets {
 		targets = append(targets, target)
@@ -99,25 +90,25 @@ func displayPolicy(chosenPolicy *policy.Policy) {
 	}).Infoln("Policy to actuate")
 }
 
-func GetPlannerData() (policy.Policy, error) {
-	plc := policy.Policy{}
-	dataPlan, err := storage.GetLocalData(enum.POLICIES)
-	if err != nil {
-		log.WithField("err", err).Warnln("Cannot retrieve plan data")
-	} else {
-		plc, err = convertDataToPolicy(dataPlan)
-	}
+// func GetPlannerData() (data.Policy, error) {
+// 	plc := policy.Policy{}
+// 	dataPlan, err := storage.GetLocalData(enum.POLICIES)
+// 	if err != nil {
+// 		log.WithField("err", err).Warnln("Cannot retrieve plan data")
+// 	} else {
+// 		plc, err = convertDataToPolicy(dataPlan)
+// 	}
 
-	return plc, err
-}
+// 	return plc, err
+// }
 
-func convertDataToPolicy(data []byte) (policy.Policy, error) {
-	plc := policy.Policy{}
-	err := json.Unmarshal(data, &plc)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error unmarshaling plan data")
-		return policy.Policy{}, err
-	}
+// func convertDataToPolicy(data []byte) (policy.Policy, error) {
+// 	plc := policy.Policy{}
+// 	err := json.Unmarshal(data, &plc)
+// 	if err != nil {
+// 		log.WithField("err", err).Errorln("Error unmarshaling plan data")
+// 		return policy.Policy{}, err
+// 	}
 
-	return plc, nil
-}
+// 	return plc, nil
+// }

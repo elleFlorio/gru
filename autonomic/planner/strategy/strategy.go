@@ -3,7 +3,7 @@ package strategy
 import (
 	"errors"
 
-	"github.com/elleFlorio/gru/autonomic/planner/policy"
+	"github.com/elleFlorio/gru/data"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
@@ -11,7 +11,7 @@ import (
 type GruStrategy interface {
 	Name() string
 	Initialize() error
-	MakeDecision([]policy.Policy) *policy.Policy
+	MakeDecision([]data.Policy) *data.Policy
 }
 
 var (
@@ -63,6 +63,6 @@ func Initialize() error {
 	return active().Initialize()
 }
 
-func MakeDecision(policies []policy.Policy) *policy.Policy {
+func MakeDecision(policies []data.Policy) *data.Policy {
 	return active().MakeDecision(policies)
 }

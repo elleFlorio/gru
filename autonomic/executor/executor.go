@@ -4,9 +4,9 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/autonomic/executor/action"
-	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	ch "github.com/elleFlorio/gru/channels"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 )
@@ -26,7 +26,7 @@ func listen() {
 	}
 }
 
-func Run(chosenPolicy *policy.Policy) {
+func Run(chosenPolicy *data.Policy) {
 	log.WithField("status", "init").Debugln("Gru Executor")
 	defer log.WithField("status", "done").Debugln("Gru Executor")
 
