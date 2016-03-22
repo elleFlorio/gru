@@ -6,9 +6,9 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	"github.com/elleFlorio/gru/autonomic/analyzer"
 	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	"github.com/elleFlorio/gru/autonomic/planner/strategy"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/storage"
 )
@@ -29,7 +29,7 @@ func SetPlannerStrategy(strategyName string) {
 	log.WithField("strategy", strtg.Name()).Infoln("Strategy initialized")
 }
 
-func Run(analytics analyzer.GruAnalytics) *policy.Policy {
+func Run(analytics data.GruAnalytics) *policy.Policy {
 	log.WithField("status", "init").Debugln("Gru Planner")
 	defer log.WithField("status", "done").Debugln("Gru Planner")
 	var chosenPolicy *policy.Policy
@@ -55,7 +55,7 @@ func Run(analytics analyzer.GruAnalytics) *policy.Policy {
 // TODO I should remove this and start from the stats to compute something
 // for the services that are not created yet. In that way I just need to call
 // service.List()
-func getServicesListFromAnalytics(analytics analyzer.GruAnalytics) []string {
+func getServicesListFromAnalytics(analytics data.GruAnalytics) []string {
 	list := make([]string, 0, len(analytics.Service))
 	for srv, _ := range analytics.Service {
 		list = append(list, srv)

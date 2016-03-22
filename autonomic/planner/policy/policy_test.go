@@ -5,8 +5,8 @@ import (
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
-	"github.com/elleFlorio/gru/autonomic/analyzer"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/data"
 	res "github.com/elleFlorio/gru/resources"
 )
 
@@ -150,33 +150,33 @@ func createServices() []cfg.Service {
 	return services
 }
 
-func createAnalytics() analyzer.GruAnalytics {
-	analytics := analyzer.GruAnalytics{}
+func createAnalytics() data.GruAnalytics {
+	analytics := data.GruAnalytics{}
 
-	srv1A := analyzer.ServiceAnalytics{}
+	srv1A := data.ServiceAnalytics{}
 	srv1A.Load = 1.0
 	srv1A.Resources.Cpu = 0.5
 	srv1A.Resources.Available = 1.0
 
-	srv2A := analyzer.ServiceAnalytics{}
+	srv2A := data.ServiceAnalytics{}
 	srv2A.Load = 0.5
 	srv2A.Resources.Cpu = 0.2
 	srv2A.Resources.Available = 1.0
 
-	srv3A := analyzer.ServiceAnalytics{}
+	srv3A := data.ServiceAnalytics{}
 	srv3A.Load = 0.9
 	srv3A.Resources.Cpu = 0.8
 	srv3A.Resources.Available = 0.0
 
-	srv4A := analyzer.ServiceAnalytics{}
+	srv4A := data.ServiceAnalytics{}
 	srv4A.Load = 0.9
 	srv4A.Resources.Cpu = 0.8
 	srv4A.Resources.Available = 1.0
 
-	srv5A := analyzer.ServiceAnalytics{}
+	srv5A := data.ServiceAnalytics{}
 	srv5A.Resources.Available = 0.0
 
-	analytics.Service = map[string]analyzer.ServiceAnalytics{
+	analytics.Service = map[string]data.ServiceAnalytics{
 		"service1": srv1A,
 		"service2": srv2A,
 		"service3": srv3A,

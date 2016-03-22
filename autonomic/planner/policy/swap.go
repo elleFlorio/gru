@@ -3,8 +3,8 @@ package policy
 import (
 	"math"
 
-	"github.com/elleFlorio/gru/autonomic/analyzer"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 )
@@ -21,7 +21,7 @@ func (p *swapCreator) listActions() []string {
 	return []string{"stop", "remove", "start"}
 }
 
-func (p *swapCreator) createPolicies(srvList []string, analytics analyzer.GruAnalytics) []Policy {
+func (p *swapCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []Policy {
 	swapPolicies := []Policy{}
 
 	swapPairs := p.createSwapPairs(srvList)
@@ -71,7 +71,7 @@ func (p *swapCreator) createSwapPairs(srvList []string) map[string][]string {
 	return pairs
 }
 
-func (p *swapCreator) computeWeight(running string, candidate string, analytics analyzer.GruAnalytics) float64 {
+func (p *swapCreator) computeWeight(running string, candidate string, analytics data.GruAnalytics) float64 {
 	srv_run, _ := service.GetServiceByName(running)
 	srv_cand, _ := service.GetServiceByName(candidate)
 	nRun := len(srv_run.Instances.Running)

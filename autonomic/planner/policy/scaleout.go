@@ -3,7 +3,7 @@ package policy
 import (
 	"math"
 
-	"github.com/elleFlorio/gru/autonomic/analyzer"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
@@ -22,7 +22,7 @@ func (p *scaleoutCreator) listActions() []string {
 	return []string{"start"}
 }
 
-func (p *scaleoutCreator) createPolicies(srvList []string, analytics analyzer.GruAnalytics) []Policy {
+func (p *scaleoutCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []Policy {
 	scaleoutPolicies := make([]Policy, 0, len(srvList))
 
 	for _, name := range srvList {
@@ -46,7 +46,7 @@ func (p *scaleoutCreator) createPolicies(srvList []string, analytics analyzer.Gr
 	return scaleoutPolicies
 }
 
-func (p *scaleoutCreator) computeWeight(name string, analytics analyzer.GruAnalytics) float64 {
+func (p *scaleoutCreator) computeWeight(name string, analytics data.GruAnalytics) float64 {
 	srv, _ := service.GetServiceByName(name)
 	// inst_run := len(srv.Instances.Running)
 	// inst_pen := len(srv.Instances.Pending)

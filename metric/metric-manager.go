@@ -5,10 +5,9 @@ import (
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	"github.com/elleFlorio/gru/autonomic/analyzer"
-	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -92,7 +91,7 @@ func UpdateMetrics() {
 		srv_metrics.Instances.Paused = len(srv.Instances.Paused)
 		srv_metrics.Instances.Stopped = len(srv.Instances.Stopped)
 
-		stats, err := monitor.GetMonitorData()
+		stats, err := data.GetStats()
 		if err != nil {
 			log.WithField("err", err).Warnln("Cannot update stats metrics")
 		} else {
@@ -109,7 +108,7 @@ func UpdateMetrics() {
 			}
 		}
 
-		analytics, err := analyzer.GetAnalyzerData()
+		analytics, err := data.GetAnalytics()
 		if err != nil {
 			log.WithField("err", err).Warnln("Cannot update analytics metrics")
 		} else {

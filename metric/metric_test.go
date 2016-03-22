@@ -5,11 +5,10 @@ import (
 
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
-	"github.com/elleFlorio/gru/autonomic/analyzer"
-	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
 	"github.com/elleFlorio/gru/autonomic/planner/policy"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
@@ -46,13 +45,13 @@ func TestUpdateMetrics(t *testing.T) {
 	assert.Equal(t, 0.0, Metrics().Service["service2"].Analytics.Cpu)
 	assert.Equal(t, "noaction", Metrics().Policy.Name)
 
-	monitor.StoreMockStats()
-	analyzer.StoreMockAnalytics()
+	data.StoreMockStats()
+	data.StoreMockAnalytics()
 	plc := policy.CreateMockPolicy("policy", 1.0, []string{"pippo"}, map[string][]enum.Action{})
 	planner.StoreMockPolicy(plc)
 	UpdateMetrics()
 	assert.Equal(t, 0.7, Metrics().Service["service1"].Stats.CpuTot)
-	assert.Equal(t, 0.2, Metrics().Service["service2"].Analytics.Cpu)
+	assert.Equal(t, 0.8, Metrics().Service["service2"].Analytics.Cpu)
 	assert.Equal(t, "policy", Metrics().Policy.Name)
 }
 

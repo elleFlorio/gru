@@ -1,13 +1,13 @@
 package policy
 
 import (
-	"github.com/elleFlorio/gru/autonomic/analyzer"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 )
 
 type policyCreator interface {
 	getPolicyName() string
-	createPolicies([]string, analyzer.GruAnalytics) []Policy
+	createPolicies([]string, data.GruAnalytics) []Policy
 	listActions() []string
 }
 
@@ -40,7 +40,7 @@ func ListPolicyActions(name string) []string {
 	return []string{}
 }
 
-func CreatePolicies(srvList []string, analytics analyzer.GruAnalytics) []Policy {
+func CreatePolicies(srvList []string, analytics data.GruAnalytics) []Policy {
 	policies := []Policy{}
 
 	for _, creator := range creators {

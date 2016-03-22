@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/json"
+	"errors"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -56,35 +57,38 @@ func saveData(data interface{}, dataType enum.Datatype) {
 }
 
 func ByteToStats(data []byte) (GruStats, error) {
-	stats, err := byteToType(data, enum.STATS)
+	stats := GruStats{}
+	err := byteToType(data, &stats, enum.STATS)
 	if err != nil {
-		log.WithField("err", err).Warnln("Cannot conver byte to stats")
+		log.WithField("err", err).Warnln("Cannot convert byte to stats")
 		return GruStats{}, err
 	}
 
-	return stats.(GruStats), nil
+	return stats, nil
 
 }
 
 func ByteToAnalytics(data []byte) (GruAnalytics, error) {
-	analytics, err := byteToType(data, enum.ANALYTICS)
+	analytics := GruAnalytics{}
+	err := byteToType(data, &analytics, enum.ANALYTICS)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot conver byte to analytics")
 		return GruAnalytics{}, err
 	}
 
-	return analytics.(GruAnalytics), nil
+	return analytics, nil
 
 }
 
 func ByteToInfo(data []byte) (Info, error) {
-	info, err := byteToType(data, enum.INFO)
+	info := Info{}
+	err := byteToType(data, &info, enum.INFO)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot conver byte to info")
 		return Info{}, err
 	}
 
-	return info.(Info), nil
+	return info, nil
 
 }
 
@@ -113,7 +117,7 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 	switch dataType {
 	case enum.STATS:
 		data = GruStats{}
-		dataStats, err := storage.GetLocalData(dataType)
+		dataStats, err := storage.GetClusterData(dataType)
 		if err != nil {
 			return nil, err
 		} else {
@@ -124,7 +128,7 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 		}
 	case enum.ANALYTICS:
 		data = GruAnalytics{}
-		dataAnalytics, err := storage.GetLocalData(dataType)
+		dataAnalytics, err := storage.GetClusterData(dataType)
 		if err != nil {
 			return nil, err
 		} else {
@@ -135,7 +139,7 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 		}
 	case enum.INFO:
 		data = Info{}
-		dataInfo, err := storage.GetLocalData(dataType)
+		dataInfo, err := storage.GetClusterData(dataType)
 		if err != nil {
 			return nil, err
 		} else {
@@ -150,31 +154,29 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 
 }
 
-func byteToType(data []byte, dataType enum.Datatype) (interface{}, error) {
-	var decoded interface{}
+func byteToType(data []byte, myStruct interface{}, dataType enum.Datatype) error {
 	var err error
 	switch dataType {
 	case enum.STATS:
-		decoded := GruStats{}
-		err = json.Unmarshal(data, &decoded)
+		err = json.Unmarshal(data, myStruct)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	case enum.ANALYTICS:
-		decoded := GruAnalytics{}
-		err = json.Unmarshal(data, &decoded)
+		err = json.Unmarshal(data, myStruct)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	case enum.INFO:
-		decoded := Info{}
-		err = json.Unmarshal(data, &decoded)
+		err = json.Unmarshal(data, myStruct)
 		if err != nil {
-			return nil, err
+			return err
 		}
+	default:
+		return errors.New("Unknown data type")
 	}
 
-	return decoded, nil
+	return nil
 }
 
 func mergeInfo(toMerge []Info) Info {
