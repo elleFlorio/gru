@@ -1,6 +1,6 @@
 package data
 
-type Info struct {
+type GruInfo struct {
 	Service map[string]ServiceInfo `json:"service"`
 	System  SystemInfo             `json:"system"`
 }

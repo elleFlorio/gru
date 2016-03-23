@@ -7,12 +7,18 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	"github.com/elleFlorio/gru/enum"
+	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
 )
 
 func init() {
 	//Initialize storage
 	storage.New("internal")
+	//simply check if the functions return without errors
+	CreateMockHistory()
+	StoreRandomMockPolicy()
+	ListMockServices()
+	MaxNumberOfEntryInHistory()
 }
 
 func TestSaveStats(t *testing.T) {
@@ -52,7 +58,15 @@ func TestSavePolicy(t *testing.T) {
 }
 
 func TestSaveInfo(t *testing.T) {
-	//TODO
+	defer storage.DeleteAllData(enum.INFO)
+	info := CreateMockInfo()
+	SaveInfo(info)
+
+	encoded, _ := storage.GetClusterData(enum.INFO)
+	decoded := GruInfo{}
+	json.Unmarshal(encoded, &decoded)
+
+	assert.Equal(t, info, decoded)
 }
 
 func TestByteToStats(t *testing.T) {
@@ -108,7 +122,20 @@ func TestByteToPolicy(t *testing.T) {
 }
 
 func TestByteToInfo(t *testing.T) {
-	//TODO
+	var encoded []byte
+	var decoded GruInfo
+	var err error
+
+	info := CreateMockInfo()
+	encoded, _ = json.Marshal(info)
+	decoded, err = ByteToInfo(encoded)
+	assert.NoError(t, err)
+	assert.Equal(t, info, decoded)
+
+	bad := 0
+	encoded, _ = json.Marshal(bad)
+	decoded, err = ByteToInfo(encoded)
+	assert.Error(t, err)
 }
 
 func TestGetStats(t *testing.T) {
@@ -151,4 +178,52 @@ func TestGetPolicy(t *testing.T) {
 	policy, err := GetPolicy()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, policy)
+}
+
+func TestGeInfo(t *testing.T) {
+	defer storage.DeleteAllData(enum.INFO)
+	var err error
+
+	_, err = GetInfo()
+	assert.Error(t, err)
+
+	expected := CreateMockInfo()
+	SaveInfo(expected)
+	info, err := GetInfo()
+	assert.NoError(t, err)
+	assert.Equal(t, expected, info)
+}
+
+func TestCheckAndAppend(t *testing.T) {
+	list0 := []string{}
+	list1 := []string{"pippo", "topolino"}
+	list2 := []string{"paperino"}
+	list3 := []string{"topolino", "paperino", "paperone"}
+
+	list0 = checkAndAppend(list0, list1)
+	assert.Len(t, list0, 2)
+	assert.Contains(t, list0, "pippo")
+	assert.Contains(t, list0, "topolino")
+
+	list0 = checkAndAppend(list0, list2)
+	assert.Len(t, list0, 3)
+	assert.Contains(t, list0, "paperino")
+
+	list0 = checkAndAppend(list0, list3)
+	assert.Len(t, list0, 4)
+	assert.Contains(t, list0, "paperone")
+}
+
+func TestMergeInfo(t *testing.T) {
+	defer service.ClearMockServices()
+	service.SetMockServices()
+	info1 := CreateMockInfo()
+	info2 := CreateMockInfo()
+	info3 := CreateMockInfo()
+
+	peers := []GruInfo{info1, info2, info3}
+
+	merged := mergeInfo(peers)
+	assert.Equal(t, info1.Service["service1"].Cpu, merged.Service["service1"].Cpu)
+	assert.Equal(t, info1.System.ActiveServices, merged.System.ActiveServices)
 }

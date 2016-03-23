@@ -54,3 +54,12 @@ func CreateMockServices() []cfg.Service {
 
 	return []cfg.Service{service1, service2, service3}
 }
+
+func SetMockServices() {
+	services := CreateMockServices()
+	cfg.SetServices(services)
+}
+
+func ClearMockServices() {
+	cfg.CleanServices()
+}

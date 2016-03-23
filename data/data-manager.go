@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/json"
+	"errors"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -11,22 +12,34 @@ import (
 )
 
 func SaveStats(stats GruStats) {
-	saveData(stats, enum.STATS)
+	err := saveData(stats, enum.STATS)
+	if err != nil {
+		log.WithField("err", err).Debugln("Cannot convert stats to data")
+	}
 }
 
 func SaveAnalytics(analytics GruAnalytics) {
-	saveData(analytics, enum.ANALYTICS)
+	err := saveData(analytics, enum.ANALYTICS)
+	if err != nil {
+		log.WithField("err", err).Debugln("Cannot convert stats to data")
+	}
 }
 
 func SavePolicy(policy Policy) {
-	saveData(policy, enum.POLICIES)
+	err := saveData(policy, enum.POLICIES)
+	if err != nil {
+		log.WithField("err", err).Debugln("Cannot convert stats to data")
+	}
 }
 
-func SaveInfo(info Info) {
-	saveData(info, enum.INFO)
+func SaveInfo(info GruInfo) {
+	err := saveData(info, enum.INFO)
+	if err != nil {
+		log.WithField("err", err).Debugln("Cannot convert stats to data")
+	}
 }
 
-func saveData(data interface{}, dataType enum.Datatype) {
+func saveData(data interface{}, dataType enum.Datatype) error {
 	var encoded []byte
 	var err error
 	switch dataType {
@@ -34,36 +47,33 @@ func saveData(data interface{}, dataType enum.Datatype) {
 		stats := data.(GruStats)
 		encoded, err = json.Marshal(stats)
 		if err != nil {
-			log.WithField("err", err).Debugln("Cannot convert stats to data")
-			return
+			return err
 		}
 	case enum.ANALYTICS:
 		analytics := data.(GruAnalytics)
 		encoded, err = json.Marshal(analytics)
 		if err != nil {
-			log.WithField("err", err).Debugln("Cannot convert analytics to data")
-			return
+			return err
 		}
 	case enum.POLICIES:
 		policy := data.(Policy)
 		encoded, err = json.Marshal(policy)
 		if err != nil {
-			log.WithField("err", err).Debugln("Cannot convert policy to data")
-			return
+			return err
 		}
 	case enum.INFO:
-		info := data.(Info)
+		info := data.(GruInfo)
 		encoded, err = json.Marshal(info)
 		if err != nil {
-			log.WithField("err", err).Debugln("Cannot convert info to data")
-			return
+			return err
 		}
 	default:
-		log.WithField("dataType", dataType).Debugln("Cannot save data: unknown data type")
-		return
+		return errors.New("Cannot save data: unknown data type")
 	}
 
 	storage.StoreClusterData(encoded, dataType)
+
+	return nil
 }
 
 func GetStats() (GruStats, error) {
@@ -94,6 +104,16 @@ func GetPolicy() (Policy, error) {
 	}
 
 	return policy.(Policy), nil
+}
+
+func GetInfo() (GruInfo, error) {
+	info, err := getData(enum.INFO)
+	if err != nil {
+		log.WithField("err", err).Warnln("Cannot get info data")
+		return GruInfo{}, err
+	}
+
+	return info.(GruInfo), nil
 }
 
 func getData(dataType enum.Datatype) (interface{}, error) {
@@ -133,7 +153,7 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 			}
 		}
 	case enum.INFO:
-		data = Info{}
+		data = GruInfo{}
 		dataInfo, err := storage.GetClusterData(dataType)
 		if err != nil {
 			return nil, err
@@ -185,25 +205,25 @@ func ByteToPolicy(data []byte) (Policy, error) {
 
 }
 
-func ByteToInfo(data []byte) (Info, error) {
-	info := Info{}
+func ByteToInfo(data []byte) (GruInfo, error) {
+	info := GruInfo{}
 	err := json.Unmarshal(data, &info)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot conver byte to info")
-		return Info{}, err
+		return GruInfo{}, err
 	}
 
 	return info, nil
 
 }
 
-func mergeInfo(toMerge []Info) Info {
+func MergeInfo(toMerge []GruInfo) GruInfo {
 	loadAvg := 0.0
 	cpuAvg := 0.0
 	memAvg := 0.0
 	resourcesAvg := 0.0
 
-	merged := Info{
+	merged := GruInfo{
 		Service: make(map[string]ServiceInfo),
 	}
 
@@ -256,9 +276,10 @@ func mergeInfo(toMerge []Info) Info {
 	healthAvg /= lenght
 
 	mergedSystem := SystemInfo{
-		Cpu:    cpuAvg,
-		Memory: memAvg,
-		Health: healthAvg,
+		Cpu:            cpuAvg,
+		Memory:         memAvg,
+		Health:         healthAvg,
+		ActiveServices: activeServices,
 	}
 
 	merged.System = mergedSystem
@@ -267,11 +288,21 @@ func mergeInfo(toMerge []Info) Info {
 }
 
 func checkAndAppend(list []string, toAppend []string) []string {
+	if len(list) == 0 {
+		return append(list, toAppend...)
+	}
+
+	var isPresent bool
 	for _, elem := range toAppend {
+		isPresent = false
 		for _, present := range list {
-			if elem != present {
-				list = append(list, elem)
+			if elem == present {
+				isPresent = true
 			}
+		}
+
+		if !isPresent {
+			list = append(list, elem)
 		}
 	}
 
