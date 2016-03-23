@@ -42,7 +42,7 @@ func TestStoreData(t *testing.T) {
 	assert.NoError(t, err)
 	err = StoreData(key, data, enum.POLICIES)
 	assert.NoError(t, err)
-	err = StoreData(key, data, enum.INFO)
+	err = StoreData(key, data, enum.SHARED)
 	assert.NoError(t, err)
 }
 
@@ -58,14 +58,14 @@ func TestGetData(t *testing.T) {
 	StoreData(key, data, enum.STATS)
 	StoreData(key, data, enum.ANALYTICS)
 	StoreData(key, data, enum.POLICIES)
-	StoreData(key, data, enum.INFO)
+	StoreData(key, data, enum.SHARED)
 	value, _ = GetData(key, enum.STATS)
 	assert.Equal(t, data, value)
 	value, _ = GetData(key, enum.ANALYTICS)
 	assert.Equal(t, data, value)
 	value, _ = GetData(key, enum.POLICIES)
 	assert.Equal(t, data, value)
-	value, _ = GetData(key, enum.INFO)
+	value, _ = GetData(key, enum.SHARED)
 	assert.Equal(t, data, value)
 }
 
@@ -81,7 +81,7 @@ func TestGetAllData(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = GetAllData(enum.POLICIES)
 	assert.NoError(t, err)
-	_, err = GetAllData(enum.INFO)
+	_, err = GetAllData(enum.SHARED)
 	assert.NoError(t, err)
 }
 
@@ -98,7 +98,7 @@ func TestDeleteData(t *testing.T) {
 	StoreData(key, data, enum.STATS)
 	StoreData(key, data, enum.ANALYTICS)
 	StoreData(key, data, enum.POLICIES)
-	StoreData(key, data, enum.INFO)
+	StoreData(key, data, enum.SHARED)
 
 	err = DeleteData(key, enum.STATS)
 	assert.NoError(t, err)
@@ -112,9 +112,9 @@ func TestDeleteData(t *testing.T) {
 	assert.NoError(t, err)
 	value, _ = GetData(key, enum.POLICIES)
 	assert.Nil(t, value)
-	err = DeleteData(key, enum.INFO)
+	err = DeleteData(key, enum.SHARED)
 	assert.NoError(t, err)
-	value, _ = GetData(key, enum.INFO)
+	value, _ = GetData(key, enum.SHARED)
 	assert.Nil(t, value)
 }
 
@@ -131,7 +131,7 @@ func TestDeleteAllData(t *testing.T) {
 	StoreData(key, data, enum.STATS)
 	StoreData(key, data, enum.ANALYTICS)
 	StoreData(key, data, enum.POLICIES)
-	StoreData(key, data, enum.INFO)
+	StoreData(key, data, enum.SHARED)
 
 	err = DeleteAllData(enum.STATS)
 	assert.NoError(t, err)
@@ -145,9 +145,9 @@ func TestDeleteAllData(t *testing.T) {
 	assert.NoError(t, err)
 	value, _ = GetAllData(enum.POLICIES)
 	assert.Empty(t, value)
-	err = DeleteAllData(enum.INFO)
+	err = DeleteAllData(enum.SHARED)
 	assert.NoError(t, err)
-	value, _ = GetAllData(enum.INFO)
+	value, _ = GetAllData(enum.SHARED)
 	assert.Empty(t, value)
 }
 

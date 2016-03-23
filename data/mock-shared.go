@@ -1,8 +1,8 @@
 package data
 
-func CreateMockInfo() GruInfo {
-	info := GruInfo{
-		Service: make(map[string]ServiceInfo),
+func CreateMockInfo() Shared {
+	info := Shared{
+		Service: make(map[string]ServiceShared),
 	}
 
 	service1 := "service1"
@@ -13,7 +13,7 @@ func CreateMockInfo() GruInfo {
 	mem1 := 0.6
 	res1 := 0.0
 	act1 := true
-	srvInfo1 := ServiceInfo{
+	srvInfo1 := ServiceShared{
 		Load:      load1,
 		Cpu:       cpu1,
 		Memory:    mem1,
@@ -26,7 +26,7 @@ func CreateMockInfo() GruInfo {
 	mem2 := 0.1
 	res2 := 1.0
 	act2 := true
-	srvInfo2 := ServiceInfo{
+	srvInfo2 := ServiceShared{
 		Load:      load2,
 		Cpu:       cpu2,
 		Memory:    mem2,
@@ -41,7 +41,7 @@ func CreateMockInfo() GruInfo {
 	memSys := 0.7
 	healthSys := 0.7
 	activeSys := []string{service1}
-	sys := SystemInfo{
+	sys := SystemShared{
 		Cpu:            cpuSys,
 		Memory:         memSys,
 		Health:         healthSys,

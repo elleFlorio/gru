@@ -125,6 +125,14 @@ var routes = Routes{
 		GetInfoActions,
 	},
 
+	//SHARED
+	Route{
+		"SharedData",
+		"GET",
+		"/gru/v1/shared",
+		GetSharedData,
+	},
+
 	//COMMANDS
 	Route{
 		"ExecCommands",

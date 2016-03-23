@@ -32,8 +32,8 @@ func SavePolicy(policy Policy) {
 	}
 }
 
-func SaveInfo(info GruInfo) {
-	err := saveData(info, enum.INFO)
+func SaveShared(info Shared) {
+	err := saveData(info, enum.SHARED)
 	if err != nil {
 		log.WithField("err", err).Debugln("Cannot convert stats to data")
 	}
@@ -61,8 +61,8 @@ func saveData(data interface{}, dataType enum.Datatype) error {
 		if err != nil {
 			return err
 		}
-	case enum.INFO:
-		info := data.(GruInfo)
+	case enum.SHARED:
+		info := data.(Shared)
 		encoded, err = json.Marshal(info)
 		if err != nil {
 			return err
@@ -106,14 +106,14 @@ func GetPolicy() (Policy, error) {
 	return policy.(Policy), nil
 }
 
-func GetInfo() (GruInfo, error) {
-	info, err := getData(enum.INFO)
+func GetShared() (Shared, error) {
+	info, err := getData(enum.SHARED)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot get info data")
-		return GruInfo{}, err
+		return Shared{}, err
 	}
 
-	return info.(GruInfo), nil
+	return info.(Shared), nil
 }
 
 func getData(dataType enum.Datatype) (interface{}, error) {
@@ -152,13 +152,13 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 				return nil, err
 			}
 		}
-	case enum.INFO:
-		data = GruInfo{}
+	case enum.SHARED:
+		data = Shared{}
 		dataInfo, err := storage.GetClusterData(dataType)
 		if err != nil {
 			return nil, err
 		} else {
-			data, err = ByteToInfo(dataInfo)
+			data, err = ByteToShared(dataInfo)
 			if err != nil {
 				return nil, err
 			}
@@ -205,26 +205,26 @@ func ByteToPolicy(data []byte) (Policy, error) {
 
 }
 
-func ByteToInfo(data []byte) (GruInfo, error) {
-	info := GruInfo{}
+func ByteToShared(data []byte) (Shared, error) {
+	info := Shared{}
 	err := json.Unmarshal(data, &info)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot conver byte to info")
-		return GruInfo{}, err
+		return Shared{}, err
 	}
 
 	return info, nil
 
 }
 
-func MergeInfo(toMerge []GruInfo) GruInfo {
+func MergeShared(toMerge []Shared) Shared {
 	loadAvg := 0.0
 	cpuAvg := 0.0
 	memAvg := 0.0
 	resourcesAvg := 0.0
 
-	merged := GruInfo{
-		Service: make(map[string]ServiceInfo),
+	merged := Shared{
+		Service: make(map[string]ServiceShared),
 	}
 
 	for _, name := range service.List() {
@@ -246,7 +246,7 @@ func MergeInfo(toMerge []GruInfo) GruInfo {
 			memAvg /= counter
 			resourcesAvg /= counter
 
-			mergedService := ServiceInfo{
+			mergedService := ServiceShared{
 				Load:      loadAvg,
 				Cpu:       cpuAvg,
 				Memory:    memAvg,
@@ -275,7 +275,7 @@ func MergeInfo(toMerge []GruInfo) GruInfo {
 	memAvg /= lenght
 	healthAvg /= lenght
 
-	mergedSystem := SystemInfo{
+	mergedSystem := SystemShared{
 		Cpu:            cpuAvg,
 		Memory:         memAvg,
 		Health:         healthAvg,
