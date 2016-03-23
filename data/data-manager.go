@@ -12,34 +12,34 @@ import (
 )
 
 func SaveStats(stats GruStats) {
-	err := saveData(stats, enum.STATS)
+	err := saveData(stats, enum.STATS, enum.LOCAL)
 	if err != nil {
 		log.WithField("err", err).Debugln("Cannot convert stats to data")
 	}
 }
 
 func SaveAnalytics(analytics GruAnalytics) {
-	err := saveData(analytics, enum.ANALYTICS)
+	err := saveData(analytics, enum.ANALYTICS, enum.LOCAL)
 	if err != nil {
 		log.WithField("err", err).Debugln("Cannot convert stats to data")
 	}
 }
 
 func SavePolicy(policy Policy) {
-	err := saveData(policy, enum.POLICIES)
+	err := saveData(policy, enum.POLICIES, enum.LOCAL)
 	if err != nil {
 		log.WithField("err", err).Debugln("Cannot convert stats to data")
 	}
 }
 
 func SaveShared(info Shared) {
-	err := saveData(info, enum.SHARED)
+	err := saveData(info, enum.SHARED, enum.CLUSTER)
 	if err != nil {
 		log.WithField("err", err).Debugln("Cannot convert stats to data")
 	}
 }
 
-func saveData(data interface{}, dataType enum.Datatype) error {
+func saveData(data interface{}, dataType enum.Datatype, dataOwner enum.DataOwner) error {
 	var encoded []byte
 	var err error
 	switch dataType {
@@ -71,13 +71,13 @@ func saveData(data interface{}, dataType enum.Datatype) error {
 		return errors.New("Cannot save data: unknown data type")
 	}
 
-	storage.StoreClusterData(encoded, dataType)
+	storage.StoreData(dataOwner.ToString(), encoded, dataType)
 
 	return nil
 }
 
 func GetStats() (GruStats, error) {
-	stats, err := getData(enum.STATS)
+	stats, err := getData(enum.STATS, enum.LOCAL)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot get stats data")
 		return GruStats{}, err
@@ -87,7 +87,7 @@ func GetStats() (GruStats, error) {
 }
 
 func GetAnalytics() (GruAnalytics, error) {
-	analytics, err := getData(enum.ANALYTICS)
+	analytics, err := getData(enum.ANALYTICS, enum.LOCAL)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot get analytics data")
 		return GruAnalytics{}, err
@@ -97,7 +97,7 @@ func GetAnalytics() (GruAnalytics, error) {
 }
 
 func GetPolicy() (Policy, error) {
-	policy, err := getData(enum.POLICIES)
+	policy, err := getData(enum.POLICIES, enum.LOCAL)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot get policy data")
 		return Policy{}, err
@@ -107,7 +107,7 @@ func GetPolicy() (Policy, error) {
 }
 
 func GetShared() (Shared, error) {
-	info, err := getData(enum.SHARED)
+	info, err := getData(enum.SHARED, enum.CLUSTER)
 	if err != nil {
 		log.WithField("err", err).Warnln("Cannot get info data")
 		return Shared{}, err
@@ -116,12 +116,12 @@ func GetShared() (Shared, error) {
 	return info.(Shared), nil
 }
 
-func getData(dataType enum.Datatype) (interface{}, error) {
+func getData(dataType enum.Datatype, dataOwner enum.DataOwner) (interface{}, error) {
 	var data interface{}
 	switch dataType {
 	case enum.STATS:
 		data = GruStats{}
-		dataStats, err := storage.GetClusterData(dataType)
+		dataStats, err := storage.GetData(dataOwner.ToString(), dataType)
 		if err != nil {
 			return nil, err
 		} else {
@@ -132,7 +132,7 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 		}
 	case enum.ANALYTICS:
 		data = GruAnalytics{}
-		dataAnalytics, err := storage.GetClusterData(dataType)
+		dataAnalytics, err := storage.GetData(dataOwner.ToString(), dataType)
 		if err != nil {
 			return nil, err
 		} else {
@@ -143,7 +143,7 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 		}
 	case enum.POLICIES:
 		data = Policy{}
-		dataPolicy, err := storage.GetClusterData(dataType)
+		dataPolicy, err := storage.GetData(dataOwner.ToString(), dataType)
 		if err != nil {
 			return nil, err
 		} else {
@@ -154,7 +154,7 @@ func getData(dataType enum.Datatype) (interface{}, error) {
 		}
 	case enum.SHARED:
 		data = Shared{}
-		dataInfo, err := storage.GetClusterData(dataType)
+		dataInfo, err := storage.GetData(dataOwner.ToString(), dataType)
 		if err != nil {
 			return nil, err
 		} else {
@@ -217,7 +217,15 @@ func ByteToShared(data []byte) (Shared, error) {
 
 }
 
-func MergeShared(toMerge []Shared) Shared {
+func MergeShared(toMerge []Shared) (Shared, error) {
+	if len(toMerge) < 1 {
+		return Shared{}, errors.New("No shared data to merge")
+	}
+
+	if len(toMerge) == 1 {
+		return toMerge[0], nil
+	}
+
 	loadAvg := 0.0
 	cpuAvg := 0.0
 	memAvg := 0.0
@@ -284,7 +292,7 @@ func MergeShared(toMerge []Shared) Shared {
 
 	merged.System = mergedSystem
 
-	return merged
+	return merged, nil
 }
 
 func checkAndAppend(list []string, toAppend []string) []string {

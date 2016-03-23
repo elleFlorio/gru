@@ -17,15 +17,15 @@ func TestClearFriendsData(t *testing.T) {
 	var err error
 	storage.New("internal")
 	data := []byte{}
-	storage.StoreLocalData(data, enum.ANALYTICS)
-	storage.StoreClusterData(data, enum.ANALYTICS)
-	storage.StoreData("node1", data, enum.ANALYTICS)
-	storage.StoreData("node2", data, enum.ANALYTICS)
-	storage.StoreData("node3", data, enum.ANALYTICS)
+	storage.StoreLocalData(data, enum.SHARED)
+	storage.StoreClusterData(data, enum.SHARED)
+	storage.StoreData("node1", data, enum.SHARED)
+	storage.StoreData("node2", data, enum.SHARED)
+	storage.StoreData("node3", data, enum.SHARED)
 
 	err = clearFriendsData()
 	assert.NoError(t, err)
-	stored, _ := storage.GetAllData(enum.ANALYTICS)
+	stored, _ := storage.GetAllData(enum.SHARED)
 	assert.Equal(t, 2, len(stored))
 }
 

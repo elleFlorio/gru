@@ -26,7 +26,7 @@ func TestSaveStats(t *testing.T) {
 	stats := CreateMockStats()
 	SaveStats(stats)
 
-	encoded, _ := storage.GetClusterData(enum.STATS)
+	encoded, _ := storage.GetLocalData(enum.STATS)
 	decoded := GruStats{}
 	json.Unmarshal(encoded, &decoded)
 
@@ -38,7 +38,7 @@ func TestSaveAnalytics(t *testing.T) {
 	analytics := CreateMockAnalytics()
 	SaveAnalytics(analytics)
 
-	encoded, _ := storage.GetClusterData(enum.ANALYTICS)
+	encoded, _ := storage.GetLocalData(enum.ANALYTICS)
 	decoded := GruAnalytics{}
 	json.Unmarshal(encoded, &decoded)
 
@@ -50,20 +50,20 @@ func TestSavePolicy(t *testing.T) {
 	policy := CreateRandomMockPolicies(1)[0]
 	SavePolicy(policy)
 
-	encoded, _ := storage.GetClusterData(enum.POLICIES)
+	encoded, _ := storage.GetLocalData(enum.POLICIES)
 	decoded := Policy{}
 	json.Unmarshal(encoded, &decoded)
 
 	assert.Equal(t, policy, decoded)
 }
 
-func TestSaveInfo(t *testing.T) {
-	defer storage.DeleteAllData(enum.INFO)
+func TestSaveShared(t *testing.T) {
+	defer storage.DeleteAllData(enum.SHARED)
 	info := CreateMockInfo()
-	SaveInfo(info)
+	SaveShared(info)
 
-	encoded, _ := storage.GetClusterData(enum.INFO)
-	decoded := GruInfo{}
+	encoded, _ := storage.GetClusterData(enum.SHARED)
+	decoded := Shared{}
 	json.Unmarshal(encoded, &decoded)
 
 	assert.Equal(t, info, decoded)
@@ -123,18 +123,18 @@ func TestByteToPolicy(t *testing.T) {
 
 func TestByteToInfo(t *testing.T) {
 	var encoded []byte
-	var decoded GruInfo
+	var decoded Shared
 	var err error
 
 	info := CreateMockInfo()
 	encoded, _ = json.Marshal(info)
-	decoded, err = ByteToInfo(encoded)
+	decoded, err = ByteToShared(encoded)
 	assert.NoError(t, err)
 	assert.Equal(t, info, decoded)
 
 	bad := 0
 	encoded, _ = json.Marshal(bad)
-	decoded, err = ByteToInfo(encoded)
+	decoded, err = ByteToShared(encoded)
 	assert.Error(t, err)
 }
 
@@ -181,15 +181,15 @@ func TestGetPolicy(t *testing.T) {
 }
 
 func TestGeInfo(t *testing.T) {
-	defer storage.DeleteAllData(enum.INFO)
+	defer storage.DeleteAllData(enum.SHARED)
 	var err error
 
-	_, err = GetInfo()
+	_, err = GetShared()
 	assert.Error(t, err)
 
 	expected := CreateMockInfo()
-	SaveInfo(expected)
-	info, err := GetInfo()
+	SaveShared(expected)
+	info, err := GetShared()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, info)
 }
@@ -216,14 +216,24 @@ func TestCheckAndAppend(t *testing.T) {
 
 func TestMergeInfo(t *testing.T) {
 	defer service.ClearMockServices()
+	var err error
+
 	service.SetMockServices()
 	info1 := CreateMockInfo()
 	info2 := CreateMockInfo()
 	info3 := CreateMockInfo()
 
-	peers := []GruInfo{info1, info2, info3}
-
-	merged := mergeInfo(peers)
+	peers := []Shared{info1, info2, info3}
+	merged, err := MergeShared(peers)
+	assert.NoError(t, err)
 	assert.Equal(t, info1.Service["service1"].Cpu, merged.Service["service1"].Cpu)
 	assert.Equal(t, info1.System.ActiveServices, merged.System.ActiveServices)
+
+	empty := []Shared{}
+	_, err = MergeShared(empty)
+	assert.Error(t, err)
+
+	one := []Shared{info1}
+	_, err = MergeShared(one)
+	assert.NoError(t, err)
 }

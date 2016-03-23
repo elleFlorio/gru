@@ -9,13 +9,14 @@ import (
 
 	"github.com/elleFlorio/gru/cluster"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/network"
 	"github.com/elleFlorio/gru/storage"
 )
 
 // api
-const c_ROUTE_ANALYTICS string = "/gru/v1/analytics"
+const c_ROUTE_SHARED string = "/gru/v1/shared"
 
 var (
 	ErrInvalidFriendsNumber error = errors.New("Friends number should be > 0")
@@ -65,7 +66,12 @@ func updateFriendsData(nFriends int) error {
 	}
 	log.WithField("friends", friends).Debugln("Friends to connect with")
 
-	err = getFriendsData(friends)
+	friendsData, err := getFriendsData(friends)
+	if err != nil {
+		return err
+	}
+
+	err = mergeFriendsData(friendsData)
 	if err != nil {
 		return err
 	}
@@ -74,7 +80,7 @@ func updateFriendsData(nFriends int) error {
 }
 
 func clearFriendsData() error {
-	allData, err := storage.GetAllData(enum.ANALYTICS)
+	allData, err := storage.GetAllData(enum.SHARED)
 	if err != nil {
 		log.Errorln("Error cleaning up friends data")
 		return err
@@ -83,7 +89,7 @@ func clearFriendsData() error {
 	for key, _ := range allData {
 		if key != enum.CLUSTER.ToString() && key != enum.LOCAL.ToString() {
 			log.WithField("friend", key).Debugln("cleared friend data")
-			storage.DeleteData(key, enum.ANALYTICS)
+			storage.DeleteData(key, enum.SHARED)
 		}
 	}
 
@@ -130,20 +136,41 @@ func chooseRandomFriends(peers map[string]string, n int) (map[string]string, err
 	return friends, nil
 }
 
-func getFriendsData(friends map[string]string) error {
+func getFriendsData(friends map[string]string) ([]data.Shared, error) {
 	var err error
+	friendsData := make([]data.Shared, 0, len(friends))
 
 	for friend, address := range friends {
-		friendRoute := address + c_ROUTE_ANALYTICS
+		friendRoute := address + c_ROUTE_SHARED
 		friendData, err := network.DoRequest("GET", friendRoute, nil)
 		if err != nil {
 			log.WithField("address", address).Debugln("Error retrieving friend stats")
 		}
-		err = storage.StoreData(friend, friendData, enum.ANALYTICS)
+		err = storage.StoreData(friend, friendData, enum.SHARED)
 		if err != nil {
 			log.WithField("err", err).Debugln("Error storing friends data")
 		}
+
+		sharedData, err := data.ByteToShared(friendData)
+		if err != nil {
+			log.WithField("address", address).Debugln("Friend data not stored")
+		} else {
+			friendsData = append(friendsData, sharedData)
+		}
+
 	}
 
-	return err
+	return friendsData, err
+}
+
+func mergeFriendsData(friendsData []data.Shared) error {
+	merged, err := data.MergeShared(friendsData)
+	if err != nil {
+		log.WithField("err", err).Debugln("Cannot store friends data")
+		return err
+	}
+
+	data.SaveShared(merged)
+
+	return nil
 }
