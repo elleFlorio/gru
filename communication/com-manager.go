@@ -71,10 +71,12 @@ func updateFriendsData(nFriends int) error {
 		return err
 	}
 
-	err = mergeFriendsData(friendsData)
+	clusterData, err := mergeSharedData(friendsData)
 	if err != nil {
 		return err
 	}
+
+	data.SaveSharedCluster(clusterData)
 
 	return nil
 }
@@ -163,14 +165,25 @@ func getFriendsData(friends map[string]string) ([]data.Shared, error) {
 	return friendsData, err
 }
 
-func mergeFriendsData(friendsData []data.Shared) error {
-	merged, err := data.MergeShared(friendsData)
+func mergeSharedData(friendsData []data.Shared) (data.Shared, error) {
+	sharedFriends, err := data.MergeShared(friendsData)
 	if err != nil {
-		log.WithField("err", err).Debugln("Cannot store friends data")
-		return err
+		log.WithField("err", err).Debugln("Cannot merge friends data")
+		return data.Shared{}, err
 	}
 
-	data.SaveShared(merged)
+	sharedStored, err := data.GetSharedCluster()
+	if err != nil {
+		log.WithField("err", err).Debugln("Cannot get stored shared data")
+		return sharedFriends, nil
+	}
 
-	return nil
+	toMerge := []data.Shared{sharedFriends, sharedStored}
+	sharedCluster, err := data.MergeShared(toMerge)
+	if err != nil {
+		log.WithField("err", err).Debugln("Cannot merge friends and stored data")
+		return sharedFriends, nil
+	}
+
+	return sharedCluster, nil
 }

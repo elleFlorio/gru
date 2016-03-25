@@ -382,3 +382,51 @@ func convertDataToAnalytics(dataByte []byte) (data.GruAnalytics, error) {
 
 	return analytics, nil
 }
+
+func analyzeSharedData(analytics *data.GruAnalytics) data.Shared {
+	myShared := computeLocalShared(analytics)
+	data.SaveSharedLocal(myShared)
+	clusterData := computeClusterData(myShared)
+	data.SaveSharedCluster(clusterData)
+	return clusterData
+
+}
+
+func computeLocalShared(analytics *data.GruAnalytics) data.Shared {
+	myShared := data.Shared{Service: make(map[string]data.ServiceShared)}
+
+	for srv, value := range analytics.Service {
+		mySrvShared := data.ServiceShared{
+			Load:      value.Load,
+			Cpu:       value.Resources.Cpu,
+			Memory:    value.Resources.Memory,
+			Resources: value.Resources.Available,
+			Active:    true,
+		}
+
+		myShared.Service[srv] = mySrvShared
+	}
+
+	myShared.System.Cpu = analytics.System.Resources.Cpu
+	myShared.System.Memory = analytics.System.Resources.Memory
+	myShared.System.Health = analytics.System.Health
+	myShared.System.ActiveServices = analytics.System.Services
+
+	return myShared
+}
+
+func computeClusterData(myShared data.Shared) data.Shared {
+	sharedData, err := data.GetSharedCluster()
+	if err != nil {
+		log.Debugln("Cannot compute cluster data")
+		return myShared
+	}
+
+	toMerge := []data.Shared{myShared, sharedData}
+	clusterData, err := data.MergeShared(toMerge)
+	if err != nil {
+		return myShared
+	}
+
+	return clusterData
+}

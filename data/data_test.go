@@ -60,13 +60,22 @@ func TestSavePolicy(t *testing.T) {
 func TestSaveShared(t *testing.T) {
 	defer storage.DeleteAllData(enum.SHARED)
 	info := CreateMockInfo()
-	SaveShared(info)
+	// Local
+	SaveSharedLocal(info)
 
-	encoded, _ := storage.GetClusterData(enum.SHARED)
+	encoded, _ := storage.GetLocalData(enum.SHARED)
 	decoded := Shared{}
 	json.Unmarshal(encoded, &decoded)
-
 	assert.Equal(t, info, decoded)
+
+	// Cluster
+	SaveSharedCluster(info)
+
+	encoded, _ = storage.GetLocalData(enum.SHARED)
+	decoded = Shared{}
+	json.Unmarshal(encoded, &decoded)
+	assert.Equal(t, info, decoded)
+
 }
 
 func TestByteToStats(t *testing.T) {
@@ -180,16 +189,26 @@ func TestGetPolicy(t *testing.T) {
 	assert.Equal(t, expected, policy)
 }
 
-func TestGeInfo(t *testing.T) {
+func TestGeShared(t *testing.T) {
 	defer storage.DeleteAllData(enum.SHARED)
 	var err error
+	expected := CreateMockInfo()
 
-	_, err = GetShared()
+	// Local
+	_, err = GetSharedLocal()
 	assert.Error(t, err)
 
-	expected := CreateMockInfo()
-	SaveShared(expected)
-	info, err := GetShared()
+	SaveSharedLocal(expected)
+	info, err := GetSharedLocal()
+	assert.NoError(t, err)
+	assert.Equal(t, expected, info)
+
+	// Local
+	_, err = GetSharedCluster()
+	assert.Error(t, err)
+
+	SaveSharedCluster(expected)
+	info, err = GetSharedCluster()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, info)
 }

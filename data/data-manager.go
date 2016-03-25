@@ -21,21 +21,28 @@ func SaveStats(stats GruStats) {
 func SaveAnalytics(analytics GruAnalytics) {
 	err := saveData(analytics, enum.ANALYTICS, enum.LOCAL)
 	if err != nil {
-		log.WithField("err", err).Debugln("Cannot convert stats to data")
+		log.WithField("err", err).Debugln("Cannot convert analytics to data")
 	}
 }
 
 func SavePolicy(policy Policy) {
 	err := saveData(policy, enum.POLICIES, enum.LOCAL)
 	if err != nil {
-		log.WithField("err", err).Debugln("Cannot convert stats to data")
+		log.WithField("err", err).Debugln("Cannot convert policy to data")
 	}
 }
 
-func SaveShared(info Shared) {
+func SaveSharedLocal(info Shared) {
+	err := saveData(info, enum.SHARED, enum.LOCAL)
+	if err != nil {
+		log.WithField("err", err).Debugln("Cannot convert local shared to data")
+	}
+}
+
+func SaveSharedCluster(info Shared) {
 	err := saveData(info, enum.SHARED, enum.CLUSTER)
 	if err != nil {
-		log.WithField("err", err).Debugln("Cannot convert stats to data")
+		log.WithField("err", err).Debugln("Cannot convert cluster shared to data")
 	}
 }
 
@@ -106,10 +113,20 @@ func GetPolicy() (Policy, error) {
 	return policy.(Policy), nil
 }
 
-func GetShared() (Shared, error) {
+func GetSharedLocal() (Shared, error) {
+	info, err := getData(enum.SHARED, enum.LOCAL)
+	if err != nil {
+		log.WithField("err", err).Warnln("Cannot get shared local data")
+		return Shared{}, err
+	}
+
+	return info.(Shared), nil
+}
+
+func GetSharedCluster() (Shared, error) {
 	info, err := getData(enum.SHARED, enum.CLUSTER)
 	if err != nil {
-		log.WithField("err", err).Warnln("Cannot get info data")
+		log.WithField("err", err).Warnln("Cannot get shared cluster data")
 		return Shared{}, err
 	}
 
