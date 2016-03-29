@@ -59,7 +59,7 @@ func TestSavePolicy(t *testing.T) {
 
 func TestSaveShared(t *testing.T) {
 	defer storage.DeleteAllData(enum.SHARED)
-	info := CreateMockInfo()
+	info := CreateMockShared()
 	// Local
 	SaveSharedLocal(info)
 
@@ -135,7 +135,7 @@ func TestByteToInfo(t *testing.T) {
 	var decoded Shared
 	var err error
 
-	info := CreateMockInfo()
+	info := CreateMockShared()
 	encoded, _ = json.Marshal(info)
 	decoded, err = ByteToShared(encoded)
 	assert.NoError(t, err)
@@ -192,7 +192,7 @@ func TestGetPolicy(t *testing.T) {
 func TestGeShared(t *testing.T) {
 	defer storage.DeleteAllData(enum.SHARED)
 	var err error
-	expected := CreateMockInfo()
+	expected := CreateMockShared()
 
 	// Local
 	_, err = GetSharedLocal()
@@ -238,9 +238,9 @@ func TestMergeInfo(t *testing.T) {
 	var err error
 
 	service.SetMockServices()
-	info1 := CreateMockInfo()
-	info2 := CreateMockInfo()
-	info3 := CreateMockInfo()
+	info1 := CreateMockShared()
+	info2 := CreateMockShared()
+	info3 := CreateMockShared()
 
 	peers := []Shared{info1, info2, info3}
 	merged, err := MergeShared(peers)

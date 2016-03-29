@@ -1,6 +1,6 @@
 package data
 
-func CreateMockInfo() Shared {
+func CreateMockShared() Shared {
 	info := Shared{
 		Service: make(map[string]ServiceShared),
 	}

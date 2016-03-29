@@ -22,12 +22,12 @@ func (p *scaleinCreator) listActions() []string {
 	return []string{"stop"}
 }
 
-func (p *scaleinCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []data.Policy {
+func (p *scaleinCreator) createPolicies(srvList []string, clusterData data.Shared) []data.Policy {
 	scaleinPolicies := make([]data.Policy, 0, len(srvList))
 
 	for _, name := range srvList {
 		policyName := p.getPolicyName()
-		policyWeight := p.computeWeight(name, analytics)
+		policyWeight := p.computeWeight(name, clusterData)
 		policyTargets := []string{name}
 		policyActions := map[string][]enum.Action{
 			name: []enum.Action{enum.STOP, enum.REMOVE},
@@ -46,7 +46,7 @@ func (p *scaleinCreator) createPolicies(srvList []string, analytics data.GruAnal
 	return scaleinPolicies
 }
 
-func (p *scaleinCreator) computeWeight(name string, analytics data.GruAnalytics) float64 {
+func (p *scaleinCreator) computeWeight(name string, clusterData data.Shared) float64 {
 	srv, _ := service.GetServiceByName(name)
 	inst_run := len(srv.Instances.Running)
 	inst_pen := len(srv.Instances.Pending)
@@ -60,13 +60,13 @@ func (p *scaleinCreator) computeWeight(name string, analytics data.GruAnalytics)
 		return 0.0
 	}
 
-	srvAnalytics := analytics.Service[name]
+	srvShared := clusterData.Service[name]
 	// LOAD
-	load := srvAnalytics.Load
+	load := srvShared.Load
 	value_load := math.Min(load, c_THRESHOLD_SCALEIN_LOAD)
 	weight_load := 1 - value_load/c_THRESHOLD_SCALEIN_LOAD
 	// CPU
-	cpu := srvAnalytics.Resources.Cpu
+	cpu := srvShared.Cpu
 	value_cpu := math.Min(cpu, c_THRESHOLD_SCALEIN_CPU)
 	weight_cpu := 1 - value_cpu/c_THRESHOLD_SCALEIN_CPU
 	// MEMORY

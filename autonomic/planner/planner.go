@@ -25,16 +25,16 @@ func SetPlannerStrategy(strategyName string) {
 	log.WithField("strategy", strtg.Name()).Infoln("Strategy initialized")
 }
 
-func Run(analytics data.GruAnalytics) *data.Policy {
+func Run(clusterData data.Shared) *data.Policy {
 	log.WithField("status", "init").Debugln("Gru Planner")
 	defer log.WithField("status", "done").Debugln("Gru Planner")
 	var chosenPolicy *data.Policy
 
-	if len(analytics.Service) == 0 {
+	if len(clusterData.Service) == 0 {
 		log.WithField("err", "No services analytics").Warnln("Cannot compute plans.")
 	} else {
-		srvList := getServicesListFromAnalytics(analytics)
-		policies := policy.CreatePolicies(srvList, analytics)
+		srvList := getServicesListFromClusterData(clusterData)
+		policies := policy.CreatePolicies(srvList, clusterData)
 		chosenPolicy = currentStrategy.MakeDecision(policies)
 		data.SavePolicy(*chosenPolicy)
 		displayPolicy(chosenPolicy)
@@ -43,39 +43,14 @@ func Run(analytics data.GruAnalytics) *data.Policy {
 	return chosenPolicy
 }
 
-// TODO I should remove this and start from the stats to compute something
-// for the services that are not created yet. In that way I just need to call
-// service.List()
-func getServicesListFromAnalytics(analytics data.GruAnalytics) []string {
-	list := make([]string, 0, len(analytics.Service))
-	for srv, _ := range analytics.Service {
+func getServicesListFromClusterData(clusterData data.Shared) []string {
+	list := make([]string, 0, len(clusterData.Service))
+	for srv, _ := range clusterData.Service {
 		list = append(list, srv)
 	}
 
 	return list
 }
-
-// func savePolicy(chosenPolicy *data.Policy) error {
-// 	data, err := convertPolicyToData(chosenPolicy)
-// 	if err != nil {
-// 		log.WithField("err", err).Debugln("Cannot convert policy to data")
-// 		return err
-// 	} else {
-// 		storage.StoreLocalData(data, enum.POLICIES)
-// 	}
-
-// 	return nil
-// }
-
-// func convertPolicyToData(chosenPolicy *policy.Policy) ([]byte, error) {
-// 	data, err := json.Marshal(*chosenPolicy)
-// 	if err != nil {
-// 		log.WithField("error", err).Errorln("Error marshaling plan data")
-// 		return nil, err
-// 	}
-
-// 	return data, nil
-// }
 
 func displayPolicy(chosenPolicy *data.Policy) {
 	targets := make([]string, 0, len(chosenPolicy.Targets))
@@ -89,26 +64,3 @@ func displayPolicy(chosenPolicy *data.Policy) {
 		"targets": targets,
 	}).Infoln("Policy to actuate")
 }
-
-// func GetPlannerData() (data.Policy, error) {
-// 	plc := policy.Policy{}
-// 	dataPlan, err := storage.GetLocalData(enum.POLICIES)
-// 	if err != nil {
-// 		log.WithField("err", err).Warnln("Cannot retrieve plan data")
-// 	} else {
-// 		plc, err = convertDataToPolicy(dataPlan)
-// 	}
-
-// 	return plc, err
-// }
-
-// func convertDataToPolicy(data []byte) (policy.Policy, error) {
-// 	plc := policy.Policy{}
-// 	err := json.Unmarshal(data, &plc)
-// 	if err != nil {
-// 		log.WithField("err", err).Errorln("Error unmarshaling plan data")
-// 		return policy.Policy{}, err
-// 	}
-
-// 	return plc, nil
-// }

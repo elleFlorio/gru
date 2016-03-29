@@ -7,7 +7,7 @@ import (
 
 type policyCreator interface {
 	getPolicyName() string
-	createPolicies([]string, data.GruAnalytics) []data.Policy
+	createPolicies([]string, data.Shared) []data.Policy
 	listActions() []string
 }
 
@@ -40,11 +40,11 @@ func ListPolicyActions(name string) []string {
 	return []string{}
 }
 
-func CreatePolicies(srvList []string, analytics data.GruAnalytics) []data.Policy {
+func CreatePolicies(srvList []string, clusterData data.Shared) []data.Policy {
 	policies := []data.Policy{}
 
 	for _, creator := range creators {
-		creatorPolicies := creator.createPolicies(srvList, analytics)
+		creatorPolicies := creator.createPolicies(srvList, clusterData)
 		policies = append(policies, creatorPolicies...)
 	}
 

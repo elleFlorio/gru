@@ -8,6 +8,7 @@ import (
 
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
+	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
@@ -114,76 +115,6 @@ func createHealth(servicesH []float64, systemH float64) data.GruAnalytics {
 	analytics.System.Health = systemH
 
 	return analytics
-
-}
-
-// TODO review after data.info integration
-// func TestGetPeerAnalytics(t *testing.T) {
-// 	defer storage.DeleteAllData(enum.ANALYTICS)
-//
-// 	peer_1 := data.CreateMockAnalytics()
-// 	peer_2 := data.CreateMockAnalytics()
-// 	peer_3 := data.CreateMockAnalytics()
-
-//  data_1, _ := convertAnalyticsToData(peer_1)
-// 	data_2, _ := convertAnalyticsToData(peer_2)
-// 	data_3, _ := convertAnalyticsToData(peer_3)
-
-// 	storage.StoreData("peer1", data_1, enum.ANALYTICS)
-// 	storage.StoreData("peer2", data_2, enum.ANALYTICS)
-// 	storage.StoreData("peer3", data_3, enum.ANALYTICS)
-
-// 	peers := getPeersAnalytics()
-
-// 	assert.Len(t, peers, 2)
-// }
-
-func TestComputeServicesAvg(t *testing.T) {
-	cfg.SetServices(createServicesWithNames([]string{"s1", "s2", "s3", "s4"}))
-	analytics := createLocal()
-	peers := createPeers()
-
-	computeServicesAvg(peers, &analytics)
-	//SERVICE 1
-	assert.InEpsilon(t, 0.6, analytics.Service["s1"].Load, c_EPSILON)
-	assert.InEpsilon(t, 0.4, analytics.Service["s1"].Resources.Cpu, c_EPSILON)
-	assert.InEpsilon(t, 0.4, analytics.Service["s1"].Resources.Memory, c_EPSILON)
-	assert.InEpsilon(t, 0.4, analytics.Service["s1"].Health, c_EPSILON)
-	/*assert.Len(t, analytics.Service["s1"].Instances.All, 8)
-	assert.Len(t, analytics.Service["s1"].Instances.Running, 3)
-	assert.Len(t, analytics.Service["s1"].Instances.Pending, 0)
-	assert.Len(t, analytics.Service["s1"].Instances.Stopped, 4)
-	assert.Len(t, analytics.Service["s1"].Instances.Paused, 1)*/
-	//SERVICE 2
-	assert.InEpsilon(t, 0.6, analytics.Service["s2"].Load, c_EPSILON)
-	assert.InEpsilon(t, 0.8, analytics.Service["s2"].Resources.Cpu, c_EPSILON)
-	assert.InEpsilon(t, 0.6, analytics.Service["s2"].Resources.Memory, c_EPSILON)
-	assert.InEpsilon(t, 0.4, analytics.Service["s2"].Health, c_EPSILON)
-	/*assert.Len(t, analytics.Service["s2"].Instances.All, 4)
-	assert.Len(t, analytics.Service["s2"].Instances.Running, 2)
-	assert.Len(t, analytics.Service["s2"].Instances.Pending, 0)
-	assert.Len(t, analytics.Service["s2"].Instances.Stopped, 1)
-	assert.Len(t, analytics.Service["s2"].Instances.Paused, 1)*/
-	//SERVICE 3
-	assert.InEpsilon(t, 0.6, analytics.Service["s3"].Load, c_EPSILON)
-	assert.InEpsilon(t, 0.6, analytics.Service["s3"].Resources.Cpu, c_EPSILON)
-	assert.InEpsilon(t, 0.6, analytics.Service["s3"].Resources.Memory, c_EPSILON)
-	assert.InEpsilon(t, 0.6, analytics.Service["s3"].Health, c_EPSILON)
-	/*assert.Len(t, analytics.Service["s3"].Instances.All, 1)
-	assert.Len(t, analytics.Service["s3"].Instances.Running, 1)
-	assert.Len(t, analytics.Service["s3"].Instances.Pending, 0)
-	assert.Len(t, analytics.Service["s3"].Instances.Stopped, 0)
-	assert.Len(t, analytics.Service["s3"].Instances.Paused, 0)*/
-	//SERVICE 4
-	assert.InEpsilon(t, 0.75, analytics.Service["s4"].Load, c_EPSILON)
-	assert.InEpsilon(t, 0.75, analytics.Service["s4"].Resources.Cpu, c_EPSILON)
-	assert.InEpsilon(t, 0.75, analytics.Service["s4"].Resources.Memory, c_EPSILON)
-	assert.InEpsilon(t, 0.75, analytics.Service["s4"].Health, c_EPSILON)
-	/*assert.Len(t, analytics.Service["s4"].Instances.All, 3)
-	assert.Len(t, analytics.Service["s4"].Instances.Running, 2)
-	assert.Len(t, analytics.Service["s4"].Instances.Pending, 0)
-	assert.Len(t, analytics.Service["s4"].Instances.Stopped, 0)
-	assert.Len(t, analytics.Service["s4"].Instances.Paused, 1)*/
 
 }
 
@@ -346,59 +277,40 @@ func createSystemAnalytics(services []string, cpu float64,
 
 }
 
-func TestCheckAndAppend(t *testing.T) {
-	slice1 := []string{"a", "b", "c"}
-	slice2 := []string{"b", "c", "d"}
+func TestComputeLocalShared(t *testing.T) {
+	analytics := data.CreateMockAnalytics()
+	shared := computeLocalShared(&analytics)
 
-	assert.Len(t, checkAndAppend(slice1, slice2), 4)
+	for name, _ := range analytics.Service {
+		assert.Equal(t, analytics.Service[name].Load, shared.Service[name].Load)
+	}
+
+	assert.Equal(t, analytics.System.Services, shared.System.ActiveServices)
 }
 
-func TestComputeClusterAvg(t *testing.T) {
-	analytics := createLocal()
-	peers := createPeers()
+func TestComputeClusterData(t *testing.T) {
+	defer storage.DeleteAllData(enum.SHARED)
+	local := data.CreateMockShared()
+	cluster := computeClusterData(local)
+	assert.Equal(t, local, cluster)
 
-	computeClusterAvg(peers, &analytics)
-	assert.Len(t, analytics.Cluster.Services, 4)
-	assert.InEpsilon(t, 0.73, analytics.Cluster.Resources.Cpu, c_EPSILON)
-	assert.InEpsilon(t, 0.73, analytics.Cluster.Resources.Memory, c_EPSILON)
-	assert.InEpsilon(t, 0.73, analytics.Cluster.Health, c_EPSILON)
+	mockCluster := local
+	srv := mockCluster.Service["service1"]
+	srv.Load = 0.5
+	mockCluster.Service["service1"] = srv
+	data.SaveSharedCluster(mockCluster)
+	cluster = computeClusterData(local)
+	assert.NotEqual(t, local, cluster)
 }
 
-// TODO Review after data.info integration
-// func TestAnalyzeCluster(t *testing.T) {
-// 	analytics := createLocal()
-// 	defer storage.DeleteAllData(enum.ANALYTICS)
-// 	peer_1 := CreateMockAnalytics()
-// 	peer_2 := CreateMockAnalytics()
-// 	peer_3 := CreateMockAnalytics()
+func TestAnalyzeSharedData(t *testing.T) {
+	defer storage.DeleteAllData(enum.SHARED)
+	var err error
+	analytics := data.CreateMockAnalytics()
 
-// 	data_1, _ := convertAnalyticsToData(peer_1)
-// 	data_2, _ := convertAnalyticsToData(peer_2)
-// 	data_3, _ := convertAnalyticsToData(peer_3)
-
-// 	storage.StoreData("peer1", data_1, enum.ANALYTICS)
-// 	storage.StoreData("peer2", data_2, enum.ANALYTICS)
-// 	storage.StoreData("peer3", data_3, enum.ANALYTICS)
-
-// 	analyzeCluster(&analytics)
-// }
-
-// func TestSaveAnalytics(t *testing.T) {
-// 	defer storage.DeleteAllData(enum.ANALYTICS)
-// 	var err error
-// 	analytics := CreateMockAnalytics()
-// 	err = saveAnalytics(analytics)
-// 	assert.NoError(t, err)
-// }
-
-// func TestGetAnalyzerData(t *testing.T) {
-// 	defer storage.DeleteAllData(enum.ANALYTICS)
-// 	var err error
-
-// 	_, err = data.GetAnalytics()
-// 	assert.Error(t, err)
-
-// 	data.StoreMockAnalytics()
-// 	_, err = GetAnalyzerData()
-// 	assert.NoError(d, err)
-// }
+	analyzeSharedData(&analytics)
+	_, err = data.GetSharedLocal()
+	assert.NoError(t, err)
+	_, err = data.GetSharedCluster()
+	assert.NoError(t, err)
+}

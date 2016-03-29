@@ -22,12 +22,12 @@ func (p *scaleoutCreator) listActions() []string {
 	return []string{"start"}
 }
 
-func (p *scaleoutCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []data.Policy {
+func (p *scaleoutCreator) createPolicies(srvList []string, clusterData data.Shared) []data.Policy {
 	scaleoutPolicies := make([]data.Policy, 0, len(srvList))
 
 	for _, name := range srvList {
 		policyName := p.getPolicyName()
-		policyWeight := p.computeWeight(name, analytics)
+		policyWeight := p.computeWeight(name, clusterData)
 		policyTargets := []string{name}
 		policyActions := map[string][]enum.Action{
 			name: []enum.Action{enum.START},
@@ -46,17 +46,10 @@ func (p *scaleoutCreator) createPolicies(srvList []string, analytics data.GruAna
 	return scaleoutPolicies
 }
 
-func (p *scaleoutCreator) computeWeight(name string, analytics data.GruAnalytics) float64 {
+func (p *scaleoutCreator) computeWeight(name string, clusterData data.Shared) float64 {
 	srv, _ := service.GetServiceByName(name)
-	// inst_run := len(srv.Instances.Running)
-	// inst_pen := len(srv.Instances.Pending)
 
-	// if (inst_pen + inst_run) > 0 {
-	// 	return 0.0
-	// }
-
-	srvAnalytics := analytics.Service[name]
-	if srvAnalytics.Resources.Available < 1.0 {
+	if res.AvailableResourcesService(name) < 1.0 {
 		return 0.0
 	}
 
@@ -67,12 +60,13 @@ func (p *scaleoutCreator) computeWeight(name string, analytics data.GruAnalytics
 		}
 	}
 
+	srvShared := clusterData.Service[name]
 	// LOAD
-	load := srvAnalytics.Load
+	load := srvShared.Load
 	value_load := math.Max(load, c_THRESHOLD_SCALEOUT_LOAD)
 	weight_load := (value_load - c_THRESHOLD_SCALEOUT_LOAD) / (1 - c_THRESHOLD_SCALEOUT_LOAD)
 	// CPU
-	cpu := srvAnalytics.Resources.Cpu
+	cpu := srvShared.Cpu
 	value_cpu := math.Max(cpu, c_THRESHOLD_SCALEOUT_CPU)
 	weight_cpu := (value_cpu - c_THRESHOLD_SCALEOUT_CPU) / (1 - c_THRESHOLD_SCALEOUT_CPU)
 	// MEMORY

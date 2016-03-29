@@ -6,6 +6,7 @@ import (
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -21,14 +22,14 @@ func (p *swapCreator) listActions() []string {
 	return []string{"stop", "remove", "start"}
 }
 
-func (p *swapCreator) createPolicies(srvList []string, analytics data.GruAnalytics) []data.Policy {
+func (p *swapCreator) createPolicies(srvList []string, clusterData data.Shared) []data.Policy {
 	swapPolicies := []data.Policy{}
 
 	swapPairs := p.createSwapPairs(srvList)
 	for running, inactives := range swapPairs {
 		for _, inactive := range inactives {
 			policyName := p.getPolicyName()
-			policyWeight := p.computeWeight(running, inactive, analytics)
+			policyWeight := p.computeWeight(running, inactive, clusterData)
 			policyTargets := []string{running, inactive}
 			policyActions := map[string][]enum.Action{
 				running:  []enum.Action{enum.STOP, enum.REMOVE},
@@ -71,7 +72,7 @@ func (p *swapCreator) createSwapPairs(srvList []string) map[string][]string {
 	return pairs
 }
 
-func (p *swapCreator) computeWeight(running string, candidate string, analytics data.GruAnalytics) float64 {
+func (p *swapCreator) computeWeight(running string, candidate string, clusterData data.Shared) float64 {
 	srv_run, _ := service.GetServiceByName(running)
 	srv_cand, _ := service.GetServiceByName(candidate)
 	nRun := len(srv_run.Instances.Running)
@@ -81,12 +82,9 @@ func (p *swapCreator) computeWeight(running string, candidate string, analytics 
 		return 0.0
 	}
 
-	runAnalytics := analytics.Service[running]
-	candAnalytics := analytics.Service[candidate]
-
 	// If the service has the resources to start without stopping the other
 	// there is no reason to swap them
-	if candAnalytics.Resources.Available > 0 {
+	if res.AvailableResourcesService(candidate) > 0 {
 		return 0.0
 	}
 
@@ -101,8 +99,11 @@ func (p *swapCreator) computeWeight(running string, candidate string, analytics 
 		return 0.0
 	}
 
-	cpuDist := candAnalytics.Resources.Cpu - runAnalytics.Resources.Cpu
-	loadDist := candAnalytics.Load - runAnalytics.Load
+	runShared := clusterData.Service[running]
+	candShared := clusterData.Service[candidate]
+
+	cpuDist := candShared.Cpu - runShared.Cpu
+	loadDist := candShared.Load - runShared.Load
 
 	cpuValue := math.Min(1.0, cpuDist/c_SWAP_MAX_DIST)
 	loadValue := math.Min(1.0, loadDist/c_SWAP_MAX_DIST)

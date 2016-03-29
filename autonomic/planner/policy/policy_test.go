@@ -44,25 +44,29 @@ func TestListPolicyActions(t *testing.T) {
 }
 
 func TestScaleIn(t *testing.T) {
-	analytics := createAnalytics()
+	shared := createSharedData()
 	creator := &scaleinCreator{}
 
-	w1 := creator.computeWeight("service1", analytics)
-	w2 := creator.computeWeight("service2", analytics)
-	w3 := creator.computeWeight("service3", analytics)
+	w1 := creator.computeWeight("service1", shared)
+	w2 := creator.computeWeight("service2", shared)
+	w3 := creator.computeWeight("service3", shared)
 	assert.InDelta(t, 0.0, w1, c_EPSILON)
 	assert.InDelta(t, 0.16, w2, c_EPSILON)
 	assert.InDelta(t, 0.0, w3, c_EPSILON)
 }
 
 func TestScaleOut(t *testing.T) {
-	analytics := createAnalytics()
+	shared := createSharedData()
 	creator := &scaleoutCreator{}
 
-	w1 := creator.computeWeight("service1", analytics)
-	w2 := creator.computeWeight("service2", analytics)
-	w3 := creator.computeWeight("service3", analytics)
-	w4 := creator.computeWeight("service4", analytics)
+	w1 := creator.computeWeight("service1", shared)
+	w2 := creator.computeWeight("service2", shared)
+
+	res.GetResources().CPU.Used = 4
+	w3 := creator.computeWeight("service3", shared)
+	res.GetResources().CPU.Used = 0
+
+	w4 := creator.computeWeight("service4", shared)
 	assert.InDelta(t, 0.5, w1, c_EPSILON)
 	assert.InDelta(t, 0.0, w2, c_EPSILON)
 	assert.InDelta(t, 0.0, w3, c_EPSILON)
@@ -70,7 +74,7 @@ func TestScaleOut(t *testing.T) {
 }
 
 func TestSwap(t *testing.T) {
-	analytics := createAnalytics()
+	shared := createSharedData()
 	creator := &swapCreator{}
 
 	srvList := []string{
@@ -93,24 +97,29 @@ func TestSwap(t *testing.T) {
 	assert.Contains(t, pair2, "service3")
 	assert.Contains(t, pair2, "service5")
 
-	w13 := creator.computeWeight("service1", "service3", analytics)
-	w14 := creator.computeWeight("service1", "service4", analytics)
-	w15 := creator.computeWeight("service1", "service5", analytics)
+	res.GetResources().CPU.Used = 4
+	w13 := creator.computeWeight("service1", "service3", shared)
+	res.GetResources().CPU.Used = 0
+
+	w14 := creator.computeWeight("service1", "service4", shared)
+	w15 := creator.computeWeight("service1", "service5", shared)
 	assert.InDelta(t, 0.16, w13, c_EPSILON)
 	assert.Equal(t, 0.0, w14)
 	assert.Equal(t, 0.0, w15)
 
-	w23 := creator.computeWeight("service2", "service3", analytics)
-	w24 := creator.computeWeight("service2", "service4", analytics)
-	w25 := creator.computeWeight("service2", "service5", analytics)
+	res.GetResources().CPU.Used = 4
+	w23 := creator.computeWeight("service2", "service3", shared)
+	res.GetResources().CPU.Used = 0
+
+	w24 := creator.computeWeight("service2", "service4", shared)
+	w25 := creator.computeWeight("service2", "service5", shared)
 	assert.InDelta(t, 0.8, w23, c_EPSILON)
 	assert.Equal(t, 0.0, w24)
 	assert.Equal(t, 0.0, w25)
 }
 
 func TestCreatePolicy(t *testing.T) {
-	analytics := createAnalytics()
-
+	shared := createSharedData()
 	srvList := []string{
 		"service1",
 		"service2",
@@ -119,7 +128,7 @@ func TestCreatePolicy(t *testing.T) {
 		"service5",
 	}
 
-	policies := CreatePolicies(srvList, analytics)
+	policies := CreatePolicies(srvList, shared)
 	assert.Len(t, policies, 17)
 
 }
@@ -130,20 +139,25 @@ func createServices() []cfg.Service {
 	srv1 := cfg.Service{}
 	srv1.Name = "service1"
 	srv1.Instances.Running = []string{"instance1_1"}
+	srv1.Docker.CPUnumber = 2
 
 	srv2 := cfg.Service{}
 	srv2.Name = "service2"
 	srv2.Instances.Running = []string{"instance2_1"}
 	srv2.Instances.Pending = []string{"instance2_2"}
+	srv2.Docker.CPUnumber = 2
 
 	srv3 := cfg.Service{}
 	srv3.Name = "service3"
+	srv3.Docker.CPUnumber = 2
 
 	srv4 := cfg.Service{}
 	srv4.Name = "service4"
+	srv4.Docker.CPUnumber = 1
 
 	srv5 := cfg.Service{}
 	srv5.Name = "service5"
+	srv5.Docker.CPUnumber = 2
 
 	services := []cfg.Service{srv1, srv2, srv3, srv4, srv5}
 
@@ -185,6 +199,43 @@ func createAnalytics() data.GruAnalytics {
 	}
 
 	return analytics
+}
+
+func createSharedData() data.Shared {
+	shared := data.Shared{}
+
+	srv1A := data.ServiceShared{}
+	srv1A.Load = 1.0
+	srv1A.Cpu = 0.5
+	srv1A.Resources = 1.0
+
+	srv2A := data.ServiceShared{}
+	srv2A.Load = 0.5
+	srv2A.Cpu = 0.2
+	srv2A.Resources = 1.0
+
+	srv3A := data.ServiceShared{}
+	srv3A.Load = 0.9
+	srv3A.Cpu = 0.8
+	srv3A.Resources = 0.0
+
+	srv4A := data.ServiceShared{}
+	srv4A.Load = 0.9
+	srv4A.Cpu = 0.8
+	srv4A.Resources = 1.0
+
+	srv5A := data.ServiceShared{}
+	srv5A.Resources = 0.0
+
+	shared.Service = map[string]data.ServiceShared{
+		"service1": srv1A,
+		"service2": srv2A,
+		"service3": srv3A,
+		"service4": srv4A,
+		"service5": srv5A,
+	}
+
+	return shared
 }
 
 func createNode() cfg.Node {

@@ -11,7 +11,7 @@ import (
 
 // /gru/v1/shared/
 func GetSharedData(w http.ResponseWriter, r *http.Request) {
-	info, _ := data.GetShared()
+	info, _ := data.GetSharedCluster()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
