@@ -71,18 +71,3 @@ func GetAnalyticsSystem(w http.ResponseWriter, r *http.Request) {
 		}).Errorln("API Server")
 	}
 }
-
-// /gru/v1/analytics/system
-func GetAnalyticsCluster(w http.ResponseWriter, r *http.Request) {
-	analytics := analyzer.GetClusterAnalytics()
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(analytics); err != nil {
-		log.WithFields(log.Fields{
-			"status":  "http response",
-			"request": "GetAnalyticsCluster",
-			"error":   err,
-		}).Errorln("API Server")
-	}
-}

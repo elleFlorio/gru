@@ -94,13 +94,6 @@ var routes = Routes{
 		GetAnalyticsSystem,
 	},
 
-	Route{
-		"AnalyticsCluster",
-		"GET",
-		"/gru/v1/analytics/cluster",
-		GetAnalyticsCluster,
-	},
-
 	//NODE
 	Route{
 		"InfoNode",
