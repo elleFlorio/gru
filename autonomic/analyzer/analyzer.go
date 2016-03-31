@@ -42,6 +42,7 @@ func Run(stats data.GruStats) data.Shared {
 		sharedData = analyzeSharedData(&gruAnalytics)
 
 		displayAnalyticsOfServices(gruAnalytics)
+		displaySharedInformation(sharedData)
 	}
 
 	return sharedData
@@ -176,19 +177,6 @@ func computeNodeHealth(analytics *data.GruAnalytics) {
 	analytics.Health = totHealth
 }
 
-func displayAnalyticsOfServices(analytics data.GruAnalytics) {
-	for srv, value := range analytics.Service {
-		log.WithFields(log.Fields{
-			"service":   srv,
-			"cpu":       fmt.Sprintf("%.2f", value.Resources.Cpu),
-			"memory":    fmt.Sprintf("%.2f", value.Resources.Memory),
-			"resources": fmt.Sprintf("%.2f", value.Resources.Available),
-			"load":      fmt.Sprintf("%.2f", value.Load),
-			"health":    fmt.Sprintf("%.2f", value.Health),
-		}).Infoln("Analytics computed: ", srv)
-	}
-}
-
 func analyzeSharedData(analytics *data.GruAnalytics) data.Shared {
 	myShared := computeLocalShared(analytics)
 	data.SaveSharedLocal(myShared)
@@ -235,4 +223,29 @@ func computeClusterData(myShared data.Shared) data.Shared {
 	}
 
 	return clusterData
+}
+
+func displayAnalyticsOfServices(analytics data.GruAnalytics) {
+	for srv, value := range analytics.Service {
+		log.WithFields(log.Fields{
+			"service":   srv,
+			"cpu":       fmt.Sprintf("%.2f", value.Resources.Cpu),
+			"memory":    fmt.Sprintf("%.2f", value.Resources.Memory),
+			"resources": fmt.Sprintf("%.2f", value.Resources.Available),
+			"load":      fmt.Sprintf("%.2f", value.Load),
+			"health":    fmt.Sprintf("%.2f", value.Health),
+		}).Infoln("Analytics computed")
+	}
+}
+
+func displaySharedInformation(clusterData data.Shared) {
+	for srv, value := range clusterData.Service {
+		log.WithFields(log.Fields{
+			"service":   srv,
+			"cpu":       fmt.Sprintf("%.2f", value.Cpu),
+			"memory":    fmt.Sprintf("%.2f", value.Memory),
+			"resources": fmt.Sprintf("%.2f", value.Resources),
+			"load":      fmt.Sprintf("%.2f", value.Load),
+		}).Infoln("Cluster shared data")
+	}
 }
