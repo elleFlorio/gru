@@ -195,7 +195,7 @@ func computeLocalShared(analytics *data.GruAnalytics) data.Shared {
 			Cpu:       value.Resources.Cpu,
 			Memory:    value.Resources.Memory,
 			Resources: value.Resources.Available,
-			Active:    true,
+			Active:    isServiceActive(value.Instances),
 		}
 
 		myShared.Service[srv] = mySrvShared
@@ -207,6 +207,10 @@ func computeLocalShared(analytics *data.GruAnalytics) data.Shared {
 	myShared.System.ActiveServices = analytics.System.Services
 
 	return myShared
+}
+
+func isServiceActive(status cfg.ServiceStatus) bool {
+	return (len(status.Pending) + len(status.Running)) > 0
 }
 
 func computeClusterData(myShared data.Shared) data.Shared {
