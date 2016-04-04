@@ -260,12 +260,14 @@ func MergeShared(toMerge []Shared) (Shared, error) {
 		counter := 0.0
 		for _, info := range toMerge {
 			if srv, ok := info.Service[name]; ok {
-				loadAvg += srv.Load
-				cpuAvg += srv.Cpu
-				memAvg += srv.Memory
-				resourcesAvg += srv.Resources
+				if srv.Active {
+					loadAvg += srv.Load
+					cpuAvg += srv.Cpu
+					memAvg += srv.Memory
+					resourcesAvg += srv.Resources
 
-				counter++
+					counter++
+				}
 			}
 		}
 
