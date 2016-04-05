@@ -25,7 +25,3 @@ func GetServicesAnalytics() map[string]data.ServiceAnalytics {
 func GetSystemAnalytics() data.SystemAnalytics {
 	return getAnalytics().System
 }
-
-func GetClusterAnalytics() data.ClusterAnalytics {
-	return getAnalytics().Cluster
-}

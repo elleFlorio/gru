@@ -83,14 +83,6 @@ func CreateMockAnalytics() GruAnalytics {
 
 	mockAnalytics.System = systAnalytics
 
-	clustAnalytics := ClusterAnalytics{
-		Services:  systService,
-		Resources: systRes,
-		Health:    systHealth,
-	}
-
-	mockAnalytics.Cluster = clustAnalytics
-
 	return mockAnalytics
 }
 

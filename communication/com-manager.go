@@ -166,23 +166,17 @@ func getFriendsData(friends map[string]string) ([]data.Shared, error) {
 }
 
 func mergeSharedData(friendsData []data.Shared) (data.Shared, error) {
-	sharedFriends, err := data.MergeShared(friendsData)
-	if err != nil {
-		log.WithField("err", err).Debugln("Cannot merge friends data")
-		return data.Shared{}, err
-	}
-
 	sharedStored, err := data.GetSharedCluster()
 	if err != nil {
 		log.WithField("err", err).Debugln("Cannot get stored shared data")
-		return sharedFriends, nil
+		return data.MergeShared(friendsData)
 	}
 
-	toMerge := []data.Shared{sharedFriends, sharedStored}
+	toMerge := append(friendsData, sharedStored)
 	sharedCluster, err := data.MergeShared(toMerge)
 	if err != nil {
-		log.WithField("err", err).Debugln("Cannot merge friends and stored data")
-		return sharedFriends, nil
+		log.WithField("err", err).Debugln("Cannot merge friends data")
+		return data.Shared{}, err
 	}
 
 	return sharedCluster, nil

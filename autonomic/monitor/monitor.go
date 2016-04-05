@@ -109,7 +109,7 @@ func computeServiceCpuPerc(name string, stats *data.GruStats) {
 	}
 
 	srvStats.Cpu.Avg = avg
-	srvStats.Cpu.Tot = sum
+	srvStats.Cpu.Tot = math.Min(1, sum)
 	stats.Service[name] = srvStats
 
 	log.WithFields(log.Fields{

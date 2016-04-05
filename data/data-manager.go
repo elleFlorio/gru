@@ -243,25 +243,31 @@ func MergeShared(toMerge []Shared) (Shared, error) {
 		return toMerge[0], nil
 	}
 
-	loadAvg := 0.0
-	cpuAvg := 0.0
-	memAvg := 0.0
-	resourcesAvg := 0.0
-
 	merged := Shared{
 		Service: make(map[string]ServiceShared),
 	}
 
+	var loadAvg float64
+	var cpuAvg float64
+	var memAvg float64
+	var resourcesAvg float64
+
 	for _, name := range service.List() {
+		loadAvg = 0.0
+		cpuAvg = 0.0
+		memAvg = 0.0
+		resourcesAvg = 0.0
 		counter := 0.0
 		for _, info := range toMerge {
 			if srv, ok := info.Service[name]; ok {
-				loadAvg += srv.Load
-				cpuAvg += srv.Cpu
-				memAvg += srv.Memory
-				resourcesAvg += srv.Resources
+				if srv.Active {
+					loadAvg += srv.Load
+					cpuAvg += srv.Cpu
+					memAvg += srv.Memory
+					resourcesAvg += srv.Resources
 
-				counter++
+					counter++
+				}
 			}
 		}
 

@@ -7,7 +7,6 @@ import (
 type GruAnalytics struct {
 	Service map[string]ServiceAnalytics `json:"service"`
 	System  SystemAnalytics             `json:"system"`
-	Cluster ClusterAnalytics            `json:"cluster"`
 	Health  float64                     `json:"health"`
 }
 
@@ -28,11 +27,5 @@ type SystemAnalytics struct {
 	Services  []string           `json:"services"`
 	Resources ResourcesAnalytics `json:"resources"`
 	Instances cfg.ServiceStatus  `json:"instances"`
-	Health    float64            `json:"health"`
-}
-
-type ClusterAnalytics struct {
-	Services  []string           `json:"services"`
-	Resources ResourcesAnalytics `json:"resources"`
 	Health    float64            `json:"health"`
 }
