@@ -188,6 +188,7 @@ func createInfluxCpuService(nodeName string, service ServiceMetric) (*client.Poi
 		"stats_tot":       service.Stats.CpuTot,
 		"stats_avg":       service.Stats.CpuAvg,
 		"analytics_value": service.Analytics.Cpu,
+		"shared_value":    service.Shared.Cpu,
 	}
 
 	point, err := client.NewPoint("cpu_service", tags, fields, time.Now())
@@ -211,6 +212,7 @@ func createInfluxMemService(nodeName string, service ServiceMetric) (*client.Poi
 		"stats_tot":       service.Stats.MemTot,
 		"stats_avg":       service.Stats.MemAvg,
 		"analytics_value": service.Analytics.Memory,
+		"shared_value":    service.Shared.Memory,
 	}
 
 	point, err := client.NewPoint("memory_service", tags, fields, time.Now())
@@ -231,7 +233,8 @@ func createInfluxLoadService(nodeName string, service ServiceMetric) (*client.Po
 		"service_image": service.Image,
 	}
 	fields := map[string]interface{}{
-		"value": service.Analytics.Load,
+		"analytics_value": service.Analytics.Load,
+		"shared_value":    service.Shared.Load,
 	}
 
 	point, err := client.NewPoint("load_service", tags, fields, time.Now())

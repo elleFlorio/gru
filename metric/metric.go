@@ -21,6 +21,7 @@ type ServiceMetric struct {
 	Instances InstancesMetric
 	Stats     StatsMetric
 	Analytics AnalyticsMetric
+	Shared    SharedMetric
 }
 
 type InstancesMetric struct {
@@ -44,6 +45,13 @@ type AnalyticsMetric struct {
 	Resources float64
 	Load      float64
 	Health    float64
+}
+
+type SharedMetric struct {
+	Cpu       float64
+	Memory    float64
+	Resources float64
+	Load      float64
 }
 
 type PolicyMetric struct {

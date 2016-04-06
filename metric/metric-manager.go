@@ -122,6 +122,18 @@ func UpdateMetrics() {
 			}
 		}
 
+		shared, err := data.GetSharedCluster()
+		if err != nil {
+			log.WithField("err", err).Warnln("Cannot update shared data metrics")
+		} else {
+			if srv_shared, ok := shared.Service[name]; ok {
+				srv_metrics.Shared.Cpu = srv_shared.Cpu
+				srv_metrics.Shared.Memory = srv_shared.Memory
+				srv_metrics.Shared.Load = srv_shared.Load
+				srv_metrics.Shared.Resources = srv_shared.Resources
+			}
+		}
+
 		metrics.Service[name] = srv_metrics
 	}
 

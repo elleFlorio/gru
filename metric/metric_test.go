@@ -45,11 +45,13 @@ func TestUpdateMetrics(t *testing.T) {
 
 	data.StoreMockStats()
 	data.StoreMockAnalytics()
+	data.SaveSharedCluster(data.CreateMockShared())
 	plc := data.CreateMockPolicy("policy", 1.0, []string{"pippo"}, map[string][]enum.Action{})
 	data.SavePolicy(plc)
 	UpdateMetrics()
 	assert.Equal(t, 0.7, Metrics().Service["service1"].Stats.CpuTot)
 	assert.Equal(t, 0.8, Metrics().Service["service2"].Analytics.Cpu)
+	assert.Equal(t, 0.7, metrics.Service["service1"].Shared.Load)
 	assert.Equal(t, "policy", Metrics().Policy.Name)
 }
 
