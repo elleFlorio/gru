@@ -62,8 +62,8 @@ func updateNodeResources() {
 func analyzeServices(analytics *data.GruAnalytics, stats data.GruStats) {
 	for name, value := range stats.Service {
 		load := analyzeServiceLoad(name, value.Metrics.ResponseTime)
-		cpu := value.Cpu.Tot
-		mem := value.Memory.Tot
+		cpu := value.Cpu.Avg
+		mem := value.Memory.Avg
 		resAvailable := res.AvailableResourcesService(name)
 
 		srv, _ := service.GetServiceByName(name)
