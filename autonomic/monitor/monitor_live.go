@@ -84,7 +84,7 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 	for monitorActive {
 		select {
 		case err := <-ch_mnt_events_err:
-			log.WithField("err", err).Debugln("Error monitoring containers events")
+			log.WithField("err", err).Fatalln("Error monitoring containers events")
 			c_err <- err
 		case err := <-ch_mnt_stats_err:
 			log.WithField("err", err).Debugln("Error monitoring containers stats")
