@@ -44,6 +44,7 @@ func join(c *cli.Context) {
 	// Configuration
 	initializeAgent(clusterName)
 	initializeServices(clusterName)
+	initializeTuning(clusterName)
 	// Core agent services
 	initializeStorage()
 	initializeMetricSerivice()
