@@ -23,6 +23,7 @@ import (
 const c_GRU_REMOTE = "/gru/"
 const c_CONFIG_REMOTE = "config/"
 const c_SERVICES_REMOTE = "services/"
+const c_TUNING_REMOTE = "tuning/"
 
 func join(c *cli.Context) {
 	var clusterName string
@@ -74,7 +75,7 @@ func initializeDiscovery(name string, address string) {
 }
 
 func initializeAgent(clusterName string) {
-	configPath := c_GRU_REMOTE + clusterName + "/config"
+	configPath := c_GRU_REMOTE + clusterName + "/" + c_CONFIG_REMOTE
 	agentConfig := cfg.Agent{}
 	cfg.ReadAgentConfig(configPath, &agentConfig)
 	cfg.SetAgent(agentConfig)
@@ -82,9 +83,15 @@ func initializeAgent(clusterName string) {
 }
 
 func initializeServices(clusterName string) {
-	remote := c_GRU_REMOTE + clusterName + "/services"
+	remote := c_GRU_REMOTE + clusterName + "/" + c_SERVICES_REMOTE
 	services := cfg.ReadServices(remote)
 	cfg.SetServices(services)
+}
+
+func initializeTuning(clusterName string) {
+	remote := c_GRU_REMOTE + clusterName + "/" + c_TUNING_REMOTE
+	tuning := cfg.ReadTuningConfig(remote)
+	cfg.SetTuning(tuning)
 }
 
 func initializeStorage() {

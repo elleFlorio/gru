@@ -62,6 +62,13 @@ func WriteService(remote string, data Service) {
 	}
 }
 
+func WriteTuning(remote string, data Tuning) {
+	err := writeData(remote, data)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error writing tuning parameters")
+	}
+}
+
 func writeData(remote string, src interface{}) error {
 	var err error
 	data, err := json.Marshal(src)
@@ -185,6 +192,16 @@ func ReadAgentConfig(remote string, config *Agent) {
 	if err != nil {
 		log.WithField("err", err).Errorln("Error reading agent configuration")
 	}
+}
+
+func ReadTuningConfig(remote string) Tuning {
+	tuning := Tuning{}
+	err := readData(remote, &tuning)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error reading tuning parameters")
+	}
+
+	return tuning
 }
 
 func readData(remote string, dest interface{}) error {

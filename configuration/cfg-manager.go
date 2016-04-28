@@ -19,6 +19,7 @@ var (
 	agent    Agent
 	node     Node
 	services []Service = []Service{}
+	tuning   Tuning
 )
 
 func SetAgent(cfg Agent) {
@@ -149,4 +150,12 @@ func RemoveServices(rmServices []string) {
 
 func CleanServices() {
 	services = make([]Service, 0)
+}
+
+func SetTuning(cfg Tuning) {
+	tuning = cfg
+}
+
+func GetTuning() *Tuning {
+	return &tuning
 }
