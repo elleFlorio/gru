@@ -21,9 +21,9 @@ import (
 )
 
 const c_GRU_REMOTE = "/gru/"
-const c_CONFIG_REMOTE = "config/"
-const c_SERVICES_REMOTE = "services/"
-const c_TUNING_REMOTE = "tuning/"
+const c_CONFIG_REMOTE = "config"
+const c_SERVICES_REMOTE = "services"
+const c_TUNING_REMOTE = "tuning"
 
 func join(c *cli.Context) {
 	var clusterName string
