@@ -93,6 +93,7 @@ func initializeTuning(clusterName string) {
 	remote := c_GRU_REMOTE + clusterName + "/" + c_TUNING_REMOTE
 	tuning := cfg.ReadTuningConfig(remote)
 	cfg.SetTuning(tuning)
+	log.WithField("tuning", tuning).Debugln("Tuning read from remote")
 }
 
 func initializeStorage() {

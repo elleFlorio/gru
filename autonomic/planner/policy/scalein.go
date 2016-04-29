@@ -9,9 +9,6 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-const c_THRESHOLD_SCALEIN_LOAD = 0.3
-const c_THRESHOLD_SCALEIN_CPU = 0.3
-
 type scaleinCreator struct{}
 
 func (p *scaleinCreator) getPolicyName() string {
@@ -63,12 +60,14 @@ func (p *scaleinCreator) computeWeight(name string, clusterData data.Shared) flo
 	srvShared := clusterData.Service[name]
 	// LOAD
 	load := srvShared.Load
-	value_load := math.Min(load, c_THRESHOLD_SCALEIN_LOAD)
-	weight_load := 1 - value_load/c_THRESHOLD_SCALEIN_LOAD
+	thrLoad := cfg.GetTuning().Policy.Scalein.Load
+	value_load := math.Min(load, thrLoad)
+	weight_load := 1 - value_load/thrLoad
 	// CPU
 	cpu := srvShared.Cpu
-	value_cpu := math.Min(cpu, c_THRESHOLD_SCALEIN_CPU)
-	weight_cpu := 1 - value_cpu/c_THRESHOLD_SCALEIN_CPU
+	thrCpu := cfg.GetTuning().Policy.Scalein.Cpu
+	value_cpu := math.Min(cpu, thrCpu)
+	weight_cpu := 1 - value_cpu/thrCpu
 	// MEMORY
 	// TODO?
 

@@ -10,8 +10,6 @@ import (
 	"github.com/elleFlorio/gru/service"
 )
 
-const c_SWAP_MAX_DIST = 0.6
-
 type swapCreator struct{}
 
 func (p *swapCreator) getPolicyName() string {
@@ -105,8 +103,11 @@ func (p *swapCreator) computeWeight(running string, candidate string, clusterDat
 	cpuDist := candShared.Cpu - runShared.Cpu
 	loadDist := candShared.Load - runShared.Load
 
-	cpuValue := math.Min(1.0, cpuDist/c_SWAP_MAX_DIST)
-	loadValue := math.Min(1.0, loadDist/c_SWAP_MAX_DIST)
+	maxDistCpu := cfg.GetTuning().Policy.Swap.Cpu
+	maxDistLoad := cfg.GetTuning().Policy.Swap.Load
+
+	cpuValue := math.Min(1.0, cpuDist/maxDistCpu)
+	loadValue := math.Min(1.0, loadDist/maxDistLoad)
 
 	weight := math.Max(0.0, (cpuValue+loadValue)/2)
 

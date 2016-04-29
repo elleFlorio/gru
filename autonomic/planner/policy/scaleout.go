@@ -3,14 +3,12 @@ package policy
 import (
 	"math"
 
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 )
-
-const c_THRESHOLD_SCALEOUT_LOAD = 0.8
-const c_THRESHOLD_SCALEOUT_CPU = 0.8
 
 type scaleoutCreator struct{}
 
@@ -63,12 +61,14 @@ func (p *scaleoutCreator) computeWeight(name string, clusterData data.Shared) fl
 	srvShared := clusterData.Service[name]
 	// LOAD
 	load := srvShared.Load
-	value_load := math.Max(load, c_THRESHOLD_SCALEOUT_LOAD)
-	weight_load := (value_load - c_THRESHOLD_SCALEOUT_LOAD) / (1 - c_THRESHOLD_SCALEOUT_LOAD)
+	thrLoad := cfg.GetTuning().Policy.Scaleout.Load
+	value_load := math.Max(load, thrLoad)
+	weight_load := (value_load - thrLoad) / (1 - thrLoad)
 	// CPU
 	cpu := srvShared.Cpu
-	value_cpu := math.Max(cpu, c_THRESHOLD_SCALEOUT_CPU)
-	weight_cpu := (value_cpu - c_THRESHOLD_SCALEOUT_CPU) / (1 - c_THRESHOLD_SCALEOUT_CPU)
+	thrCpu := cfg.GetTuning().Policy.Scaleout.Cpu
+	value_cpu := math.Max(cpu, thrCpu)
+	weight_cpu := (value_cpu - thrCpu) / (1 - thrCpu)
 	// MEMORY
 	// TODO?
 

@@ -15,6 +15,7 @@ const c_EPSILON = 0.09
 func init() {
 	cfg.SetServices(createServices())
 	cfg.SetNode(createNode())
+	cfg.SetTuning(createTuning())
 
 	res.GetResources().CPU.Total = 4
 	res.GetResources().Memory.Total = 4 * 1024 * 1024 * 1024
@@ -242,4 +243,16 @@ func createNode() cfg.Node {
 	n := cfg.Node{}
 	n.Constraints.BaseServices = []string{"service3"}
 	return n
+}
+
+func createTuning() cfg.Tuning {
+	t := cfg.Tuning{}
+	t.Policy.Scalein.Cpu = 0.3
+	t.Policy.Scalein.Load = 0.3
+	t.Policy.Scaleout.Cpu = 0.8
+	t.Policy.Scaleout.Load = 0.8
+	t.Policy.Swap.Cpu = 0.6
+	t.Policy.Swap.Load = 0.6
+
+	return t
 }
