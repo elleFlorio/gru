@@ -122,8 +122,13 @@ func initializeMetricSerivice() {
 	}
 }
 
+// TODO needs to make more "generic" the container engine package
+// This is just a temporary solution
 func initializeContainerEngine() {
-	err := container.Connect(cfg.GetAgentDocker().DaemonUrl, cfg.GetAgentDocker().DaemonTimeout)
+	// This is just for quick development
+	daemonUrl := "http://" + network.Config().IpAddress + ":2375"
+
+	err := container.Connect(daemonUrl, cfg.GetAgentDocker().DaemonTimeout)
 	if err != nil {
 		log.WithField("err", err).Fatalln("Error initializing container engine")
 	}

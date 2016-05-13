@@ -124,6 +124,8 @@ func (m *Manager) ParseCommand(cmd string) bool {
 			m.show(cmd)
 		case "start":
 			m.start(cmd)
+		case "deploy":
+			m.deploy()
 		default:
 			unknown(cmd)
 		}
@@ -518,6 +520,59 @@ func showNode(clusterName string, nodeName string, what string) {
 		}
 	default:
 		fmt.Println("Unrecognized node property ", what)
+	}
+
+	w.Flush()
+}
+
+func (m *Manager) deploy() {
+	var err error
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
+	fmt.Fprintf(w, "NODE\tSERVICE\tSTATUS\n")
+
+	services := cluster.ListServices(m.Cluster)
+	servicesNames := make([]string, 0, len(services))
+	for name, _ := range services {
+		servicesNames = append(servicesNames, name)
+	}
+
+	nodes := cluster.ListNodes(m.Cluster, false)
+	nodesNames := make([]string, 0, len(nodes))
+	for name, _ := range nodes {
+		nodesNames = append(nodesNames, name)
+	}
+
+	if len(nodes) < len(services) {
+		fmt.Println("Cannot deploy: not enough nodes")
+		return
+	}
+
+	for i := 0; i < len(services); i++ {
+		service := servicesNames[i]
+		node := nodesNames[i]
+		address := nodes[node]
+		status := "done"
+
+		err = network.SendUpdateCommand(address, "node-base-services", []string{service})
+		if err != nil {
+			fmt.Println("Error sending update command to ", address)
+			status = "error"
+
+		} else {
+			err = network.SendStartServiceCommand(address, service)
+			if err != nil {
+				fmt.Println("Error sending start service command to node ", node)
+				status = "error"
+			}
+		}
+
+		fmt.Fprintf(w, "%s\t%s\t%s\n",
+			node,
+			service,
+			status,
+		)
+
 	}
 
 	w.Flush()
