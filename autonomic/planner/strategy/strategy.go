@@ -23,7 +23,8 @@ var (
 func init() {
 	strategies = []GruStrategy{
 		&dummyStrategy{},
-		&probabilisticStrategy{},
+		&probCumulativeStrategy{},
+		&probDeltaStrategy{},
 	}
 }
 

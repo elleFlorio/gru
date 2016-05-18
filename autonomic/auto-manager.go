@@ -9,6 +9,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/executor"
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/metric"
 )
 
@@ -23,7 +24,7 @@ func init() {
 }
 
 func Initialize(plannerStrategy string) {
-	planner.SetPlannerStrategy("probabilistic")
+	planner.SetPlannerStrategy(cfg.GetAgentAutonomic().PlannerStrategy)
 }
 
 func Start() {

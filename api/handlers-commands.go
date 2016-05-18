@@ -24,6 +24,11 @@ type Command struct {
 	Timestamp time.Time
 }
 
+const c_GRU_REMOTE = "/gru/"
+const c_CONFIG_REMOTE = "config"
+const c_SERVICES_REMOTE = "services"
+const c_TUNING_REMOTE = "tuning"
+
 func PostCommand(w http.ResponseWriter, r *http.Request) {
 	var err error
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -71,6 +76,8 @@ func executeCommand(cmd Command) {
 	switch cmd.Name {
 	case "start":
 		startCommand(cmd)
+	case "stop":
+		//TODO
 	case "update":
 		updateCommand(cmd)
 	default:
@@ -138,9 +145,33 @@ func startService(name string) {
 	ch.SendActionStartMessage(toStart)
 }
 
+func stopCommand(cmd Command) {
+	switch cmd.Target {
+	case "agent":
+		//TODO
+	case "service":
+		name := cmd.Object.(string)
+		startService(name)
+	default:
+		log.WithField("target", cmd.Target).Errorln("Unrecognized target for command stop")
+	}
+}
+
+func stopService(name string) {
+	log.WithField("name", name).Debugln("Stopping service")
+	toStop, err := service.GetServiceByName(name)
+	if err != nil {
+		log.WithField("name", name).Debugln("Error stopping service")
+	}
+	ch.SendActionStopMessage(toStop)
+}
+
 func updateCommand(cmd Command) {
 	log.Debugln("Updating ", cmd.Target)
 	switch cmd.Target {
+	case "all":
+		cluster := cmd.Object.(string)
+		updateAll(cluster)
 	case "node-base-services":
 		data := cmd.Object.([]interface{})
 		upd := []string{}
@@ -168,4 +199,29 @@ func updateCommand(cmd Command) {
 	default:
 		log.WithField("target", cmd.Target).Errorln("Unrecognized target for command update")
 	}
+}
+
+func updateAll(cluster string) {
+	updateAgent(cluster)
+	updateServices(cluster)
+	updateTuning(cluster)
+}
+
+func updateAgent(cluster string) {
+	configPath := c_GRU_REMOTE + cluster + "/" + c_CONFIG_REMOTE
+	agentConfig := cfg.Agent{}
+	cfg.ReadAgentConfig(configPath, &agentConfig)
+	cfg.SetAgent(agentConfig)
+}
+
+func updateServices(cluster string) {
+	remote := c_GRU_REMOTE + cluster + "/" + c_SERVICES_REMOTE
+	services := cfg.ReadServices(remote)
+	cfg.SetServices(services)
+}
+
+func updateTuning(cluster string) {
+	remote := c_GRU_REMOTE + cluster + "/" + c_TUNING_REMOTE
+	tuning := cfg.ReadTuningConfig(remote)
+	cfg.SetTuning(tuning)
 }
