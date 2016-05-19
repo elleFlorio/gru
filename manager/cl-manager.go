@@ -127,7 +127,7 @@ func (m *Manager) ParseCommand(cmd string) bool {
 		case "stop":
 			m.stop(cmd)
 		case "update":
-			m.update()
+			m.update(cmd)
 		case "deploy":
 			m.deploy()
 		case "undeploy":
@@ -492,7 +492,13 @@ func (m *Manager) stopService(what string, where []string) {
 	}
 }
 
-func (m *Manager) update() {
+func (m *Manager) update(cmd string) {
+	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
+	if len(args) < 2 {
+		fmt.Println("not enough arguments to 'update' command")
+		return
+	}
+
 	if !m.isClusterSet() {
 		return
 	}
@@ -505,13 +511,13 @@ func (m *Manager) update() {
 	nodes := cluster.ListNodes(m.Cluster, false)
 	for node, address := range nodes {
 		status := "done"
-		err = network.SendUpdateCommand(address, "all", m.Cluster)
+		err = network.SendUpdateCommand(address, args[1], m.Cluster)
 		if err != nil {
 			fmt.Println("Error sending update command to node ", node)
 			status = "error"
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\n",
+		fmt.Fprintf(w, "%s\t%s\n",
 			node,
 			status,
 		)

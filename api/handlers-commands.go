@@ -77,7 +77,7 @@ func executeCommand(cmd Command) {
 	case "start":
 		startCommand(cmd)
 	case "stop":
-		//TODO
+		stopCommand(cmd)
 	case "update":
 		updateCommand(cmd)
 	default:
@@ -151,7 +151,7 @@ func stopCommand(cmd Command) {
 		//TODO
 	case "service":
 		name := cmd.Object.(string)
-		startService(name)
+		stopService(name)
 	default:
 		log.WithField("target", cmd.Target).Errorln("Unrecognized target for command stop")
 	}
@@ -172,6 +172,15 @@ func updateCommand(cmd Command) {
 	case "all":
 		cluster := cmd.Object.(string)
 		updateAll(cluster)
+	case "agent":
+		cluster := cmd.Object.(string)
+		updateAgent(cluster)
+	case "services":
+		cluster := cmd.Object.(string)
+		updateServices(cluster)
+	case "tuning":
+		cluster := cmd.Object.(string)
+		updateTuning(cluster)
 	case "node-base-services":
 		data := cmd.Object.([]interface{})
 		upd := []string{}
@@ -212,16 +221,19 @@ func updateAgent(cluster string) {
 	agentConfig := cfg.Agent{}
 	cfg.ReadAgentConfig(configPath, &agentConfig)
 	cfg.SetAgent(agentConfig)
+	log.WithField("agent", agentConfig).Debugln("Agent updated from remote")
 }
 
 func updateServices(cluster string) {
 	remote := c_GRU_REMOTE + cluster + "/" + c_SERVICES_REMOTE
 	services := cfg.ReadServices(remote)
 	cfg.SetServices(services)
+	log.WithField("services", services).Debugln("Services updated from remote")
 }
 
 func updateTuning(cluster string) {
 	remote := c_GRU_REMOTE + cluster + "/" + c_TUNING_REMOTE
 	tuning := cfg.ReadTuningConfig(remote)
 	cfg.SetTuning(tuning)
+	log.WithField("tuning", tuning).Debugln("Tuning updated from remote")
 }
