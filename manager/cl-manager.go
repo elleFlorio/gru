@@ -704,11 +704,6 @@ func (m *Manager) undeploy() {
 	fmt.Fprintf(w, "NODE\tSTATUS\n")
 
 	services := cluster.ListServices(m.Cluster)
-	servicesNames := make([]string, 0, len(services))
-	for name, _ := range services {
-		servicesNames = append(servicesNames, name)
-	}
-
 	nodes := cluster.ListNodes(m.Cluster, false)
 	for node, address := range nodes {
 		status := "done"
@@ -718,10 +713,10 @@ func (m *Manager) undeploy() {
 			status = "error"
 		}
 
-		for _, service := range services {
+		for service, _ := range services {
 			err = network.SendStopServiceCommand(address, service)
 			if err != nil {
-				fmt.Println("Error sending start service command to node ", node)
+				fmt.Println("Error sending stop service command to node ", node)
 				status = "error"
 			}
 		}
