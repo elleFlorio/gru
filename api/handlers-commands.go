@@ -163,6 +163,11 @@ func stopService(name string) {
 	if err != nil {
 		log.WithField("name", name).Debugln("Error stopping service")
 	}
+	if len(toStop.Instances.All) < 1 {
+		log.WithField("service", name).Debugln("No active instance to stop")
+		return
+	}
+
 	ch.SendActionStopMessage(toStop)
 }
 
