@@ -6,9 +6,7 @@ import (
 )
 
 func Initialize() {
-	autonomic.Initialize(
-		cfg.GetAgentAutonomic().PlannerStrategy,
-	)
+	autonomic.UpdatePlannerStrategy(cfg.GetAgentAutonomic().PlannerStrategy)
 }
 
 func StartMonitoring() {
@@ -19,8 +17,10 @@ func Run() {
 	startAutonomicManager()
 }
 
+func UpdateStrategy() {
+	autonomic.UpdatePlannerStrategy(cfg.GetAgentAutonomic().PlannerStrategy)
+}
+
 func startAutonomicManager() {
-	autonomic.RunLoop(
-		cfg.GetAgentAutonomic().LoopTimeInterval,
-	)
+	autonomic.RunLoop(cfg.GetAgentAutonomic().LoopTimeInterval)
 }

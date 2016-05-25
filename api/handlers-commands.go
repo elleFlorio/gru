@@ -226,6 +226,7 @@ func updateAgent(cluster string) {
 	agentConfig := cfg.Agent{}
 	cfg.ReadAgentConfig(configPath, &agentConfig)
 	cfg.SetAgent(agentConfig)
+	agent.UpdateStrategy()
 	log.WithField("agent", agentConfig).Debugln("Agent updated from remote")
 }
 

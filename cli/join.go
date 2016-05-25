@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/codegangsta/cli"
@@ -123,16 +124,35 @@ func initializeMetricSerivice() {
 }
 
 // TODO needs to make more "generic" the container engine package
-// This is just a temporary solution
 func initializeContainerEngine() {
-	// This is just for quick development
-	daemonUrl := "http://" + network.Config().IpAddress + ":2375"
-
+	daemonUrl := getDaemonUrl()
+	log.WithField("daemonUrl", daemonUrl).Debugln("Container engine initialization")
 	err := container.Connect(daemonUrl, cfg.GetAgentDocker().DaemonTimeout)
 	if err != nil {
 		log.WithField("err", err).Fatalln("Error initializing container engine")
 	}
 	log.WithField("docker", "ok").Infoln("Container engine initialized")
+}
+
+func getDaemonUrl() string {
+	url := cfg.GetAgentDocker().DaemonUrl
+	if url == "default" {
+		return "unix:///var/run/docker.sock"
+	}
+
+	ipPort := strings.Split(url, ":")
+	if len(ipPort) < 2 {
+		log.WithField("err", "Wrong daemon url").Fatalln("Error initializing container engine")
+	}
+
+	var daemonUrl string
+	if ipPort[0] == "local" {
+		daemonUrl = "http://" + network.Config().IpAddress + ":" + ipPort[1]
+	} else {
+		daemonUrl = "http://" + ipPort[0] + ":" + ipPort[1]
+	}
+
+	return daemonUrl
 }
 
 func initializeResources() {

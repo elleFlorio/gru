@@ -294,7 +294,7 @@ func TestComputeClusterData(t *testing.T) {
 	cluster := computeClusterData(local)
 	assert.Equal(t, local, cluster)
 
-	mockCluster := local
+	mockCluster := data.CreateMockShared()
 	srv := mockCluster.Service["service1"]
 	srv.Load = 0.5
 	mockCluster.Service["service1"] = srv

@@ -23,6 +23,5 @@ func TestGetters(t *testing.T) {
 	assert.Equal(t, analytics.Service["service1"], GetServiceAnalytics("service1"))
 	assert.Equal(t, analytics.Service, GetServicesAnalytics())
 	assert.Equal(t, analytics.System, GetSystemAnalytics())
-	assert.Equal(t, analytics.Cluster, GetClusterAnalytics())
 
 }

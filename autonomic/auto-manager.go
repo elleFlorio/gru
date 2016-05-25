@@ -9,7 +9,6 @@ import (
 	"github.com/elleFlorio/gru/autonomic/executor"
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
-	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/metric"
 )
 
@@ -23,8 +22,8 @@ func init() {
 	ch_stop = make(chan struct{})
 }
 
-func Initialize(plannerStrategy string) {
-	planner.SetPlannerStrategy(cfg.GetAgentAutonomic().PlannerStrategy)
+func UpdatePlannerStrategy(plannerStrategy string) {
+	planner.SetPlannerStrategy(plannerStrategy)
 }
 
 func Start() {

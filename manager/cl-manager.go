@@ -721,7 +721,7 @@ func (m *Manager) undeploy() {
 			}
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\n",
+		fmt.Fprintf(w, "%s\t%s\n",
 			node,
 			status,
 		)

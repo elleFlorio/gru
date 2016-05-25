@@ -16,9 +16,9 @@ func TestNew(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "dummy", Name())
 
-	_, err = New("probabilistic")
+	_, err = New("probcumulative")
 	assert.NoError(t, err)
-	assert.Equal(t, "probabilistic", Name())
+	assert.Equal(t, "probcumulative", Name())
 
 	_, err = New("notImplemented")
 	assert.Error(t, err)
@@ -28,7 +28,7 @@ func TestNew(t *testing.T) {
 func TestList(t *testing.T) {
 	names := List()
 	assert.Contains(t, names, "dummy")
-	assert.Contains(t, names, "probabilistic")
+	assert.Contains(t, names, "probcumulative")
 }
 
 func TestMakeDecision(t *testing.T) {
@@ -57,7 +57,11 @@ func TestMakeDecision(t *testing.T) {
 		data.CreateMockPolicy("p", 0.2, targets, actions),
 	}
 
-	New("probabilistic")
+	New("probcumulative")
+	plc = MakeDecision(policies)
+	assert.Equal(t, plc.Weight, 0.2)
+
+	New("probdelta")
 	plc = MakeDecision(policies)
 	assert.Equal(t, plc.Weight, 0.2)
 }
