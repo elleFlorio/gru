@@ -15,20 +15,19 @@ func (p *probCumulativeStrategy) Initialize() error {
 }
 
 func (p *probCumulativeStrategy) MakeDecision(policies []data.Policy) *data.Policy {
-	return weightedRandomElement(policies)
+	threshold := randUniform(0, 1)
+	shuffle(policies)
+	return weightedRandomElement(policies, threshold)
 }
 
-func weightedRandomElement(policies []data.Policy) *data.Policy {
+func weightedRandomElement(policies []data.Policy, threshold float64) *data.Policy {
 	var chosenPolicy *data.Policy
 	totalWeight := 0.0
-	threshold := randUniform(0, 1)
 	normalizedCumulative := 0.0
 
 	for _, plc := range policies {
 		totalWeight += plc.Weight
 	}
-
-	shuffle(policies)
 
 	for _, plc := range policies {
 		normalizedCumulative += plc.Weight / totalWeight

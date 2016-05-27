@@ -20,6 +20,10 @@ func TestNew(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "probcumulative", Name())
 
+	_, err = New("probdelta")
+	assert.NoError(t, err)
+	assert.Equal(t, "probdelta", Name())
+
 	_, err = New("notImplemented")
 	assert.Error(t, err)
 	assert.Equal(t, "dummy", Name())
@@ -29,6 +33,7 @@ func TestList(t *testing.T) {
 	names := List()
 	assert.Contains(t, names, "dummy")
 	assert.Contains(t, names, "probcumulative")
+	assert.Contains(t, names, "probdelta")
 }
 
 func TestMakeDecision(t *testing.T) {
@@ -37,6 +42,8 @@ func TestMakeDecision(t *testing.T) {
 	actions := map[string][]enum.Action{
 		"pippo": []enum.Action{enum.START},
 	}
+
+	// ----- DUMMY ----- //
 
 	policies := []data.Policy{
 		data.CreateMockPolicy("p", 0.0, targets, actions),
@@ -49,19 +56,4 @@ func TestMakeDecision(t *testing.T) {
 	New("dummy")
 	plc = MakeDecision(policies)
 	assert.Equal(t, plc.Weight, 1.0)
-
-	policies = []data.Policy{
-		data.CreateMockPolicy("p", 0.0, targets, actions),
-		data.CreateMockPolicy("p", 0.0, targets, actions),
-		data.CreateMockPolicy("p", 0.0, targets, actions),
-		data.CreateMockPolicy("p", 0.2, targets, actions),
-	}
-
-	New("probcumulative")
-	plc = MakeDecision(policies)
-	assert.Equal(t, plc.Weight, 0.2)
-
-	New("probdelta")
-	plc = MakeDecision(policies)
-	assert.Equal(t, plc.Weight, 0.2)
 }
