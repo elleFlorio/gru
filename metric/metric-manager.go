@@ -2,6 +2,7 @@ package metric
 
 import (
 	"errors"
+	"time"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -15,6 +16,8 @@ type metricService interface {
 	Initialize(map[string]interface{}) error
 	StoreMetrics(GruMetric) error
 }
+
+const c_AUTO_LOOP_EPSILON = 5
 
 var (
 	metricServices  []metricService
@@ -59,10 +62,6 @@ func Initialize(conf map[string]interface{}) error {
 	return activeService().Initialize(conf)
 }
 
-func StoreMetrics(metrics GruMetric) error {
-	return activeService().StoreMetrics(metrics)
-}
-
 func activeService() metricService {
 	return metricServices[metricServ]
 }
@@ -71,7 +70,32 @@ func Metrics() GruMetric {
 	return metrics
 }
 
-func UpdateMetrics() {
+func StartMetricCollector() {
+	go startCollector()
+}
+
+func startCollector() {
+	interval := cfg.GetAgentAutonomic().LoopTimeInterval + c_AUTO_LOOP_EPSILON
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+
+	for {
+		select {
+		case <-ticker.C:
+			collectMetrics()
+		}
+	}
+}
+
+func collectMetrics() {
+	log.Debugln("Collecting metrics")
+	updateMetrics()
+	err := storeMetrics(metrics)
+	if err != nil {
+		log.WithField("errr", err).Errorln("Error collecting agent metrics")
+	}
+}
+
+func updateMetrics() {
 	var err error
 	metrics = newMetrics()
 	metrics.Node.UUID = cfg.GetNodeConfig().UUID
@@ -166,4 +190,8 @@ func newMetrics() GruMetric {
 	new_metrics.Policy = policy_new
 
 	return new_metrics
+}
+
+func storeMetrics(metrics GruMetric) error {
+	return activeService().StoreMetrics(metrics)
 }

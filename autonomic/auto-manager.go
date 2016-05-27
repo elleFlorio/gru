@@ -32,9 +32,10 @@ func Start() {
 }
 
 func RunLoop(loopTimeInterval int) {
+	// Start the metric collector
+	metric.StartMetricCollector()
 	// Set the ticker for the periodic execution
 	ticker := time.NewTicker(time.Duration(loopTimeInterval) * time.Second)
-
 	log.Infoln("Running autonomic loop")
 	for {
 		select {
@@ -44,8 +45,6 @@ func RunLoop(loopTimeInterval int) {
 			policy := planner.Run(analytics)
 			executor.Run(policy)
 
-			collectMetrics()
-
 			log.Infoln("-------------------------")
 
 		case <-ch_err:
@@ -53,14 +52,5 @@ func RunLoop(loopTimeInterval int) {
 		case <-ch_stop:
 			ticker.Stop()
 		}
-	}
-}
-
-func collectMetrics() {
-	log.Debugln("Collecting metrics")
-	metric.UpdateMetrics()
-	err := metric.StoreMetrics(metric.Metrics())
-	if err != nil {
-		log.WithField("errr", err).Errorln("Error collecting agent metrics")
 	}
 }
