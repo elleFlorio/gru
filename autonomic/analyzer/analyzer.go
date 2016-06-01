@@ -113,20 +113,19 @@ func computeAvgResponseTime(responseTimes []float64) float64 {
 }
 
 func computeLoad(maxRt float64, avgRt float64) float64 {
-	// I want the maximum response time
-	// to correspond to the 80% of load
-	upperBound := maxRt / 0.8
-	if avgRt > upperBound {
-		avgRt = upperBound
+	lowerbound := maxRt / 2.0
+	if avgRt < lowerbound {
+		return 0.0
 	}
 
-	loadValue := avgRt / upperBound
+	upperBound := maxRt
+	if avgRt > upperBound {
+		return 1.0
+	}
 
-	log.WithFields(log.Fields{
-		"upperBound": upperBound,
-		"avgRt":      avgRt,
-		"load":       loadValue,
-	}).Debugln("Computed load")
+	loadValue := (avgRt - lowerbound) / (upperBound - lowerbound)
+
+	log.WithField("load", loadValue).Debugln("Computed load")
 
 	return loadValue
 }
