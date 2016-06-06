@@ -33,7 +33,8 @@ type MemoryStats struct {
 }
 
 type MetricStats struct {
-	ResponseTime []float64 `json:responsetime`
+	BaseMetrics map[string]float64 `json:basemetrics`
+	UserMetrics map[string]float64 `json:usermetrics`
 }
 
 type InstanceStats struct {
