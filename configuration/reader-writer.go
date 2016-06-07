@@ -204,6 +204,32 @@ func ReadTuningConfig(remote string) Tuning {
 	return tuning
 }
 
+func ReadExpressions(remote string) map[string]Expression {
+	expressions := make(map[string]Expression)
+	resp, err := discovery.Get(remote, discovery.Options{})
+	if err != nil {
+		log.WithField("err", err).Errorln("Error reading expressions from ", remote)
+		return expressions
+	}
+
+	for exprPath, _ := range resp {
+		expr := ReadExpression(exprPath)
+		expressions[expr.Analytic] = expr
+	}
+
+	return expressions
+}
+
+func ReadExpression(remote string) Expression {
+	expr := Expression{}
+	err := readData(remote, &expr)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error reading expression")
+	}
+
+	return expr
+}
+
 func readData(remote string, dest interface{}) error {
 	var err error
 	resp, err := discovery.Get(remote, discovery.Options{})

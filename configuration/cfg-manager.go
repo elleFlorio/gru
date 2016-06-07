@@ -16,11 +16,16 @@ const (
 )
 
 var (
-	agent    Agent
-	node     Node
-	services []Service = []Service{}
-	tuning   Tuning
+	agent       Agent
+	node        Node
+	services    []Service = []Service{}
+	tuning      Tuning
+	expressions map[string]Expression
 )
+
+func init() {
+	expressions = make(map[string]Expression)
+}
 
 func SetAgent(cfg Agent) {
 	agent = cfg
@@ -158,4 +163,12 @@ func SetTuning(cfg Tuning) {
 
 func GetTuning() *Tuning {
 	return &tuning
+}
+
+func SetExpr(cfg map[string]Expression) {
+	expressions = cfg
+}
+
+func GetExpr() map[string]Expression {
+	return expressions
 }
