@@ -12,8 +12,6 @@ type GruStats struct {
 
 type ServiceStats struct {
 	Events  EventStats  `json:"events"`
-	Cpu     CpuStats    `json:"cpu"`
-	Memory  MemoryStats `json:memory`
 	Metrics MetricStats `json:metrics`
 }
 
@@ -22,28 +20,17 @@ type EventStats struct {
 	Stop  []string `json:"stop"`
 }
 
-type CpuStats struct {
-	Avg float64 `json:"avg"`
-	Tot float64 `json:"tot"`
-}
-
-type MemoryStats struct {
-	Avg float64 `json:"avg"`
-	Tot float64 `json:"tot"`
-}
-
 type MetricStats struct {
 	BaseMetrics map[string]float64 `json:basemetrics`
 	UserMetrics map[string]float64 `json:usermetrics`
 }
 
 type InstanceStats struct {
-	Cpu    float64 `json:"cpu"`
-	Memory float64 `json:memory`
+	BaseMetrics map[string]float64 `json:basemetrics`
 }
 
 type SystemStats struct {
-	Cpu float64 `json:"cpu"`
+	BaseMetrics map[string]float64 `json:basemetrics`
 }
 
 type StatsHistory struct {
