@@ -5,32 +5,28 @@ import (
 )
 
 type GruStats struct {
-	Service  map[string]ServiceStats  `json:"service"`
-	Instance map[string]InstanceStats `json:"instance"`
-	System   SystemStats              `json:"system"`
-}
-
-type ServiceStats struct {
-	Events  EventStats  `json:"events"`
-	Metrics MetricStats `json:metrics`
-}
-
-type EventStats struct {
-	Start []string `json:"start"`
-	Stop  []string `json:"stop"`
+	Metrics MetricStats
+	Events  EventStats
 }
 
 type MetricStats struct {
-	BaseMetrics map[string]float64 `json:basemetrics`
-	UserMetrics map[string]float64 `json:usermetrics`
+	Service  map[string]MetricData `json:"service"`
+	Instance map[string]MetricData `json:"instance"`
+	System   MetricData            `json:"system"`
 }
 
-type InstanceStats struct {
-	BaseMetrics map[string]float64 `json:basemetrics`
+type MetricData struct {
+	BaseMetrics map[string]float64 `json:"basemetrics"`
+	UserMetrics map[string]float64 `json:"usermetrics"`
 }
 
-type SystemStats struct {
-	BaseMetrics map[string]float64 `json:basemetrics`
+type EventStats struct {
+	Service map[string]EventData `json:"service"`
+}
+
+type EventData struct {
+	Start []string `json:"start"`
+	Stop  []string `json:"stop"`
 }
 
 type StatsHistory struct {
