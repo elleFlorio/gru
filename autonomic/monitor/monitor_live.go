@@ -9,24 +9,38 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/samalba/dockerclient"
 
 	"github.com/elleFlorio/gru/autonomic/monitor/logreader"
+	mtr "github.com/elleFlorio/gru/autonomic/monitor/metric"
 	ch "github.com/elleFlorio/gru/channels"
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/data"
 	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/utils"
 )
 
-//History window
+// Add memory
+type instanceMetricBuffer struct {
+	cpuInst utils.Buffer
+	cpuSys  utils.Buffer
+}
+
+// History window
 const W_SIZE = 100
 const W_MULT = 1000
 
-// Manage channels using the proper package
-var ch_mnt_stats_err chan error
-var ch_mnt_events_err chan error
+// New Metric stuff
+const c_B_SIZE = 20
+
+var (
+	ch_mnt_stats_err  chan error
+	ch_mnt_events_err chan error
+	instBuffer        map[string]instanceMetricBuffer
+)
 
 func init() {
 	ch_mnt_stats_err = make(chan error)
 	ch_mnt_events_err = make(chan error)
+	instBuffer = make(map[string]instanceMetricBuffer)
 }
 
 func Stop() {
@@ -263,6 +277,12 @@ func addInstance(id string, srvName string, status string, stats *data.GruStats,
 		service.RegisterServiceInstanceId(srvName, id)
 		service.KeepAlive(srvName, id)
 
+		// NEW METRIC STUFF
+		instBuffer[id] = instanceMetricBuffer{
+			cpuInst: utils.BuildBuffer(c_B_SIZE),
+			cpuSys:  utils.BuildBuffer(c_B_SIZE),
+		}
+
 	case "stopped":
 		srv.Instances.Stopped = append(srv.Instances.Stopped, id)
 		log.Debugln("services stopped: ", srv.Instances.Stopped)
@@ -318,6 +338,9 @@ func stopInstance(id string, stats *data.GruStats, hist *data.StatsHistory) {
 	delete(hist.Instance, id)
 
 	service.UnregisterServiceInstance(srv.Name, id)
+
+	// NEW METRIC STUFF
+	delete(instBuffer, id)
 
 	log.WithFields(log.Fields{
 		"service": srv.Name,
@@ -403,23 +426,41 @@ func getContainerStatus(info *dockerclient.ContainerInfo) string {
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	if instHist, ok := history.Instance[id]; ok {
-		// Instance stats update
+	if metricBuffer, ok := instBuffer[id]; ok {
+		cpuInst := float64(stats.CpuStats.CpuUsage.TotalUsage)
+		cpuSys := float64(stats.CpuStats.SystemUsage)
 
-		// Cpu history usage update
-		totCpu := float64(stats.CpuStats.CpuUsage.TotalUsage)
-		sysCpu := float64(stats.CpuStats.SystemUsage)
-		instHist.Cpu.TotalUsage.PushBack(totCpu)
-		instHist.Cpu.SysUsage.PushBack(sysCpu)
+		toAddInst := metricBuffer.cpuInst.PushValue(cpuInst)
+		toAddSys := metricBuffer.cpuSys.PushValue(cpuSys)
 
-		// Memory usage update
-		mem := float64(stats.MemoryStats.Usage)
-		instHist.Mem.PushBack(mem)
+		if toAddInst != nil && toAddSys != nil {
+			mtr.UpdateCpuMetric(id, toAddInst, toAddSys)
+		}
 
-		history.Instance[id] = instHist
+		// TODO - Memory
+
 	} else {
-		log.WithField("id", id).Debugln("Cannot find history of instance")
+		log.WithField("id", id).Debugln("Cannot find metric buffer of instance")
 	}
+
+	// DEPRECATED
+	// if instHist, ok := history.Instance[id]; ok {
+	// 	// Instance stats update
+
+	// 	// Cpu history usage update
+	// 	totCpu := float64(stats.CpuStats.CpuUsage.TotalUsage)
+	// 	sysCpu := float64(stats.CpuStats.SystemUsage)
+	// 	instHist.Cpu.TotalUsage.PushBack(totCpu)
+	// 	instHist.Cpu.SysUsage.PushBack(sysCpu)
+
+	// 	// Memory usage update
+	// 	mem := float64(stats.MemoryStats.Usage)
+	// 	instHist.Mem.PushBack(mem)
+
+	// 	history.Instance[id] = instHist
+	// } else {
+	// 	log.WithField("id", id).Debugln("Cannot find history of instance")
+	// }
 
 }
 
