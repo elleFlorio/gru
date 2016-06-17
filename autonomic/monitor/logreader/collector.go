@@ -1,4 +1,4 @@
-package metric
+package logreader
 
 import (
 	"bufio"
@@ -9,7 +9,9 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
-func collector(contLog io.ReadCloser, ch_data chan logEntry) {
+const c_SEP string = ":"
+
+func collector(contLog io.ReadCloser, ch_entry chan logEntry) {
 	var err error
 	var line []byte
 	var data logEntry
@@ -22,7 +24,7 @@ func collector(contLog io.ReadCloser, ch_data chan logEntry) {
 			if err != nil {
 				log.WithField("err", err).Errorln("Error parsing container logs")
 			} else {
-				ch_data <- data
+				ch_entry <- data
 			}
 		}
 	}
@@ -36,7 +38,7 @@ func collector(contLog io.ReadCloser, ch_data chan logEntry) {
 
 func getDataFromLogLine(line string) (logEntry, error) {
 	relevant := line[strings.LastIndex(line, "gru"):]
-	data := strings.Split(relevant, sep)
+	data := strings.Split(relevant, c_SEP)
 	if len(data) < 5 {
 		return logEntry{}, ErrWrongLogLine
 	}

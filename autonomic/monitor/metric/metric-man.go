@@ -104,15 +104,18 @@ func StartMetricCollector() {
 }
 
 func metricCollector() {
+	var id string
+	var update updatePackage
+
 	for {
 		select {
-		case id := <-ch_inst_add:
+		case id = <-ch_inst_add:
 			instancesMetrics[id] = Metric{
 				BaseMetrics: make(map[string][]float64),
 			}
-		case id := <-ch_inst_rm:
+		case id = <-ch_inst_rm:
 			delete(instancesMetrics, id)
-		case update := <-ch_update:
+		case update = <-ch_update:
 			updateMetric(update.target, update.metricType, update.metric, update.toAdd)
 		case <-ch_compute:
 			metricsStats := computeMetrics()

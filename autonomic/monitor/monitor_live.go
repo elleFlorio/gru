@@ -426,22 +426,25 @@ func getContainerStatus(info *dockerclient.ContainerInfo) string {
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	if metricBuffer, ok := instBuffer[id]; ok {
-		cpuInst := float64(stats.CpuStats.CpuUsage.TotalUsage)
-		cpuSys := float64(stats.CpuStats.SystemUsage)
-
-		toAddInst := metricBuffer.cpuInst.PushValue(cpuInst)
-		toAddSys := metricBuffer.cpuSys.PushValue(cpuSys)
-
-		if toAddInst != nil && toAddSys != nil {
-			mtr.UpdateCpuMetric(id, toAddInst, toAddSys)
+	if _, ok := instBuffer[id]; !ok {
+		instBuffer[id] = instanceMetricBuffer{
+			cpuInst: utils.BuildBuffer(c_B_SIZE),
+			cpuSys:  utils.BuildBuffer(c_B_SIZE),
 		}
-
-		// TODO - Memory
-
-	} else {
-		log.WithField("id", id).Debugln("Cannot find metric buffer of instance")
 	}
+
+	metricBuffer := instBuffer[id]
+	cpuInst := float64(stats.CpuStats.CpuUsage.TotalUsage)
+	cpuSys := float64(stats.CpuStats.SystemUsage)
+
+	toAddInst := metricBuffer.cpuInst.PushValue(cpuInst)
+	toAddSys := metricBuffer.cpuSys.PushValue(cpuSys)
+
+	if toAddInst != nil && toAddSys != nil {
+		mtr.UpdateCpuMetric(id, toAddInst, toAddSys)
+	}
+
+	// TODO - Memory
 
 	// DEPRECATED
 	// if instHist, ok := history.Instance[id]; ok {

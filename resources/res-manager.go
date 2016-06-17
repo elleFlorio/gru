@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -200,6 +201,88 @@ func AvailableResourcesService(name string) float64 {
 	}
 
 	return 1.0
+}
+
+func SetServiceInstanceResources(name string, id string) {
+	var err error
+
+	log.Debugln("Setting new instance resources")
+	// This is needed otherwise dockerclient does not
+	// return the correct container information
+	time.Sleep(100 * time.Millisecond)
+
+	info, err := container.Docker().Client.InspectContainer(id)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"id":  id,
+			"err": err,
+		}).Errorln("Error setting instance resources")
+	}
+
+	cpusetcpus := info.HostConfig.CpusetCpus
+	portBindings, err := container.GetPortBindings(id)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"service": name,
+			"id":      id,
+			"err":     err,
+		}).Errorln("Error getting instance port binding")
+	}
+
+	log.WithFields(log.Fields{
+		"service":      name,
+		"cpusetcpus":   cpusetcpus,
+		"portbindings": portBindings,
+	}).Debugln("New instance respources")
+
+	err = CheckAndSetSpecificCores(cpusetcpus, id)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"service": name,
+			"id":      id,
+			"cpus":    cpusetcpus,
+			"err":     err,
+		}).Errorln("Error assigning CPU resources to new instance")
+	}
+
+	err = AssignSpecifiPortsToService(name, id, portBindings)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"service":  name,
+			"id":       id,
+			"bindings": portBindings,
+			"err":      err,
+		}).Errorln("Error assigning port resources to new instance")
+	}
+
+	guestPort := service.GetDiscoveryPort(name)
+	if hostPorts, ok := portBindings[guestPort]; ok {
+		if len(hostPorts) > 0 {
+			service.SaveInstanceAddress(id, hostPorts[0])
+
+			log.WithFields(log.Fields{
+				"service":  name,
+				"instance": id,
+				"guest":    guestPort,
+				"host":     hostPorts[0],
+			}).Debugln("Saved instance address")
+
+		} else {
+			log.WithFields(log.Fields{
+				"service":  name,
+				"instance": id,
+				"guest":    guestPort,
+			}).Debugln("Cannot register instance address: host ports < 0")
+		}
+
+	} else {
+		log.WithFields(log.Fields{
+			"service":  name,
+			"instance": id,
+			"guest":    guestPort,
+		}).Debugln("Cannot register instance address: no bindings")
+	}
+
 }
 
 // ############### CPU ######################

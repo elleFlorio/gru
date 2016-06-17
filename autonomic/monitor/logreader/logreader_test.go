@@ -1,4 +1,4 @@
-package metric
+package logreader
 
 import (
 	"io/ioutil"
@@ -9,17 +9,29 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 )
 
-func TestMetricManager(t *testing.T) {
+func TestLogReading(t *testing.T) {
 	logFile := createMockLog()
 	logStream, _ := os.Open(logFile)
 	defer os.Remove(logFile)
+	services := []string{"service1", "service2"}
 
-	Manager().Start()
-	Manager().StartCollector(logStream)
+	Initialize(services)
+	StartLogReader()
+	StartCollector(logStream)
 	time.Sleep(1 * time.Second)
-	data := Manager().GetMetrics()
-	assert.Len(t, data, 2)
-	Manager().Stop()
+	metricsSrv1 := srvMetrics["service1"].userDef
+	metricsSrv2 := srvMetrics["service2"].userDef
+	assert.Len(t, metricsSrv1, 2)
+	assert.Len(t, metricsSrv2, 1)
+	m1Srv1 := metricsSrv1["metric1"]
+	m2Srv1 := metricsSrv1["metric2"]
+	m1Srv2 := metricsSrv2["metric1"]
+	m2Srv2 := metricsSrv2["metric2"]
+	assert.Len(t, m1Srv1.GetValues(), 2)
+	assert.Len(t, m2Srv1.GetValues(), 1)
+	assert.Len(t, m1Srv2.GetValues(), 1)
+	assert.Nil(t, m2Srv2.GetValues())
+	Stop()
 }
 
 func createMockLog() string {
