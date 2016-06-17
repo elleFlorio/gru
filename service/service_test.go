@@ -56,7 +56,7 @@ func TestGetServiceById(t *testing.T) {
 	var err error
 	cfg.SetServices(CreateMockServices())
 
-	srv1, err := GetServiceById("instance1_2")
+	srv1, err := GetServiceById("instance1_0")
 	assert.NoError(t, err)
 	assert.Equal(t, "service1", srv1.Name)
 

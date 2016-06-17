@@ -131,7 +131,7 @@ func stopInstance(instance string) {
 	service.Instances.Stopped = append(service.Instances.Stopped, instance)
 
 	srvEvents := events.Service[service.Name]
-	srvEvents.Start = append(srvEvents.Start, instance)
+	srvEvents.Stop = append(srvEvents.Stop, instance)
 	events.Service[service.Name] = srvEvents
 
 	srv.UnregisterServiceInstance(service.Name, instance)
@@ -150,7 +150,7 @@ func freeServiceInstanceResources(name string, id string) {
 func removeInstance(instance string) {
 	service, err := srv.GetServiceById(instance)
 	if err != nil {
-		log.Warnln("Cannor remove instance: service unknown")
+		log.WithField("instance", instance).Warnln("Cannot remove instance: service unknown")
 		return
 	}
 
