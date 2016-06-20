@@ -1,9 +1,5 @@
 package data
 
-import (
-	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/jbrukh/window"
-)
-
 type GruStats struct {
 	Metrics MetricStats
 	Events  EventStats
@@ -27,18 +23,4 @@ type EventStats struct {
 type EventData struct {
 	Start []string `json:"start"`
 	Stop  []string `json:"stop"`
-}
-
-type StatsHistory struct {
-	Instance map[string]InstanceHistory
-}
-
-type InstanceHistory struct {
-	Cpu CpuHistory
-	Mem *window.MovingWindow
-}
-
-type CpuHistory struct {
-	TotalUsage *window.MovingWindow
-	SysUsage   *window.MovingWindow
 }

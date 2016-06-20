@@ -1,9 +1,11 @@
 package event
 
+import "github.com/elleFlorio/gru/enum"
+
 type Event struct {
 	Type     string
 	Service  string
 	Image    string
-	Isntance string
-	Status   string
+	Instance string
+	Status   enum.Status
 }

@@ -5,11 +5,11 @@ import (
 )
 
 func CreateMockServices() []cfg.Service {
-	all1 := []string{"instance1_0", "instance1_1", "instance1_2", "instance1_3", "instance1_4"}
+	all1 := []string{"instance1_0", "instance1_1", "instance1_2", "instance1_3", "instance1_4", "instance1_5"}
 	running1 := []string{"instance1_1", "instance1_2"}
 	pending1 := []string{"instance1_3", "instance1_4"}
 	stopped1 := []string{"instance1_0"}
-	paused1 := []string{}
+	paused1 := []string{"instance1_5"}
 	instances1 := cfg.ServiceStatus{
 		All:     all1,
 		Running: running1,

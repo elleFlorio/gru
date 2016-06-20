@@ -6,6 +6,7 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/enum"
 )
 
 func TestGetServiceByType(t *testing.T) {
@@ -106,4 +107,150 @@ func TestUpdateServices(t *testing.T) {
 	cfg.SetServices(newServices)
 	assert.Len(t, cfg.GetServices(), 1, "services should have lenght = 1 after the update")
 	assert.Contains(t, List(), "newService", "services should contain service 'newService' after the update")
+}
+
+func TestFindIdIndex(t *testing.T) {
+	instances := []string{
+		"instance1_1",
+		"instance1_2",
+		"instance1_3",
+		"instance1_4",
+		"instance2_1",
+	}
+
+	index, _ := findIdIndex("instance1_3", instances)
+	assert.Equal(t, 2, index, "index of 'instance3' should be 2")
+}
+
+func TestAddServiceInstance(t *testing.T) {
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
+	name := "service1"
+	service, _ := GetServiceByName(name)
+	instance_p := "instance1_100"
+	instance_ps := "instance1_101"
+	instance_s := "instance1_102"
+	var err error
+	var status enum.Status
+
+	status = enum.PENDING
+	err = AddServiceInstance(name, instance_p, status)
+	assert.NoError(t, err)
+	assert.Contains(t, service.Instances.All, instance_p)
+	assert.Contains(t, service.Instances.Pending, instance_p)
+
+	status = enum.PAUSED
+	err = AddServiceInstance(name, instance_ps, status)
+	assert.NoError(t, err)
+	assert.Contains(t, service.Instances.All, instance_ps)
+	assert.Contains(t, service.Instances.Paused, instance_ps)
+
+	status = enum.STOPPED
+	err = AddServiceInstance(name, instance_s, status)
+	assert.NoError(t, err)
+	assert.Contains(t, service.Instances.All, instance_s)
+	assert.Contains(t, service.Instances.Stopped, instance_s)
+
+	status = enum.PENDING
+	err = AddServiceInstance("pippo", "pippo", status)
+	assert.Error(t, err)
+}
+
+func TestChangeServiceInstanceStatus(t *testing.T) {
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
+	name := "service1"
+	service, _ := GetServiceByName(name)
+	instance := "instance1_3"
+	var prev enum.Status
+	var upd enum.Status
+	var err error
+
+	prev = enum.PENDING
+	upd = enum.RUNNING
+	err = ChangeServiceInstanceStatus(name, instance, prev, upd)
+	assert.NotContains(t, service.Instances.Pending, instance)
+	assert.Contains(t, service.Instances.Running, instance)
+	assert.NoError(t, err)
+
+	prev = enum.RUNNING
+	upd = enum.PAUSED
+	err = ChangeServiceInstanceStatus(name, instance, prev, upd)
+	assert.NotContains(t, service.Instances.Running, instance)
+	assert.Contains(t, service.Instances.Paused, instance)
+	assert.NoError(t, err)
+
+	prev = enum.PAUSED
+	upd = enum.STOPPED
+	err = ChangeServiceInstanceStatus(name, instance, prev, upd)
+	assert.NotContains(t, service.Instances.Paused, instance)
+	assert.Contains(t, service.Instances.Stopped, instance)
+	assert.NoError(t, err)
+
+	prev = enum.STOPPED
+	upd = enum.PENDING
+	err = ChangeServiceInstanceStatus(name, instance, prev, upd)
+	assert.NotContains(t, service.Instances.Stopped, instance)
+	assert.Contains(t, service.Instances.Pending, instance)
+	assert.NoError(t, err)
+
+	prev = enum.PENDING
+	upd = enum.RUNNING
+	err = ChangeServiceInstanceStatus("pippo", instance, prev, upd)
+	assert.Error(t, err)
+
+	prev = enum.PENDING
+	upd = enum.RUNNING
+	err = ChangeServiceInstanceStatus(name, "pippo", prev, upd)
+	assert.Error(t, err)
+}
+
+func TestRemoveServiceIntance(t *testing.T) {
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
+	name := "service1"
+	service, _ := GetServiceByName(name)
+	instance := "instance1_0"
+	var err error
+
+	err = RemoveServiceInstance(name, instance)
+	assert.NotContains(t, service.Instances.Stopped, instance)
+	assert.NotContains(t, service.Instances.All, instance)
+	assert.NoError(t, err)
+
+	err = RemoveServiceInstance("pippo", instance)
+	assert.Error(t, err)
+
+	err = RemoveServiceInstance(name, "pippo")
+	assert.Error(t, err)
+
+}
+
+func TestGetServiceInstanceStatus(t *testing.T) {
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
+	name := "service1"
+	instance_p := "instance1_3"
+	instance_r := "instance1_1"
+	instance_s := "instance1_0"
+	instance_ps := "instance1_5"
+	var status enum.Status
+
+	status = GetServiceInstanceStatus(name, instance_p)
+	assert.Equal(t, enum.PENDING, status)
+
+	status = GetServiceInstanceStatus(name, instance_r)
+	assert.Equal(t, enum.RUNNING, status)
+
+	status = GetServiceInstanceStatus(name, instance_s)
+	assert.Equal(t, enum.STOPPED, status)
+
+	status = GetServiceInstanceStatus(name, instance_ps)
+	assert.Equal(t, enum.PAUSED, status)
+
+	status = GetServiceInstanceStatus(name, "pippo")
+	assert.Equal(t, enum.UNKNOWN, status)
+
+	status = GetServiceInstanceStatus("pippo", "pippo")
+	assert.Equal(t, enum.UNKNOWN, status)
 }

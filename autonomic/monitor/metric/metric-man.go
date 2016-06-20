@@ -92,6 +92,16 @@ func UpdateUserMetric(service string, metric string, toAdd []float64) {
 	}
 }
 
+func IsReadyForRunning(instance string, threshold int) bool {
+	readyToRun := true
+	metrics := instancesMetrics[instance].BaseMetrics
+	for _, values := range metrics {
+		readyToRun = readyToRun && (len(values) >= threshold)
+	}
+
+	return readyToRun
+}
+
 func GetMetricsStats() data.MetricStats {
 	ch_compute <- struct{}{}
 	metStats := <-ch_metrics
