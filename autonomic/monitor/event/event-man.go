@@ -2,6 +2,7 @@ package event
 
 import (
 	"errors"
+	"sync"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -13,13 +14,15 @@ import (
 )
 
 var (
-	events data.EventStats
+	events    data.EventStats
+	evt_mutex sync.RWMutex
 
 	ErrNoIndexById error = errors.New("No index for such Id")
 )
 
 func init() {
 	events.Service = make(map[string]data.EventData)
+	evt_mutex = sync.RWMutex{}
 }
 
 func Initialize(services []string) {
@@ -53,17 +56,26 @@ func HandleRemoveEvent(e Event) {
 	notifyRemoval()
 }
 
-// TODO - Need to do a copy
 func GetEventsStats() data.EventStats {
-	return events
+	defer clearEvents()
+	events_cpy := data.EventStats{
+		Service: make(map[string]data.EventData, len(events.Service)),
+	}
+	for service, values := range events.Service {
+		events_cpy.Service[service] = values
+	}
+
+	return events_cpy
 }
 
 func clearEvents() {
+	evt_mutex.Lock()
 	for service, eventData := range events.Service {
 		eventData.Start = eventData.Start[:0]
 		eventData.Stop = eventData.Stop[:0]
 		events.Service[service] = eventData
 	}
+	evt_mutex.Unlock()
 }
 
 func addInstance(name string, instance string, status enum.Status) {
@@ -74,9 +86,11 @@ func addInstance(name string, instance string, status enum.Status) {
 	}
 
 	if status == enum.PENDING {
+		evt_mutex.Lock()
 		srvEvents := events.Service[name]
 		srvEvents.Start = append(srvEvents.Start, instance)
 		events.Service[name] = srvEvents
+		evt_mutex.Unlock()
 
 		srv.RegisterServiceInstanceId(name, instance)
 		srv.KeepAlive(name, instance)
@@ -100,9 +114,11 @@ func stopInstance(name string, instance string) {
 		return
 	}
 
+	evt_mutex.Lock()
 	srvEvents := events.Service[name]
 	srvEvents.Stop = append(srvEvents.Stop, instance)
 	events.Service[name] = srvEvents
+	evt_mutex.Unlock()
 
 	srv.UnregisterServiceInstance(name, instance)
 

@@ -7,6 +7,7 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/data"
 	dsc "github.com/elleFlorio/gru/discovery"
 	"github.com/elleFlorio/gru/enum"
 	srv "github.com/elleFlorio/gru/service"
@@ -17,6 +18,17 @@ func init() {
 	cfg.GetAgentDiscovery().TTL = 5
 	resetMockServices()
 	Initialize(srv.List())
+}
+
+func TestGetEvents(t *testing.T) {
+	event := data.EventData{
+		Start: []string{"a", "b"},
+		Stop:  []string{"c", "d"},
+	}
+	events.Service["pippo"] = event
+
+	result := GetEventsStats()
+	assert.Contains(t, result.Service["pippo"].Start, "a")
 }
 
 func TestHandleStartEvent(t *testing.T) {

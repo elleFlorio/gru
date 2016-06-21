@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	ch_action    chan ActionMessage
-	ch_instances map[string]chan struct{}
-	ch_removal   chan struct{}
+	ch_action        chan ActionMessage
+	ch_instances     map[string]chan struct{}
+	ch_removal       chan struct{}
+	ch_autonomic_err chan error
 
 	needsRemovalNotification bool
 )
@@ -19,6 +20,7 @@ func init() {
 	ch_action = make(chan ActionMessage)
 	ch_instances = make(map[string]chan struct{})
 	ch_removal = make(chan struct{})
+	ch_autonomic_err = make(chan error)
 
 	needsRemovalNotification = false
 }
@@ -31,12 +33,18 @@ func GetRemovalChannel() chan struct{} {
 	return getChannel("removal").(chan struct{})
 }
 
+func GetAutonomicErrChannel() chan error {
+	return getChannel("autonomic_err").(chan error)
+}
+
 func getChannel(name string) interface{} {
 	switch name {
 	case "action":
 		return ch_action
 	case "removal":
 		return ch_removal
+	case "autonomic_err":
+		return ch_autonomic_err
 	}
 
 	return nil

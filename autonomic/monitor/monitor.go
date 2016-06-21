@@ -9,6 +9,7 @@ import (
 	evt "github.com/elleFlorio/gru/autonomic/monitor/event"
 	lgr "github.com/elleFlorio/gru/autonomic/monitor/logreader"
 	mtr "github.com/elleFlorio/gru/autonomic/monitor/metric"
+	chn "github.com/elleFlorio/gru/channels"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/data"
@@ -27,54 +28,58 @@ const c_B_SIZE = 20
 const c_MTR_THR = 20
 
 var (
-	ch_mnt_stats_err  chan error
-	ch_mnt_events_err chan error
-	ch_err            chan error
-	ch_stop           chan struct{}
-
+	stats      data.GruStats
 	instBuffer map[string]instanceMetricBuffer
 
-	monitorActive bool
-
-	stats data.GruStats
+	ch_mnt_stats_err  chan error
+	ch_mnt_events_err chan error
+	ch_stop           chan struct{}
 )
 
 func init() {
-	ch_mnt_stats_err = make(chan error)
-	ch_mnt_events_err = make(chan error)
-
+	stats = data.GruStats{}
 	instBuffer = make(map[string]instanceMetricBuffer)
 
-	monitorActive = false
-
-	stats = data.GruStats{}
+	ch_mnt_stats_err = make(chan error)
+	ch_mnt_events_err = make(chan error)
+	ch_stop = make(chan struct{})
 }
 
-func Stop() {
-	monitorActive = false
-	log.Warnln("Autonomic monitor stopped")
+func StartMonitor() {
+	initiailizeMonitoring()
+	go startMonitoring()
+}
+
+func StopMonitor() {
 	ch_stop <- struct{}{}
+	log.Warnln("Autonomic monitor stopped")
 }
 
-func Start(cError chan error, cStop chan struct{}) {
-	go startMonitoring(cError, cStop)
+func Run() data.GruStats {
+	services := srv.List()
+	for _, service := range services {
+		updateRunningInstances(service, c_MTR_THR)
+	}
+	updateSystemInstances(services)
+	metrics := mtr.GetMetricsStats()
+	events := evt.GetEventsStats()
+	stats.Metrics = metrics
+	stats.Events = events
+	data.SaveStats(stats)
+	displayStatsOfServices(stats)
+	return stats
 }
 
-func startMonitoring(cError chan error, cStop chan struct{}) {
+func initiailizeMonitoring() {
 	log.Debugln("Running autonomic monitoring")
-	mtr.StartMetricCollector()
-
-	monitorActive = true
-	ch_err = cError
-	ch_stop = cStop
+	ch_aut_err := chn.GetAutonomicErrChannel()
 
 	// Get the list of containers (running or not) to monitor
 	containers, err := container.Docker().Client.ListContainers(true, false, "")
 	if err != nil {
-		monitorError(err)
+		log.WithField("err", err).Debugln("Error monitoring containers")
+		ch_aut_err <- err
 	}
-
-	container.Docker().Client.StartMonitorEvents(eventCallback, ch_mnt_events_err)
 
 	// Start the monitor for each configured service
 	for _, c := range containers {
@@ -97,20 +102,28 @@ func startMonitoring(cError chan error, cStop chan struct{}) {
 			evt.HandleCreateEvent(e)
 			evt.HanldeStartEvent(e)
 			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, ch_mnt_stats_err)
-			if status == "pending" {
+			if status == enum.PENDING {
 				startMonitorLog(c.Id)
 			}
 		}
 	}
+}
 
-	for monitorActive {
+func startMonitoring() {
+	log.Debugln("Running autonomic monitoring")
+	ch_aut_err := chn.GetAutonomicErrChannel()
+
+	container.Docker().Client.StartMonitorEvents(eventCallback, ch_mnt_events_err)
+	for {
 		select {
 		case err := <-ch_mnt_events_err:
 			log.WithField("err", err).Fatalln("Error monitoring containers events")
-			ch_err <- err
+			ch_aut_err <- err
 		case err := <-ch_mnt_stats_err:
 			log.WithField("err", err).Debugln("Error monitoring containers stats")
-			ch_err <- err
+			ch_aut_err <- err
+		case <-ch_stop:
+			return
 		}
 	}
 }
@@ -216,26 +229,6 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 
 }
 
-func monitorError(err error) {
-	log.WithField("err", err).Debugln("Error monitoring containers")
-	ch_err <- err
-}
-
-func Run() data.GruStats {
-	services := srv.List()
-	for _, service := range services {
-		updateRunningInstances(service, c_MTR_THR)
-	}
-	updateSystemInstances(services)
-	metrics := mtr.GetMetricsStats()
-	events := evt.GetEventsStats()
-	stats.Metrics = metrics
-	stats.Events = events
-	data.SaveStats(stats)
-	displayStatsOfServices(stats)
-	return stats
-}
-
 func updateRunningInstances(name string, threshold int) {
 	service, _ := srv.GetServiceByName(name)
 	pending := service.Instances.Pending
@@ -279,9 +272,7 @@ func displayStatsOfServices(stats data.GruStats) {
 			"stopped:": len(service.Instances.Stopped),
 			"paused:":  len(service.Instances.Paused),
 			"cpu avg":  fmt.Sprintf("%.2f", value.BaseMetrics[enum.METRIC_CPU_AVG.ToString()]),
-			"cpu tot":  fmt.Sprintf("%.2f", value.BaseMetrics[enum.METRIC_CPU_TOT.ToString()]),
 			"mem avg":  fmt.Sprintf("%.2f", value.BaseMetrics[enum.METRIC_MEM_AVG.ToString()]),
-			"mem tot":  fmt.Sprintf("%.2f", value.BaseMetrics[enum.METRIC_MEM_TOT.ToString()]),
 		}).Infoln("Stats computed: ", name)
 	}
 }

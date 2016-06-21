@@ -2,6 +2,7 @@ package metric
 
 import (
 	"math"
+	"sync"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -11,37 +12,21 @@ import (
 	srv "github.com/elleFlorio/gru/service"
 )
 
-type updatePackage struct {
-	target     string
-	metricType enum.MetricType
-	metric     string
-	toAdd      []float64
-}
-
 var (
 	servicesMetrics  map[string]Metric
 	instancesMetrics map[string]Metric
-	ch_inst_add      chan string
-	ch_inst_rm       chan string
-	ch_update        chan updatePackage
-	ch_compute       chan struct{}
-	ch_metrics       chan data.MetricStats
+
+	mutex_instMet sync.RWMutex
 )
 
 func init() {
-	ch_inst_add = make(chan string, 100)
-	ch_inst_rm = make(chan string, 100)
-	ch_update = make(chan updatePackage, 100)
-	ch_compute = make(chan struct{})
-	ch_metrics = make(chan data.MetricStats)
-
 	instancesMetrics = make(map[string]Metric)
+	mutex_instMet = sync.RWMutex{}
 }
 
-func Initialize() {
-	servicesList := srv.List()
-	servicesMetrics = make(map[string]Metric, len(servicesList))
-	for _, service := range servicesList {
+func Initialize(services []string) {
+	servicesMetrics = make(map[string]Metric, len(services))
+	for _, service := range services {
 		metric := Metric{
 			UserMetrics: make(map[string][]float64),
 		}
@@ -51,48 +36,38 @@ func Initialize() {
 }
 
 func AddInstance(id string) {
-	ch_inst_add <- id
+	defer mutex_instMet.Unlock()
+
+	mutex_instMet.Lock()
+	instancesMetrics[id] = Metric{
+		BaseMetrics: make(map[string][]float64),
+	}
 }
 
 func RemoveInstance(id string) {
-	ch_inst_rm <- id
+	defer mutex_instMet.Unlock()
+
+	mutex_instMet.Lock()
+	delete(instancesMetrics, id)
 }
 
 func UpdateCpuMetric(id string, toAddInst []float64, toAddSys []float64) {
-	ch_update <- updatePackage{
-		target:     id,
-		metricType: enum.METRIC_T_BASE,
-		metric:     enum.METRIC_CPU_INST.ToString(),
-		toAdd:      toAddInst,
-	}
-
-	ch_update <- updatePackage{
-		target:     id,
-		metricType: enum.METRIC_T_BASE,
-		metric:     enum.METRIC_CPU_SYS.ToString(),
-		toAdd:      toAddSys,
-	}
+	updateMetric(id, enum.METRIC_T_BASE, enum.METRIC_CPU_INST.ToString(), toAddInst)
+	updateMetric(id, enum.METRIC_T_BASE, enum.METRIC_CPU_SYS.ToString(), toAddSys)
 }
 
 func UpdateMemMetric(id string, toAdd []float64) {
-	ch_update <- updatePackage{
-		target:     id,
-		metricType: enum.METRIC_T_BASE,
-		metric:     enum.METRIC_MEM_INST.ToString(),
-		toAdd:      toAdd,
-	}
+	updateMetric(id, enum.METRIC_T_BASE, enum.METRIC_MEM_INST.ToString(), toAdd)
 }
 
 func UpdateUserMetric(service string, metric string, toAdd []float64) {
-	ch_update <- updatePackage{
-		target:     service,
-		metricType: enum.METRIC_T_USER,
-		metric:     metric,
-		toAdd:      toAdd,
-	}
+	updateMetric(service, enum.METRIC_T_USER, metric, toAdd)
 }
 
 func IsReadyForRunning(instance string, threshold int) bool {
+	defer mutex_instMet.RUnlock()
+
+	mutex_instMet.RLock()
 	readyToRun := true
 	metrics := instancesMetrics[instance].BaseMetrics
 	for _, values := range metrics {
@@ -103,52 +78,22 @@ func IsReadyForRunning(instance string, threshold int) bool {
 }
 
 func GetMetricsStats() data.MetricStats {
-	ch_compute <- struct{}{}
-	metStats := <-ch_metrics
+	defer resetMetrics()
+	metStats := computeMetrics()
 
 	return metStats
 }
 
-func StartMetricCollector() {
-	go metricCollector()
-}
-
-func metricCollector() {
-	var id string
-	var update updatePackage
-
-	for {
-		select {
-		case id = <-ch_inst_add:
-			instancesMetrics[id] = Metric{
-				BaseMetrics: make(map[string][]float64),
-			}
-		case id = <-ch_inst_rm:
-			delete(instancesMetrics, id)
-		case update = <-ch_update:
-			updateMetric(update.target, update.metricType, update.metric, update.toAdd)
-		case <-ch_compute:
-			metricsStats := computeMetrics()
-			ch_metrics <- metricsStats
-			clearMetrics()
-		}
-	}
-}
-
 func updateMetric(target string, metricType enum.MetricType, metric string, toAdd []float64) {
+	defer mutex_instMet.Unlock()
 
+	mutex_instMet.Lock()
 	switch metricType {
 	case enum.METRIC_T_BASE:
 		if toUpdateInstace, ok := instancesMetrics[target]; ok {
-			if values, ok := toUpdateInstace.BaseMetrics[metric]; ok {
-				values = append(values, toAdd...)
-				toUpdateInstace.BaseMetrics[metric] = values
-			} else {
-				log.WithFields(log.Fields{
-					"target": target,
-					"metric": metric,
-				}).Errorln("Cannot update instance metric: unknown metric")
-			}
+			values := toUpdateInstace.BaseMetrics[metric]
+			values = append(values, toAdd...)
+			toUpdateInstace.BaseMetrics[metric] = values
 		} else {
 			log.WithFields(log.Fields{
 				"target": target,
@@ -157,20 +102,14 @@ func updateMetric(target string, metricType enum.MetricType, metric string, toAd
 		}
 	case enum.METRIC_T_USER:
 		if toUpdateService, ok := servicesMetrics[target]; ok {
-			if values, ok := toUpdateService.UserMetrics[metric]; ok {
-				values = append(values, toAdd...)
-				toUpdateService.UserMetrics[metric] = values
-			} else {
-				log.WithFields(log.Fields{
-					"target": target,
-					"metric": metric,
-				}).Errorln("Cannot update service metric: unknown metric")
-			}
+			values := toUpdateService.UserMetrics[metric]
+			values = append(values, toAdd...)
+			toUpdateService.UserMetrics[metric] = values
 		} else {
 			log.WithFields(log.Fields{
 				"target": target,
 				"metric": metric,
-			}).Errorln("Cannot update service metric: unknown instance")
+			}).Errorln("Cannot update service metric: unknown service")
 		}
 	}
 }
@@ -189,6 +128,9 @@ func computeMetrics() data.MetricStats {
 }
 
 func computeInstancesMetrics() map[string]data.MetricData {
+	defer mutex_instMet.RUnlock()
+
+	mutex_instMet.RLock()
 	instMetrics := make(map[string]data.MetricData)
 	baseMetrics := make(map[string]float64)
 
@@ -256,20 +198,16 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 }
 
 func computeServicesMetrics(instMetrics map[string]data.MetricData) map[string]data.MetricData {
-
 	servicesAvg := make(map[string]data.MetricData, len(servicesMetrics))
 
 	for service, metrics := range servicesMetrics {
 		baseMetrics := make(map[string]float64)
 		// CPU
-		cpuAvg, cpuTot := computeServiceCpuPerc(service, instMetrics)
+		cpuAvg := computeServiceCpuPerc(service, instMetrics)
 		baseMetrics[enum.METRIC_CPU_AVG.ToString()] = cpuAvg
-		baseMetrics[enum.METRIC_CPU_TOT.ToString()] = cpuTot
 		// MEMORY -TODO
 		memAvg := 0.0
-		memTot := 0.0
 		baseMetrics[enum.METRIC_MEM_AVG.ToString()] = memAvg
-		baseMetrics[enum.METRIC_MEM_TOT.ToString()] = memTot
 
 		userMetrics := make(map[string]float64, len(metrics.UserMetrics))
 		for metric, values := range metrics.UserMetrics {
@@ -289,8 +227,7 @@ func computeServicesMetrics(instMetrics map[string]data.MetricData) map[string]d
 }
 
 // Returns CPU percentage average, total.
-func computeServiceCpuPerc(name string, instMetrics map[string]data.MetricData) (float64, float64) {
-	sum := 0.0
+func computeServiceCpuPerc(name string, instMetrics map[string]data.MetricData) float64 {
 
 	service, _ := srv.GetServiceByName(name)
 	values := make([]float64, 0)
@@ -298,12 +235,11 @@ func computeServiceCpuPerc(name string, instMetrics map[string]data.MetricData) 
 	if len(service.Instances.Running) > 0 {
 		for _, id := range service.Instances.Running {
 			instCpuAvg := instMetrics[id].BaseMetrics[enum.METRIC_CPU_AVG.ToString()]
-			sum += instCpuAvg
 			values = append(values, instCpuAvg)
 		}
 	}
 
-	return mean(values), math.Min(1.0, sum)
+	return mean(values)
 }
 
 func mean(values []float64) float64 {
@@ -322,18 +258,18 @@ func mean(values []float64) float64 {
 func computeSysMetrics(servMetrics map[string]data.MetricData) data.MetricData {
 	// TODO - improve by adding capacity
 	baseMetrics := make(map[string]float64)
-	cpuSys := 0.0
-	memSys := 0.0
+	cpuSys := make([]float64, 0, len(servMetrics))
+	memSys := make([]float64, 0, len(servMetrics))
 	for _, metrics := range servMetrics {
 		// CPU
-		cpuSys += metrics.BaseMetrics[enum.METRIC_CPU_TOT.ToString()]
+		cpuSys = append(cpuSys, metrics.BaseMetrics[enum.METRIC_CPU_AVG.ToString()])
 
 		// MEM
 		// TODO
 	}
 
-	baseMetrics[enum.METRIC_CPU_TOT.ToString()] = cpuSys
-	baseMetrics[enum.METRIC_MEM_TOT.ToString()] = memSys
+	baseMetrics[enum.METRIC_CPU_AVG.ToString()] = mean(cpuSys)
+	baseMetrics[enum.METRIC_MEM_AVG.ToString()] = mean(memSys)
 	sysMetrics := data.MetricData{
 		BaseMetrics: baseMetrics,
 	}
@@ -342,8 +278,21 @@ func computeSysMetrics(servMetrics map[string]data.MetricData) data.MetricData {
 
 }
 
-// FIXME
-func clearMetrics() {
-	capacity := len(servicesMetrics)
-	servicesMetrics = make(map[string]Metric, capacity)
+func resetMetrics() {
+	defer mutex_instMet.Unlock()
+
+	mutex_instMet.Lock()
+	for service, metrics := range servicesMetrics {
+		for metric, _ := range metrics.UserMetrics {
+			metrics.UserMetrics[metric] = metrics.UserMetrics[metric][:0]
+		}
+		servicesMetrics[service] = metrics
+	}
+
+	for instance, metrics := range instancesMetrics {
+		for metric, _ := range metrics.BaseMetrics {
+			metrics.BaseMetrics[metric] = metrics.BaseMetrics[metric][:0]
+		}
+		instancesMetrics[instance] = metrics
+	}
 }
