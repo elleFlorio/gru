@@ -23,6 +23,9 @@ func (p *swapCreator) listActions() []string {
 
 func (p *swapCreator) createPolicies(srvList []string, clusterData data.Shared) []data.Policy {
 	swapPolicies := []data.Policy{}
+	if !cfg.GetPolicy().Swap.Enable {
+		return swapPolicies
+	}
 
 	swapPairs := p.createSwapPairs(srvList)
 	for running, inactives := range swapPairs {
@@ -77,7 +80,7 @@ func (p *swapCreator) computeWeight(running string, candidate string, clusterDat
 	nRun := len(srv_run.Instances.Running)
 	baseServices := cfg.GetNodeConstraints().BaseServices
 
-	if p.contains(baseServices, running) && nRun < 2 {
+	if utils.ContainsString(baseServices, running) && nRun < 2 {
 		return 0.0
 	}
 
@@ -100,7 +103,7 @@ func (p *swapCreator) computeWeight(running string, candidate string, clusterDat
 
 	runShared := clusterData.Service[running]
 	candShared := clusterData.Service[candidate]
-	threshold := cfg.GetTuning().Policy.Swap
+	threshold := cfg.GetPolicy().Swap.Threshold
 	weights := []float64{}
 	analytics := srv.GetServiceExpressionsList(running)
 
@@ -122,15 +125,4 @@ func (p *swapCreator) computeWeight(running string, candidate string, clusterDat
 	policyValue := math.Max(0.0, utils.Mean(weights))
 
 	return policyValue
-}
-
-// FIX duplicated from scalein...
-func (p *swapCreator) contains(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-
-	return false
 }

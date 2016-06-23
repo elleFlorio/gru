@@ -19,7 +19,7 @@ var (
 	agent       Agent
 	node        Node
 	services    []Service = []Service{}
-	tuning      Tuning
+	policy      Policy
 	expressions map[string]Expression
 )
 
@@ -157,12 +157,12 @@ func CleanServices() {
 	services = make([]Service, 0)
 }
 
-func SetTuning(cfg Tuning) {
-	tuning = cfg
+func SetPolicy(cfg Policy) {
+	policy = cfg
 }
 
-func GetTuning() *Tuning {
-	return &tuning
+func GetPolicy() *Policy {
+	return &policy
 }
 
 func SetExpr(cfg map[string]Expression) {

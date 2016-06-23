@@ -1,55 +1,90 @@
 package data
 
-// func CreateMockShared() Shared {
-// 	info := Shared{
-// 		Service: make(map[string]ServiceShared),
-// 	}
+import (
+	"github.com/elleFlorio/gru/enum"
+)
 
-// 	service1 := "service1"
-// 	service2 := "service2"
+func CreateMockShared() Shared {
+	// service 1
+	srvBaseShared1 := map[string]float64{
+		enum.METRIC_CPU_AVG.ToString(): 0.6,
+		enum.METRIC_MEM_AVG.ToString(): 0.3,
+	}
+	srvUserShared1 := map[string]float64{
+		"LOAD": 0.5,
+	}
 
-// 	load1 := 0.7
-// 	cpu1 := 0.9
-// 	mem1 := 0.6
-// 	res1 := 0.0
-// 	act1 := true
-// 	srvInfo1 := ServiceShared{
-// 		Load:      load1,
-// 		Cpu:       cpu1,
-// 		Memory:    mem1,
-// 		Resources: res1,
-// 		Active:    act1,
-// 	}
+	srvSharedData1 := SharedData{
+		BaseShared: srvBaseShared1,
+		UserShared: srvUserShared1,
+	}
 
-// 	load2 := 0.4
-// 	cpu2 := 0.5
-// 	mem2 := 0.1
-// 	res2 := 1.0
-// 	act2 := true
-// 	srvInfo2 := ServiceShared{
-// 		Load:      load2,
-// 		Cpu:       cpu2,
-// 		Memory:    mem2,
-// 		Resources: res2,
-// 		Active:    act2,
-// 	}
+	srvShared1 := ServiceShared{
+		Data:   srvSharedData1,
+		Active: true,
+	}
 
-// 	info.Service[service1] = srvInfo1
-// 	info.Service[service2] = srvInfo2
+	// service 2
+	srvBaseShared2 := map[string]float64{
+		enum.METRIC_CPU_AVG.ToString(): 0.1,
+		enum.METRIC_MEM_AVG.ToString(): 0.1,
+	}
+	srvUserShared2 := map[string]float64{
+		"LOAD": 0.1,
+	}
 
-// 	cpuSys := 0.8
-// 	memSys := 0.7
-// 	healthSys := 0.7
-// 	activeSys := []string{service1}
-// 	sys := SystemShared{
-// 		Cpu:            cpuSys,
-// 		Memory:         memSys,
-// 		Health:         healthSys,
-// 		ActiveServices: activeSys,
-// 	}
+	srvSharedData2 := SharedData{
+		BaseShared: srvBaseShared2,
+		UserShared: srvUserShared2,
+	}
 
-// 	info.System = sys
+	srvShared2 := ServiceShared{
+		Data:   srvSharedData2,
+		Active: true,
+	}
 
-// 	return info
+	// service 3
+	srvBaseShared3 := map[string]float64{
+		enum.METRIC_CPU_AVG.ToString(): 0.9,
+		enum.METRIC_MEM_AVG.ToString(): 0.8,
+	}
+	srvUserShared3 := map[string]float64{
+		"LOAD": 0.9,
+	}
 
-// }
+	srvSharedData3 := SharedData{
+		BaseShared: srvBaseShared3,
+		UserShared: srvUserShared3,
+	}
+
+	srvShared3 := ServiceShared{
+		Data:   srvSharedData3,
+		Active: true,
+	}
+
+	// system
+	sysBaseShared := map[string]float64{
+		enum.METRIC_CPU_AVG.ToString(): 0.5,
+		enum.METRIC_MEM_AVG.ToString(): 0.4,
+	}
+
+	sysSharedData := SharedData{
+		BaseShared: sysBaseShared,
+	}
+
+	sysShared := SystemShared{
+		Data:           sysSharedData,
+		ActiveServices: []string{"service1", "service2", "service3"},
+	}
+
+	shared := Shared{
+		Service: map[string]ServiceShared{
+			"service1": srvShared1,
+			"service2": srvShared2,
+			"service3": srvShared3,
+		},
+		System: sysShared,
+	}
+
+	return shared
+}

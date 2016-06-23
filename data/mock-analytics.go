@@ -1,91 +1,77 @@
 package data
 
-// import (
-// 	cfg "github.com/elleFlorio/gru/configuration"
-// )
+import (
+	"github.com/elleFlorio/gru/enum"
+)
 
-// func CreateMockAnalytics() GruAnalytics {
-// 	mockAnalytics := GruAnalytics{
-// 		Service: make(map[string]ServiceAnalytics),
-// 	}
+func CreateMockAnalytics() GruAnalytics {
+	// service 1
+	srvBaseAnalytics1 := map[string]float64{
+		enum.METRIC_CPU_AVG.ToString(): 0.6,
+		enum.METRIC_MEM_AVG.ToString(): 0.3,
+	}
+	srvUserAnalytics1 := map[string]float64{
+		"LOAD": 0.5,
+	}
 
-// 	service1 := "service1"
-// 	service2 := "service2"
+	srvAnalytics1 := AnalyticData{
+		BaseAnalytics: srvBaseAnalytics1,
+		UserAnalytics: srvUserAnalytics1,
+	}
 
-// 	cpu1 := 0.4
-// 	mem1 := 0.1
-// 	avail1 := 1.0
-// 	res1 := ResourcesAnalytics{
-// 		Cpu:       cpu1,
-// 		Memory:    mem1,
-// 		Available: avail1,
-// 	}
+	// service 2
+	srvBaseAnalytics2 := map[string]float64{
+		enum.METRIC_CPU_AVG.ToString(): 0.1,
+		enum.METRIC_MEM_AVG.ToString(): 0.1,
+	}
+	srvUserAnalytics2 := map[string]float64{
+		"LOAD": 0.1,
+	}
 
-// 	load1 := 0.3
-// 	status1 := cfg.ServiceStatus{
-// 		Running: []string{"service1_1"},
-// 		Stopped: []string{"service1_2"},
-// 	}
-// 	health1 := 0.9
+	srvAnalytics2 := AnalyticData{
+		BaseAnalytics: srvBaseAnalytics2,
+		UserAnalytics: srvUserAnalytics2,
+	}
 
-// 	analytics1 := ServiceAnalytics{
-// 		Load:      load1,
-// 		Resources: res1,
-// 		Instances: status1,
-// 		Health:    health1,
-// 	}
+	// service 3
+	srvBaseAnalytics3 := map[string]float64{
+		enum.METRIC_CPU_AVG.ToString(): 0.9,
+		enum.METRIC_MEM_AVG.ToString(): 0.8,
+	}
+	srvUserAnalytics3 := map[string]float64{
+		"LOAD": 0.9,
+	}
 
-// 	cpu2 := 0.8
-// 	mem2 := 0.4
-// 	avail2 := 0.0
-// 	res2 := ResourcesAnalytics{
-// 		Cpu:       cpu2,
-// 		Memory:    mem2,
-// 		Available: avail2,
-// 	}
+	srvAnalytics3 := AnalyticData{
+		BaseAnalytics: srvBaseAnalytics3,
+		UserAnalytics: srvUserAnalytics3,
+	}
 
-// 	load2 := 0.8
-// 	status2 := cfg.ServiceStatus{
-// 		Running: []string{"service2_1", "service2_2"},
-// 	}
+	srvAnalytics := map[string]AnalyticData{
+		"service1": srvAnalytics1,
+		"service2": srvAnalytics2,
+		"service3": srvAnalytics3,
+	}
 
-// 	health2 := 0.6
+	// system
+	sysBaseAnalytics := map[string]float64{
+		enum.METRIC_CPU_AVG.ToString(): 0.5,
+		enum.METRIC_MEM_AVG.ToString(): 0.4,
+	}
 
-// 	analytics2 := ServiceAnalytics{
-// 		Load:      load2,
-// 		Resources: res2,
-// 		Instances: status2,
-// 		Health:    health2,
-// 	}
+	sysAnalytics := AnalyticData{
+		BaseAnalytics: sysBaseAnalytics,
+	}
 
-// 	mockAnalytics.Service[service1] = analytics1
-// 	mockAnalytics.Service[service2] = analytics2
+	analytics := GruAnalytics{
+		Service: srvAnalytics,
+		System:  sysAnalytics,
+	}
 
-// 	systService := []string{service1, service2}
-// 	systCpu := 0.8
-// 	systMem := 0.5
-// 	systRes := ResourcesAnalytics{
-// 		Cpu:    systCpu,
-// 		Memory: systMem,
-// 	}
-// 	systInstances := cfg.ServiceStatus{
-// 		Running: []string{"service1_1", "service2_1", "service2_2"},
-// 		Stopped: []string{"service1_2"},
-// 	}
-// 	systHealth := 0.8
+	return analytics
+}
 
-// 	systAnalytics := SystemAnalytics{
-// 		Services:  systService,
-// 		Resources: systRes,
-// 		Instances: systInstances,
-// 		Health:    systHealth,
-// 	}
-
-// 	mockAnalytics.System = systAnalytics
-
-// 	return mockAnalytics
-// }
-
-// func StoreMockAnalytics() {
-// 	SaveAnalytics(CreateMockAnalytics())
-// }
+func SaveMockAnalytics() {
+	analytics := CreateMockAnalytics()
+	SaveAnalytics(analytics)
+}

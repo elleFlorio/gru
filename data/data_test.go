@@ -15,10 +15,7 @@ func init() {
 	//Initialize storage
 	storage.New("internal")
 	//simply check if the functions return without errors
-	CreateMockHistory()
 	StoreRandomMockPolicy()
-	ListMockServices()
-	MaxNumberOfEntryInHistory()
 }
 
 func TestSaveStats(t *testing.T) {
@@ -155,7 +152,7 @@ func TestGetStats(t *testing.T) {
 	assert.Error(t, err)
 
 	expected := CreateMockStats()
-	StoreMockStats()
+	SaveMockStats()
 	stats, err := GetStats()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, stats)
@@ -169,7 +166,7 @@ func TestGetAnalytics(t *testing.T) {
 	assert.Error(t, err)
 
 	expected := CreateMockAnalytics()
-	StoreMockAnalytics()
+	SaveMockAnalytics()
 	analytics, err := GetAnalytics()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, analytics)
@@ -238,21 +235,22 @@ func TestMergeInfo(t *testing.T) {
 	var err error
 
 	service.SetMockServices()
-	info1 := CreateMockShared()
-	info2 := CreateMockShared()
-	info3 := CreateMockShared()
+	shared1 := CreateMockShared()
+	shared2 := CreateMockShared()
+	shared3 := CreateMockShared()
 
-	peers := []Shared{info1, info2, info3}
+	peers := []Shared{shared1, shared2, shared3}
 	merged, err := MergeShared(peers)
 	assert.NoError(t, err)
-	assert.Equal(t, info1.Service["service1"].Cpu, merged.Service["service1"].Cpu)
-	assert.Equal(t, info1.System.ActiveServices, merged.System.ActiveServices)
+	assert.Equal(t, shared1.Service["service1"].Data.BaseShared[enum.METRIC_CPU_AVG.ToString()],
+		merged.Service["service1"].Data.BaseShared[enum.METRIC_CPU_AVG.ToString()])
+	assert.Equal(t, shared1.System.ActiveServices, merged.System.ActiveServices)
 
 	empty := []Shared{}
 	_, err = MergeShared(empty)
 	assert.Error(t, err)
 
-	one := []Shared{info1}
+	one := []Shared{shared1}
 	_, err = MergeShared(one)
 	assert.NoError(t, err)
 }

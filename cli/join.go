@@ -23,7 +23,7 @@ import (
 const c_GRU_REMOTE = "/gru/"
 const c_CONFIG_REMOTE = "config"
 const c_SERVICES_REMOTE = "services"
-const c_TUNING_REMOTE = "tuning"
+const c_POLICY_REMOTE = "policy"
 
 func join(c *cli.Context) {
 	var clusterName string
@@ -44,7 +44,7 @@ func join(c *cli.Context) {
 	// Configuration
 	initializeAgent(clusterName)
 	initializeServices(clusterName)
-	initializeTuning(clusterName)
+	initializePolicy(clusterName)
 	// Core agent services
 	initializeStorage()
 	initializeMetricSerivice()
@@ -89,11 +89,11 @@ func initializeServices(clusterName string) {
 	cfg.SetServices(services)
 }
 
-func initializeTuning(clusterName string) {
-	remote := c_GRU_REMOTE + clusterName + "/" + c_TUNING_REMOTE
-	tuning := cfg.ReadTuningConfig(remote)
-	cfg.SetTuning(tuning)
-	log.WithField("tuning", tuning).Debugln("Tuning read from remote")
+func initializePolicy(clusterName string) {
+	remote := c_GRU_REMOTE + clusterName + "/" + c_POLICY_REMOTE
+	policy := cfg.ReadPolicyConfig(remote)
+	cfg.SetPolicy(policy)
+	log.WithField("Policy", policy).Debugln("Policy read from remote")
 }
 
 func initializeStorage() {

@@ -8,7 +8,7 @@ type Service struct {
 	DiscoveryPort string             `json:"discoveryport"`
 	Instances     ServiceStatus      `json:"instances"`
 	Expressions   []string           `json:"expressions"`
-	Constraints   ServiceConstraints `json:"constraints"`
+	Constraints   map[string]float64 `json:"constraints"`
 	Docker        ServiceDocker      `json:"configuration"`
 }
 
@@ -18,11 +18,6 @@ type ServiceStatus struct {
 	Pending []string `json:"pending"`
 	Stopped []string `json:"stopped"`
 	Paused  []string `json:"paused"`
-}
-
-// TODO this needs a review
-type ServiceConstraints struct {
-	MaxRespTime float64 `json:"maxresptime"`
 }
 
 type ServiceDocker struct {

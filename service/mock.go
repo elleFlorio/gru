@@ -22,8 +22,8 @@ func CreateMockServices() []cfg.Service {
 		Type:      "webserver",
 		Image:     "test/tomcat",
 		Instances: instances1,
-		Constraints: cfg.ServiceConstraints{
-			MaxRespTime: 2000,
+		Constraints: map[string]float64{
+			"MAX_RESP_TIME": 2000,
 		},
 	}
 
@@ -38,8 +38,8 @@ func CreateMockServices() []cfg.Service {
 		Type:      "webserver",
 		Image:     "test/jetty",
 		Instances: instances2,
-		Constraints: cfg.ServiceConstraints{
-			MaxRespTime: 6000,
+		Constraints: map[string]float64{
+			"MAX_RESP_TIME": 6000,
 		},
 	}
 
@@ -47,8 +47,8 @@ func CreateMockServices() []cfg.Service {
 		Name:  "service3",
 		Type:  "database",
 		Image: "test/mysql",
-		Constraints: cfg.ServiceConstraints{
-			MaxRespTime: 1000,
+		Constraints: map[string]float64{
+			"MAX_RESP_TIME": 1000,
 		},
 	}
 

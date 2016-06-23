@@ -22,6 +22,9 @@ func (p *scaleinCreator) listActions() []string {
 
 func (p *scaleinCreator) createPolicies(srvList []string, clusterData data.Shared) []data.Policy {
 	scaleinPolicies := make([]data.Policy, 0, len(srvList))
+	if !cfg.GetPolicy().Scalein.Enable {
+		return scaleinPolicies
+	}
 
 	for _, name := range srvList {
 		policyName := p.getPolicyName()
@@ -54,12 +57,12 @@ func (p *scaleinCreator) computeWeight(name string, clusterData data.Shared) flo
 	}
 
 	baseServices := cfg.GetNodeConstraints().BaseServices
-	if (inst_pen+inst_run) <= 1 && p.contains(baseServices, name) {
+	if (inst_pen+inst_run) <= 1 && utils.ContainsString(baseServices, name) {
 		return 0.0
 	}
 
 	analytics := srv.GetServiceExpressionsList(name)
-	threshold := cfg.GetTuning().Policy.Scalein
+	threshold := cfg.GetPolicy().Scalein.Threshold
 	weights := []float64{}
 
 	for _, value := range clusterData.Service[name].Data.BaseShared {
@@ -78,14 +81,4 @@ func (p *scaleinCreator) computeWeight(name string, clusterData data.Shared) flo
 
 func (p *scaleinCreator) computeMetricWeight(value float64, threshold float64) float64 {
 	return 1 - (math.Min(value, threshold) / threshold)
-}
-
-func (p *scaleinCreator) contains(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-
-	return false
 }

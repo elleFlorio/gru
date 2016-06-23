@@ -23,6 +23,9 @@ func (p *scaleoutCreator) listActions() []string {
 
 func (p *scaleoutCreator) createPolicies(srvList []string, clusterData data.Shared) []data.Policy {
 	scaleoutPolicies := make([]data.Policy, 0, len(srvList))
+	if !cfg.GetPolicy().Scaleout.Enable {
+		return scaleoutPolicies
+	}
 
 	for _, name := range srvList {
 		policyName := p.getPolicyName()
@@ -60,7 +63,7 @@ func (p *scaleoutCreator) computeWeight(name string, clusterData data.Shared) fl
 	}
 
 	analytics := srv.GetServiceExpressionsList(name)
-	threshold := cfg.GetTuning().Policy.Scaleout
+	threshold := cfg.GetPolicy().Scaleout.Threshold
 	weights := []float64{}
 
 	for _, value := range clusterData.Service[name].Data.BaseShared {

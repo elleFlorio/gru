@@ -62,10 +62,10 @@ func WriteService(remote string, data Service) {
 	}
 }
 
-func WriteTuning(remote string, data Tuning) {
+func WritePolicy(remote string, data Policy) {
 	err := writeData(remote, data)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error writing tuning parameters")
+		log.WithField("err", err).Errorln("Error writing policy configuration")
 	}
 }
 
@@ -194,14 +194,14 @@ func ReadAgentConfig(remote string, config *Agent) {
 	}
 }
 
-func ReadTuningConfig(remote string) Tuning {
-	tuning := Tuning{}
-	err := readData(remote, &tuning)
+func ReadPolicyConfig(remote string) Policy {
+	policy := Policy{}
+	err := readData(remote, &policy)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error reading tuning parameters")
+		log.WithField("err", err).Errorln("Error reading policy parameters")
 	}
 
-	return tuning
+	return policy
 }
 
 func ReadExpressions(remote string) map[string]Expression {

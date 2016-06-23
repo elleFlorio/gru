@@ -7,9 +7,8 @@ import (
 
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/enum"
+	"github.com/elleFlorio/gru/utils"
 )
-
-const c_INFINITE = 1000000000
 
 var (
 	ErrNoSuchService error = errors.New("Service does not exists")
@@ -25,15 +24,7 @@ func CheckServices(services []cfg.Service) {
 
 func checkService(service *cfg.Service) {
 	name := service.Name
-	checkConstraints(name, &service.Constraints)
 	checkConfiguration(name, &service.Docker)
-}
-
-func checkConstraints(name string, cnstrnts *cfg.ServiceConstraints) {
-	if cnstrnts.MaxRespTime == 0 {
-		log.WithField("service", name).Warnln("Max Response Time is 0. Setting it to 'infinite'")
-		cnstrnts.MaxRespTime = c_INFINITE
-	}
 }
 
 func checkConfiguration(name string, conf *cfg.ServiceDocker) {
@@ -115,27 +106,17 @@ func GetServiceInstanceStatus(name string, instance string) enum.Status {
 	}
 
 	switch {
-	case contains(service.Instances.Pending, instance):
+	case utils.ContainsString(service.Instances.Pending, instance):
 		return enum.PENDING
-	case contains(service.Instances.Running, instance):
+	case utils.ContainsString(service.Instances.Running, instance):
 		return enum.RUNNING
-	case contains(service.Instances.Stopped, instance):
+	case utils.ContainsString(service.Instances.Stopped, instance):
 		return enum.STOPPED
-	case contains(service.Instances.Paused, instance):
+	case utils.ContainsString(service.Instances.Paused, instance):
 		return enum.PAUSED
 	default:
 		return enum.UNKNOWN
 	}
-}
-
-func contains(list []string, instance string) bool {
-	for _, elem := range list {
-		if elem == instance {
-			return true
-		}
-	}
-
-	return false
 }
 
 func AddServiceInstance(name string, instance string, status enum.Status) error {
@@ -274,4 +255,14 @@ func GetServiceExpressionsList(service string) []string {
 	}
 
 	return srv.Expressions
+}
+
+func GetServiceConstraints(service string) map[string]float64 {
+	srv, err := getServiceBy("name", service)
+	if err != nil {
+		log.WithField("service", service).Errorln("Cannot return service constraints: unknown service")
+		return map[string]float64{}
+	}
+
+	return srv.Constraints
 }
