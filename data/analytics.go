@@ -5,16 +5,14 @@ import (
 )
 
 type GruAnalytics struct {
-	Service map[string]ServiceAnalytics `json:"service"`
-	System  SystemAnalytics             `json:"system"`
-	Health  float64                     `json:"health"`
+	Service map[string]AnalyticData `json:"service"`
+	System  AnalyticData            `json:"system"`
 }
 
 type ServiceAnalytics struct {
 	Load      float64            `json:"load"`
 	Resources ResourcesAnalytics `json:"resources"`
 	Instances cfg.ServiceStatus  `json:"instances"`
-	Health    float64            `json:"health"`
 }
 
 type ResourcesAnalytics struct {
@@ -27,5 +25,9 @@ type SystemAnalytics struct {
 	Services  []string           `json:"services"`
 	Resources ResourcesAnalytics `json:"resources"`
 	Instances cfg.ServiceStatus  `json:"instances"`
-	Health    float64            `json:"health"`
+}
+
+type AnalyticData struct {
+	BaseAnalytics map[string]float64
+	UserAnalytics map[string]float64
 }

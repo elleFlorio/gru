@@ -10,18 +10,18 @@ func getAnalytics() data.GruAnalytics {
 	return analytics
 }
 
-func GetNodeAnalytics() data.GruAnalytics {
+func GetAnalytics() data.GruAnalytics {
 	return getAnalytics()
 }
 
-func GetServiceAnalytics(name string) data.ServiceAnalytics {
+func GetServiceAnalytics(name string) data.AnalyticData {
 	return getAnalytics().Service[name]
 }
 
-func GetServicesAnalytics() map[string]data.ServiceAnalytics {
+func GetServicesAnalytics() map[string]data.AnalyticData {
 	return getAnalytics().Service
 }
 
-func GetSystemAnalytics() data.SystemAnalytics {
+func GetSystemAnalytics() data.AnalyticData {
 	return getAnalytics().System
 }

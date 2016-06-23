@@ -7,8 +7,9 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	"github.com/elleFlorio/gru/enum"
-	"github.com/elleFlorio/gru/service"
+	srv "github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/storage"
+	"github.com/elleFlorio/gru/utils"
 )
 
 func SaveStats(stats GruStats) {
@@ -247,75 +248,138 @@ func MergeShared(toMerge []Shared) (Shared, error) {
 		Service: make(map[string]ServiceShared),
 	}
 
-	var loadAvg float64
-	var cpuAvg float64
-	var memAvg float64
-	var resourcesAvg float64
+	for _, name := range srv.List() {
+		srvMerged := ServiceShared{}
+		baseValues := make(map[string][]float64)
+		userValues := make(map[string][]float64)
+		for _, data := range toMerge {
+			if data.Service[name].Active {
+				srvMerged.Active = true
 
-	for _, name := range service.List() {
-		loadAvg = 0.0
-		cpuAvg = 0.0
-		memAvg = 0.0
-		resourcesAvg = 0.0
-		counter := 0.0
-		for _, info := range toMerge {
-			if srv, ok := info.Service[name]; ok {
-				if srv.Active {
-					loadAvg += srv.Load
-					cpuAvg += srv.Cpu
-					memAvg += srv.Memory
-					resourcesAvg += srv.Resources
+				for analytics, value := range data.Service[name].Data.BaseShared {
+					baseValues[analytics] = append(baseValues[analytics], value)
+				}
 
-					counter++
+				for analytics, value := range data.Service[name].Data.UserShared {
+					userValues[analytics] = append(userValues[analytics], value)
 				}
 			}
 		}
 
-		if counter > 0 {
-			loadAvg /= counter
-			cpuAvg /= counter
-			memAvg /= counter
-			resourcesAvg /= counter
-
-			mergedService := ServiceShared{
-				Load:      loadAvg,
-				Cpu:       cpuAvg,
-				Memory:    memAvg,
-				Resources: resourcesAvg,
-				Active:    true,
-			}
-
-			merged.Service[name] = mergedService
+		baseMerged := make(map[string]float64, len(baseValues))
+		for analytics, values := range baseValues {
+			baseMerged[analytics] = utils.Mean(values)
 		}
+
+		userMerged := make(map[string]float64, len(userValues))
+		for analytics, values := range userValues {
+			userMerged[analytics] = utils.Mean(values)
+		}
+
+		srvMerged.Data.BaseShared = baseMerged
+		srvMerged.Data.UserShared = userMerged
+		merged.Service[name] = srvMerged
 	}
 
-	cpuAvg = 0.0
-	memAvg = 0.0
-	resourcesAvg = 0.0
-	healthAvg := 0.0
-	activeServices := []string{}
-	for _, info := range toMerge {
-		cpuAvg += info.System.Cpu
-		memAvg += info.System.Memory
-		healthAvg += info.System.Health
-		activeServices = checkAndAppend(activeServices, info.System.ActiveServices)
+	sysMerged := SystemShared{}
+	baseValues := make(map[string][]float64)
+	userValues := make(map[string][]float64)
+	for _, data := range toMerge {
+
+		for analytics, value := range data.System.Data.BaseShared {
+			baseValues[analytics] = append(baseValues[analytics], value)
+		}
+
+		for analytics, value := range data.System.Data.UserShared {
+			userValues[analytics] = append(userValues[analytics], value)
+		}
+
+		sysMerged.ActiveServices = checkAndAppend(sysMerged.ActiveServices, data.System.ActiveServices)
 	}
 
-	lenght := float64(len(toMerge))
-	cpuAvg /= lenght
-	memAvg /= lenght
-	healthAvg /= lenght
-
-	mergedSystem := SystemShared{
-		Cpu:            cpuAvg,
-		Memory:         memAvg,
-		Health:         healthAvg,
-		ActiveServices: activeServices,
+	baseMerged := make(map[string]float64, len(baseValues))
+	for analytics, values := range baseValues {
+		baseMerged[analytics] = utils.Mean(values)
 	}
 
-	merged.System = mergedSystem
+	userMerged := make(map[string]float64, len(userValues))
+	for analytics, values := range userValues {
+		userMerged[analytics] = utils.Mean(values)
+	}
+
+	sysMerged.Data.BaseShared = baseMerged
+	sysMerged.Data.UserShared = userMerged
+	merged.System = sysMerged
 
 	return merged, nil
+
+	// var loadAvg float64
+	// var cpuAvg float64
+	// var memAvg float64
+	// var resourcesAvg float64
+
+	// for _, name := range service.List() {
+	// 	loadAvg = 0.0
+	// 	cpuAvg = 0.0
+	// 	memAvg = 0.0
+	// 	resourcesAvg = 0.0
+	// 	counter := 0.0
+	// 	for _, info := range toMerge {
+	// 		if srv, ok := info.Service[name]; ok {
+	// 			if srv.Active {
+	// 				loadAvg += srv.Load
+	// 				cpuAvg += srv.Cpu
+	// 				memAvg += srv.Memory
+	// 				resourcesAvg += srv.Resources
+
+	// 				counter++
+	// 			}
+	// 		}
+	// 	}
+
+	// 	if counter > 0 {
+	// 		loadAvg /= counter
+	// 		cpuAvg /= counter
+	// 		memAvg /= counter
+	// 		resourcesAvg /= counter
+
+	// 		mergedService := ServiceShared{
+	// 			Load:      loadAvg,
+	// 			Cpu:       cpuAvg,
+	// 			Memory:    memAvg,
+	// 			Resources: resourcesAvg,
+	// 			Active:    true,
+	// 		}
+
+	// 		merged.Service[name] = mergedService
+	// 	}
+	// }
+
+	// cpuAvg = 0.0
+	// memAvg = 0.0
+	// resourcesAvg = 0.0
+	// healthAvg := 0.0
+	// activeServices := []string{}
+	// for _, info := range toMerge {
+	// 	cpuAvg += info.System.Cpu
+	// 	memAvg += info.System.Memory
+	// 	healthAvg += info.System.Health
+	// 	activeServices = checkAndAppend(activeServices, info.System.ActiveServices)
+	// }
+
+	// lenght := float64(len(toMerge))
+	// cpuAvg /= lenght
+	// memAvg /= lenght
+	// healthAvg /= lenght
+
+	// mergedSystem := SystemShared{
+	// 	Cpu:            cpuAvg,
+	// 	Memory:         memAvg,
+	// 	Health:         healthAvg,
+	// 	ActiveServices: activeServices,
+	// }
+
+	// merged.System = mergedSystem
 }
 
 func checkAndAppend(list []string, toAppend []string) []string {

@@ -10,6 +10,7 @@ import (
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
 	srv "github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/utils"
 )
 
 var (
@@ -211,7 +212,7 @@ func computeServicesMetrics(instMetrics map[string]data.MetricData) map[string]d
 
 		userMetrics := make(map[string]float64, len(metrics.UserMetrics))
 		for metric, values := range metrics.UserMetrics {
-			value := mean(values)
+			value := utils.Mean(values)
 			userMetrics[metric] = value
 		}
 
@@ -239,20 +240,7 @@ func computeServiceCpuPerc(name string, instMetrics map[string]data.MetricData) 
 		}
 	}
 
-	return mean(values)
-}
-
-func mean(values []float64) float64 {
-	if len(values) < 1 {
-		return 0.0
-	}
-
-	sum := 0.0
-	for _, value := range values {
-		sum += value
-	}
-
-	return sum / float64(len(values))
+	return utils.Mean(values)
 }
 
 func computeSysMetrics(servMetrics map[string]data.MetricData) data.MetricData {
@@ -268,8 +256,8 @@ func computeSysMetrics(servMetrics map[string]data.MetricData) data.MetricData {
 		// TODO
 	}
 
-	baseMetrics[enum.METRIC_CPU_AVG.ToString()] = mean(cpuSys)
-	baseMetrics[enum.METRIC_MEM_AVG.ToString()] = mean(memSys)
+	baseMetrics[enum.METRIC_CPU_AVG.ToString()] = utils.Mean(cpuSys)
+	baseMetrics[enum.METRIC_MEM_AVG.ToString()] = utils.Mean(memSys)
 	sysMetrics := data.MetricData{
 		BaseMetrics: baseMetrics,
 	}

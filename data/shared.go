@@ -6,16 +6,16 @@ type Shared struct {
 }
 
 type ServiceShared struct {
-	Load      float64 `json:"load"`
-	Cpu       float64 `json:"cpu"`
-	Memory    float64 `json:"memory"`
-	Resources float64 `json:"resources"`
-	Active    bool    `json:"active"`
+	Data   SharedData
+	Active bool `json:"active"`
 }
 
 type SystemShared struct {
-	Cpu            float64  `json:"cpu"`
-	Memory         float64  `json:"memory"`
-	Health         float64  `json:"health"`
+	Data           SharedData
 	ActiveServices []string `json:"activeservices"`
+}
+
+type SharedData struct {
+	BaseShared map[string]float64
+	UserShared map[string]float64
 }

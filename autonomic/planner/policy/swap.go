@@ -7,7 +7,8 @@ import (
 	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
-	"github.com/elleFlorio/gru/service"
+	srv "github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/utils"
 )
 
 type swapCreator struct{}
@@ -55,8 +56,8 @@ func (p *swapCreator) createSwapPairs(srvList []string) map[string][]string {
 	inactive := []string{}
 
 	for _, name := range srvList {
-		srv, _ := service.GetServiceByName(name)
-		if len(srv.Instances.Running) > 0 {
+		service, _ := srv.GetServiceByName(name)
+		if len(service.Instances.Running) > 0 {
 			running = append(running, name)
 		} else {
 			inactive = append(inactive, name)
@@ -71,8 +72,8 @@ func (p *swapCreator) createSwapPairs(srvList []string) map[string][]string {
 }
 
 func (p *swapCreator) computeWeight(running string, candidate string, clusterData data.Shared) float64 {
-	srv_run, _ := service.GetServiceByName(running)
-	srv_cand, _ := service.GetServiceByName(candidate)
+	srv_run, _ := srv.GetServiceByName(running)
+	srv_cand, _ := srv.GetServiceByName(candidate)
 	nRun := len(srv_run.Instances.Running)
 	baseServices := cfg.GetNodeConstraints().BaseServices
 
@@ -99,19 +100,28 @@ func (p *swapCreator) computeWeight(running string, candidate string, clusterDat
 
 	runShared := clusterData.Service[running]
 	candShared := clusterData.Service[candidate]
+	threshold := cfg.GetTuning().Policy.Swap
+	weights := []float64{}
+	analytics := srv.GetServiceExpressionsList(running)
 
-	cpuDist := candShared.Cpu - runShared.Cpu
-	loadDist := candShared.Load - runShared.Load
+	for analytic, value := range runShared.Data.BaseShared {
+		delta := candShared.Data.BaseShared[analytic] - value
+		weight := math.Min(1.0, delta/threshold)
+		weights = append(weights, weight)
+	}
 
-	maxDistCpu := cfg.GetTuning().Policy.Swap.Cpu
-	maxDistLoad := cfg.GetTuning().Policy.Swap.Load
+	for _, analytic := range analytics {
+		runValue := runShared.Data.UserShared[analytic]
+		if candValue, ok := candShared.Data.UserShared[analytic]; ok {
+			delta := candValue - runValue
+			weight := math.Min(1.0, delta/threshold)
+			weights = append(weights, weight)
+		}
+	}
 
-	cpuValue := math.Min(1.0, cpuDist/maxDistCpu)
-	loadValue := math.Min(1.0, loadDist/maxDistLoad)
+	policyValue := math.Max(0.0, utils.Mean(weights))
 
-	weight := math.Max(0.0, (cpuValue+loadValue)/2)
-
-	return weight
+	return policyValue
 }
 
 // FIX duplicated from scalein...

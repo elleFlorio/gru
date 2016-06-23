@@ -5,12 +5,7 @@ type Tuning struct {
 }
 
 type PolicyThreshold struct {
-	Scaleout ScaleThreshold
-	Scalein  ScaleThreshold
-	Swap     ScaleThreshold
-}
-
-type ScaleThreshold struct {
-	Cpu  float64
-	Load float64
+	Scaleout float64
+	Scalein  float64
+	Swap     float64
 }

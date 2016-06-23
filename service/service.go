@@ -255,3 +255,23 @@ func findIdIndex(id string, instances []string) (int, error) {
 
 	return -1, ErrNoIndexById
 }
+
+func IsServiceActive(service string) bool {
+	srv, err := getServiceBy("name", service)
+	if err != nil {
+		log.WithField("service", service).Errorln("Cannot determine if service is active: unknown service")
+		return false
+	}
+
+	return (len(srv.Instances.Pending) + len(srv.Instances.Running)) > 0
+}
+
+func GetServiceExpressionsList(service string) []string {
+	srv, err := getServiceBy("name", service)
+	if err != nil {
+		log.WithField("service", service).Errorln("Cannot return service expressions: unknown service")
+		return []string{}
+	}
+
+	return srv.Expressions
+}

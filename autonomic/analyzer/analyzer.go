@@ -2,254 +2,111 @@ package analyzer
 
 import (
 	"errors"
-	"fmt"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
-	cfg "github.com/elleFlorio/gru/configuration"
+	evl "github.com/elleFlorio/gru/autonomic/analyzer/evaluator"
 	"github.com/elleFlorio/gru/data"
-	res "github.com/elleFlorio/gru/resources"
-	"github.com/elleFlorio/gru/service"
+	srv "github.com/elleFlorio/gru/service"
 )
 
-const overcommitratio float64 = 0.0
-
 var (
-	gruAnalytics          data.GruAnalytics
+	analytics             data.GruAnalytics
 	ErrNoRunningInstances error = errors.New("No active instance to analyze")
 )
 
 func init() {
-	gruAnalytics = data.GruAnalytics{
-		Service: make(map[string]data.ServiceAnalytics),
-	}
+	analytics = data.GruAnalytics{}
 }
 
+// TODO - What if I have no stats?
 func Run(stats data.GruStats) data.Shared {
-	log.WithField("status", "init").Debugln("Gru Analyzer")
-	defer log.WithField("status", "done").Debugln("Gru Analyzer")
+	log.WithField("status", "init").Debugln("Gru Monitor")
+	defer log.WithField("status", "done").Debugln("Gru Monitor")
 
-	sharedData := data.Shared{Service: make(map[string]data.ServiceShared)}
-
-	if len(stats.Service) == 0 {
-		log.WithField("err", "No services stats").Warnln("Cannot compute analytics.")
-	} else {
-		updateNodeResources()
-		analyzeServices(&gruAnalytics, stats)
-		analyzeSystem(&gruAnalytics, stats)
-		computeNodeHealth(&gruAnalytics)
-		data.SaveAnalytics(gruAnalytics)
-		sharedData = analyzeSharedData(&gruAnalytics)
-
-		displayAnalyticsOfServices(gruAnalytics)
-		displaySharedInformation(sharedData)
+	if len(stats.Metrics.Service) == 0 {
+		log.Debugln("No stats to compute")
+		return data.Shared{}
 	}
 
-	return sharedData
+	analytics.Service = computeServicesAnalytics(stats.Metrics.Service)
+	analytics.System = computeSystemAnalytics(stats.Metrics.System)
+	shared := computeSharedData(analytics)
+
+	return shared
 }
 
-func updateNodeResources() {
-	res.ComputeUsedResources()
+func computeServicesAnalytics(servStats map[string]data.MetricData) map[string]data.AnalyticData {
+	servAnalytics := make(map[string]data.AnalyticData)
 
-	log.WithFields(log.Fields{
-		"totalcpu": res.GetResources().CPU.Total,
-		"usedcpu":  res.GetResources().CPU.Used,
-		"totalmem": res.GetResources().Memory.Total,
-		"usedmem":  res.GetResources().Memory.Used,
-	}).Debugln("Updated node resources")
+	for service, metrics := range servStats {
+		aData := data.AnalyticData{}
+		baseAnalytics := metrics.BaseMetrics
+		userAnalytics := evl.ComputeMetricAnalytics(service, metrics.UserMetrics)
+		aData.BaseAnalytics = baseAnalytics
+		aData.UserAnalytics = userAnalytics
+
+		servAnalytics[service] = aData
+	}
+
+	return servAnalytics
 }
 
-func analyzeServices(analytics *data.GruAnalytics, stats data.GruStats) {
-	for name, value := range stats.Service {
-		load := analyzeServiceLoad(name, value.Metrics.ResponseTime)
-		cpu := value.Cpu.Avg
-		mem := value.Memory.Avg
-		resAvailable := res.AvailableResourcesService(name)
+func computeSystemAnalytics(sysStats data.MetricData) data.AnalyticData {
+	sysAnalitycs := data.AnalyticData{
+		BaseAnalytics: sysStats.BaseMetrics,
+		UserAnalytics: sysStats.UserMetrics,
+	}
 
-		srv, _ := service.GetServiceByName(name)
-		instances := srv.Instances
+	return sysAnalitycs
+}
 
-		health := 1 - ((load + mem + cpu - resAvailable) / 4) //I don't like this...
+func computeSharedData(analytics data.GruAnalytics) data.Shared {
+	local := computeLocaShared(analytics)
+	cluster := computeClusterShared(local)
 
-		srvRes := data.ResourcesAnalytics{
-			cpu,
-			mem,
-			resAvailable,
+	return cluster
+}
+
+func computeLocaShared(analytics data.GruAnalytics) data.Shared {
+	local := data.Shared{}
+	srvActive := []string{}
+	for name, values := range analytics.Service {
+		srvShared := data.ServiceShared{}
+		srvShared.Data.BaseShared = values.BaseAnalytics
+		srvShared.Data.UserShared = values.UserAnalytics
+		srvShared.Active = srv.IsServiceActive(name)
+
+		local.Service[name] = srvShared
+
+		if srvShared.Active {
+			srvActive = append(srvActive, name)
 		}
-
-		srvAnalytics := data.ServiceAnalytics{
-			load,
-			srvRes,
-			instances,
-			health,
-		}
-
-		analytics.Service[name] = srvAnalytics
-	}
-}
-
-func analyzeServiceLoad(name string, responseTimes []float64) float64 {
-	srv, _ := service.GetServiceByName(name)
-	maxRt := srv.Constraints.MaxRespTime
-	avgRt := computeAvgResponseTime(responseTimes)
-	load := computeLoad(maxRt, avgRt)
-
-	return load
-}
-
-func computeAvgResponseTime(responseTimes []float64) float64 {
-	sum := 0.0
-	avg := 0.0
-
-	for _, rt := range responseTimes {
-		sum += rt
 	}
 
-	if len(responseTimes) > 0 {
-		avg = sum / float64(len(responseTimes))
-	}
+	local.System.Data.BaseShared = analytics.System.BaseAnalytics
+	local.System.Data.UserShared = analytics.System.UserAnalytics
+	local.System.ActiveServices = srvActive
 
-	return avg
+	data.SaveSharedLocal(local)
+
+	return local
 }
 
-func computeLoad(maxRt float64, avgRt float64) float64 {
-	// I want the maximum response time
-	// to correspond to the 80% of load
-	upperBound := maxRt / 0.8
-	if avgRt > upperBound {
-		avgRt = upperBound
-	}
-
-	loadValue := avgRt / upperBound
-
-	log.WithFields(log.Fields{
-		"upperBound": upperBound,
-		"avgRt":      avgRt,
-		"load":       loadValue,
-	}).Debugln("Computed load")
-
-	return loadValue
-}
-
-func analyzeSystem(analytics *data.GruAnalytics, stats data.GruStats) {
-	sysSrvs := []string{}
-	for name, _ := range stats.Service {
-		sysSrvs = append(sysSrvs, name)
-	}
-
-	temp := 0.0
-	cpu := stats.System.Cpu
-	//TODO compute system mem!!!
-	mem := temp
-	resources := res.AvailableResources()
-	instances := *cfg.GetNodeInstances()
-
-	health := 1 - ((cpu + mem - resources) / 3) //Ok, maybe this is a bit... "mah"...
-
-	sysRes := data.ResourcesAnalytics{
-		cpu,
-		mem,
-		resources,
-	}
-
-	systemAnalytics := data.SystemAnalytics{
-		sysSrvs,
-		sysRes,
-		instances,
-		health,
-	}
-
-	gruAnalytics.System = systemAnalytics
-}
-
-func computeNodeHealth(analytics *data.GruAnalytics) {
-	nServices := len(analytics.Service)
-	sumHealth := 0.0
-	for _, value := range analytics.Service {
-		sumHealth += value.Health
-	}
-	srvAvgHealth := sumHealth / float64(nServices)
-
-	sysHealth := analytics.System.Health
-
-	totHealth := (srvAvgHealth + sysHealth) / 2
-
-	analytics.Health = totHealth
-}
-
-func analyzeSharedData(analytics *data.GruAnalytics) data.Shared {
-	myShared := computeLocalShared(analytics)
-	data.SaveSharedLocal(myShared)
-	clusterData := computeClusterData(myShared)
-	data.SaveSharedCluster(clusterData)
-	return clusterData
-
-}
-
-func computeLocalShared(analytics *data.GruAnalytics) data.Shared {
-	myShared := data.Shared{Service: make(map[string]data.ServiceShared)}
-
-	for srv, value := range analytics.Service {
-		mySrvShared := data.ServiceShared{
-			Load:      value.Load,
-			Cpu:       value.Resources.Cpu,
-			Memory:    value.Resources.Memory,
-			Resources: value.Resources.Available,
-			Active:    isServiceActive(value.Instances),
-		}
-
-		myShared.Service[srv] = mySrvShared
-	}
-
-	myShared.System.Cpu = analytics.System.Resources.Cpu
-	myShared.System.Memory = analytics.System.Resources.Memory
-	myShared.System.Health = analytics.System.Health
-	myShared.System.ActiveServices = analytics.System.Services
-
-	return myShared
-}
-
-func isServiceActive(status cfg.ServiceStatus) bool {
-	return (len(status.Pending) + len(status.Running)) > 0
-}
-
-func computeClusterData(myShared data.Shared) data.Shared {
-	sharedData, err := data.GetSharedCluster()
+func computeClusterShared(local data.Shared) data.Shared {
+	storedCluster, err := data.GetSharedCluster()
 	if err != nil {
-		log.Debugln("Cannot compute cluster data")
-		return myShared
+		log.WithField("err", err).Debugln("Cannot compute cluster data")
+		return local
 	}
 
-	toMerge := []data.Shared{myShared, sharedData}
-	clusterData, err := data.MergeShared(toMerge)
+	toMerge := []data.Shared{local, storedCluster}
+	cluster, err := data.MergeShared(toMerge)
 	if err != nil {
-		return myShared
+		return local
 	}
 
-	return clusterData
-}
+	data.SaveSharedCluster(cluster)
 
-func displayAnalyticsOfServices(analytics data.GruAnalytics) {
-	for srv, value := range analytics.Service {
-		log.WithFields(log.Fields{
-			"service":   srv,
-			"cpu":       fmt.Sprintf("%.2f", value.Resources.Cpu),
-			"memory":    fmt.Sprintf("%.2f", value.Resources.Memory),
-			"resources": fmt.Sprintf("%.2f", value.Resources.Available),
-			"load":      fmt.Sprintf("%.2f", value.Load),
-			"health":    fmt.Sprintf("%.2f", value.Health),
-		}).Infoln("Analytics computed")
-	}
-}
-
-func displaySharedInformation(clusterData data.Shared) {
-	for srv, value := range clusterData.Service {
-		log.WithFields(log.Fields{
-			"service":   srv,
-			"cpu":       fmt.Sprintf("%.2f", value.Cpu),
-			"memory":    fmt.Sprintf("%.2f", value.Memory),
-			"resources": fmt.Sprintf("%.2f", value.Resources),
-			"load":      fmt.Sprintf("%.2f", value.Load),
-		}).Infoln("Cluster shared data")
-	}
+	return cluster
 }

@@ -5,8 +5,9 @@ type Service struct {
 	Type          string             `json:"type"`
 	Image         string             `json:"image"`
 	Remote        string             `json:"remote"`
-	DiscoveryPort string             `json:discoveryport`
+	DiscoveryPort string             `json:"discoveryport"`
 	Instances     ServiceStatus      `json:"instances"`
+	Expressions   []string           `json:"expressions"`
 	Constraints   ServiceConstraints `json:"constraints"`
 	Docker        ServiceDocker      `json:"configuration"`
 }

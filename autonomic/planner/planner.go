@@ -28,17 +28,19 @@ func SetPlannerStrategy(strategyName string) {
 func Run(clusterData data.Shared) *data.Policy {
 	log.WithField("status", "init").Debugln("Gru Planner")
 	defer log.WithField("status", "done").Debugln("Gru Planner")
+
 	var chosenPolicy *data.Policy
 
 	if len(clusterData.Service) == 0 {
-		log.WithField("err", "No services analytics").Warnln("Cannot compute plans.")
-	} else {
-		srvList := getServicesListFromClusterData(clusterData)
-		policies := policy.CreatePolicies(srvList, clusterData)
-		chosenPolicy = currentStrategy.MakeDecision(policies)
-		data.SavePolicy(*chosenPolicy)
-		displayPolicy(chosenPolicy)
+		log.Warnln("No cluster data for policy computation")
+		return chosenPolicy
 	}
+
+	srvList := getServicesListFromClusterData(clusterData)
+	policies := policy.CreatePolicies(srvList, clusterData)
+	chosenPolicy = currentStrategy.MakeDecision(policies)
+	data.SavePolicy(*chosenPolicy)
+	displayPolicy(chosenPolicy)
 
 	return chosenPolicy
 }

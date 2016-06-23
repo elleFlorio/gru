@@ -56,10 +56,11 @@ func StopMonitor() {
 }
 
 func Run() data.GruStats {
+	log.WithField("status", "init").Debugln("Gru Monitor")
+	defer log.WithField("status", "done").Debugln("Gru Monitor")
+
 	services := srv.List()
-	for _, service := range services {
-		updateRunningInstances(service, c_MTR_THR)
-	}
+	updateRunningInstances(services, c_MTR_THR)
 	updateSystemInstances(services)
 	metrics := mtr.GetMetricsStats()
 	events := evt.GetEventsStats()
@@ -171,6 +172,12 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		container.Docker().Client.StartMonitorStats(e.Instance, statCallBack, ch_mnt_stats_err)
 	case "start":
 		log.WithField("image", e.Image).Debugln("Received start signal")
+		if _, ok := instBuffer[e.Instance]; !ok {
+			instBuffer[e.Instance] = instanceMetricBuffer{
+				cpuInst: utils.BuildBuffer(c_B_SIZE),
+				cpuSys:  utils.BuildBuffer(c_B_SIZE),
+			}
+		}
 		e.Status = enum.PENDING
 		evt.HanldeStartEvent(e)
 		startMonitorLog(event.ID)
@@ -180,6 +187,7 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		log.WithField("image", e.Image).Debugln("Received kill signal")
 	case "die":
 		log.WithField("image", e.Image).Debugln("Received die signal")
+		delete(instBuffer, e.Instance)
 		evt.HandleStopEvent(e)
 	case "destroy":
 		log.WithField("id", e.Instance).Debugln("Received destroy signal")
@@ -207,13 +215,6 @@ func startMonitorLog(id string) {
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
-	if _, ok := instBuffer[id]; !ok {
-		instBuffer[id] = instanceMetricBuffer{
-			cpuInst: utils.BuildBuffer(c_B_SIZE),
-			cpuSys:  utils.BuildBuffer(c_B_SIZE),
-		}
-	}
-
 	metricBuffer := instBuffer[id]
 	cpuInst := float64(stats.CpuStats.CpuUsage.TotalUsage)
 	cpuSys := float64(stats.CpuStats.SystemUsage)
@@ -229,23 +230,25 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 
 }
 
-func updateRunningInstances(name string, threshold int) {
-	service, _ := srv.GetServiceByName(name)
-	pending := service.Instances.Pending
+func updateRunningInstances(services []string, threshold int) {
+	for _, name := range services {
+		service, _ := srv.GetServiceByName(name)
+		pending := service.Instances.Pending
 
-	for _, instance := range pending {
-		if mtr.IsReadyForRunning(instance, threshold) {
-			// TODO
-			e := evt.Event{
-				Service:  name,
-				Instance: instance,
-				Status:   enum.PENDING,
+		for _, instance := range pending {
+			if mtr.IsReadyForRunning(instance, threshold) {
+				// TODO
+				e := evt.Event{
+					Service:  name,
+					Instance: instance,
+					Status:   enum.PENDING,
+				}
+				evt.HandlePromoteEvent(e)
+				log.WithFields(log.Fields{
+					"service":  name,
+					"instance": instance,
+				}).Debugln("Promoted resource to running state")
 			}
-			evt.HandlePromoteEvent(e)
-			log.WithFields(log.Fields{
-				"service":  name,
-				"instance": instance,
-			}).Debugln("Promoted resource to running state")
 		}
 	}
 }

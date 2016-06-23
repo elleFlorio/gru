@@ -7,7 +7,8 @@ import (
 	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
-	"github.com/elleFlorio/gru/service"
+	srv "github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/utils"
 )
 
 type scaleoutCreator struct{}
@@ -45,34 +46,37 @@ func (p *scaleoutCreator) createPolicies(srvList []string, clusterData data.Shar
 }
 
 func (p *scaleoutCreator) computeWeight(name string, clusterData data.Shared) float64 {
-	srv, _ := service.GetServiceByName(name)
+	service, _ := srv.GetServiceByName(name)
 
 	if res.AvailableResourcesService(name) < 1.0 {
 		return 0.0
 	}
 
-	srvCores := srv.Docker.CpusetCpus
+	srvCores := service.Docker.CpusetCpus
 	if srvCores != "" {
 		if !res.CheckSpecificCoresAvailable(srvCores) {
 			return 0.0
 		}
 	}
 
-	srvShared := clusterData.Service[name]
-	// LOAD
-	load := srvShared.Load
-	thrLoad := cfg.GetTuning().Policy.Scaleout.Load
-	value_load := math.Max(load, thrLoad)
-	weight_load := (value_load - thrLoad) / (1 - thrLoad)
-	// CPU
-	cpu := srvShared.Cpu
-	thrCpu := cfg.GetTuning().Policy.Scaleout.Cpu
-	value_cpu := math.Max(cpu, thrCpu)
-	weight_cpu := (value_cpu - thrCpu) / (1 - thrCpu)
-	// MEMORY
-	// TODO?
+	analytics := srv.GetServiceExpressionsList(name)
+	threshold := cfg.GetTuning().Policy.Scaleout
+	weights := []float64{}
 
-	policyValue := (weight_load + weight_cpu) / 2
+	for _, value := range clusterData.Service[name].Data.BaseShared {
+		weights = append(weights, p.computeMetricWeight(value, threshold))
+	}
+
+	for _, analytic := range analytics {
+		value := clusterData.Service[name].Data.UserShared[analytic]
+		weights = append(weights, p.computeMetricWeight(value, threshold))
+	}
+
+	policyValue := utils.Mean(weights)
 
 	return policyValue
+}
+
+func (p *scaleoutCreator) computeMetricWeight(value float64, threshold float64) float64 {
+	return 1 - (math.Max(value, threshold) / (1 - threshold))
 }

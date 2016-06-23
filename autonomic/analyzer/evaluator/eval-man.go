@@ -8,24 +8,30 @@ import (
 	"github.com/soniah/evaler"
 
 	cfg "github.com/elleFlorio/gru/configuration"
+	srv "github.com/elleFlorio/gru/service"
 )
 
-func ComputeMetricAnalytics(metrics map[string]float64) map[string]float64 {
+func ComputeMetricAnalytics(service string, metrics map[string]float64) map[string]float64 {
 	expressions := cfg.GetExpr()
+	srvExprList := srv.GetServiceExpressionsList(service)
 	metricAnalytics := make(map[string]float64, len(expressions))
 
-	for exprName, expr := range expressions {
-		toEval := buildExpression(expr.Expr, metrics)
-		result, err := evaler.Eval(toEval)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"err":  err,
-				"expr": toEval,
-			}).Errorln("Error evaluating expression")
+	for _, expr := range srvExprList {
+		if curExpr, ok := expressions[expr]; ok {
+			toEval := buildExpression(curExpr.Expr, metrics)
+			result, err := evaler.Eval(toEval)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"err":  err,
+					"expr": toEval,
+				}).Errorln("Error evaluating expression")
 
-			metricAnalytics[exprName] = 0.0
+				metricAnalytics[expr] = 0.0
+			} else {
+				metricAnalytics[expr] = evaler.BigratToFloat(result)
+			}
 		} else {
-			metricAnalytics[exprName] = evaler.BigratToFloat(result)
+			log.WithField("expr", expr).Errorln("Cannot compute expression: expression unknown")
 		}
 	}
 
