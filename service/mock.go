@@ -18,10 +18,11 @@ func CreateMockServices() []cfg.Service {
 		Paused:  paused1,
 	}
 	service1 := cfg.Service{
-		Name:      "service1",
-		Type:      "webserver",
-		Image:     "test/tomcat",
-		Instances: instances1,
+		Name:        "service1",
+		Type:        "webserver",
+		Image:       "test/tomcat",
+		Instances:   instances1,
+		Expressions: []string{"expr1"},
 		Constraints: map[string]float64{
 			"MAX_RESP_TIME": 2000,
 		},
@@ -34,19 +35,21 @@ func CreateMockServices() []cfg.Service {
 		Running: running2,
 	}
 	service2 := cfg.Service{
-		Name:      "service2",
-		Type:      "webserver",
-		Image:     "test/jetty",
-		Instances: instances2,
+		Name:        "service2",
+		Type:        "webserver",
+		Image:       "test/jetty",
+		Instances:   instances2,
+		Expressions: []string{"expr2"},
 		Constraints: map[string]float64{
 			"MAX_RESP_TIME": 6000,
 		},
 	}
 
 	service3 := cfg.Service{
-		Name:  "service3",
-		Type:  "database",
-		Image: "test/mysql",
+		Name:        "service3",
+		Type:        "database",
+		Image:       "test/mysql",
+		Expressions: []string{"expr3"},
 		Constraints: map[string]float64{
 			"MAX_RESP_TIME": 1000,
 		},

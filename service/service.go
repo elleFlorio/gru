@@ -266,3 +266,13 @@ func GetServiceConstraints(service string) map[string]float64 {
 
 	return srv.Constraints
 }
+
+func SetServiceConstraints(service string, constraints map[string]float64) {
+	srv, err := getServiceBy("name", service)
+	if err != nil {
+		log.WithField("service", service).Errorln("Cannot set service constraints: unknown service")
+		return
+	}
+
+	srv.Constraints = constraints
+}

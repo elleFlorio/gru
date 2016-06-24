@@ -7,6 +7,7 @@ import (
 
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
+	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
 )
 
@@ -15,7 +16,7 @@ const c_EPSILON = 0.09
 func init() {
 	cfg.SetServices(createServices())
 	cfg.SetNode(createNode())
-	cfg.SetTuning(createTuning())
+	cfg.SetPolicy(createMockPolicy())
 
 	res.GetResources().CPU.Total = 4
 	res.GetResources().Memory.Total = 4 * 1024 * 1024 * 1024
@@ -141,99 +142,109 @@ func createServices() []cfg.Service {
 	srv1.Name = "service1"
 	srv1.Instances.Running = []string{"instance1_1"}
 	srv1.Docker.CPUnumber = 2
+	srv1.Expressions = []string{"LOAD"}
 
 	srv2 := cfg.Service{}
 	srv2.Name = "service2"
 	srv2.Instances.Running = []string{"instance2_1"}
 	srv2.Instances.Pending = []string{"instance2_2"}
 	srv2.Docker.CPUnumber = 2
+	srv2.Expressions = []string{"LOAD"}
 
 	srv3 := cfg.Service{}
 	srv3.Name = "service3"
 	srv3.Docker.CPUnumber = 2
+	srv3.Expressions = []string{"LOAD"}
 
 	srv4 := cfg.Service{}
 	srv4.Name = "service4"
 	srv4.Docker.CPUnumber = 1
+	srv4.Expressions = []string{"LOAD"}
 
 	srv5 := cfg.Service{}
 	srv5.Name = "service5"
 	srv5.Docker.CPUnumber = 2
+	srv5.Expressions = []string{"LOAD"}
 
 	services := []cfg.Service{srv1, srv2, srv3, srv4, srv5}
 
 	return services
 }
 
-func createAnalytics() data.GruAnalytics {
-	analytics := data.GruAnalytics{}
-
-	srv1A := data.ServiceAnalytics{}
-	srv1A.Load = 1.0
-	srv1A.Resources.Cpu = 0.5
-	srv1A.Resources.Available = 1.0
-
-	srv2A := data.ServiceAnalytics{}
-	srv2A.Load = 0.5
-	srv2A.Resources.Cpu = 0.2
-	srv2A.Resources.Available = 1.0
-
-	srv3A := data.ServiceAnalytics{}
-	srv3A.Load = 0.9
-	srv3A.Resources.Cpu = 0.8
-	srv3A.Resources.Available = 0.0
-
-	srv4A := data.ServiceAnalytics{}
-	srv4A.Load = 0.9
-	srv4A.Resources.Cpu = 0.8
-	srv4A.Resources.Available = 1.0
-
-	srv5A := data.ServiceAnalytics{}
-	srv5A.Resources.Available = 0.0
-
-	analytics.Service = map[string]data.ServiceAnalytics{
-		"service1": srv1A,
-		"service2": srv2A,
-		"service3": srv3A,
-		"service4": srv4A,
-		"service5": srv5A,
-	}
-
-	return analytics
-}
-
 func createSharedData() data.Shared {
 	shared := data.Shared{}
 
-	srv1A := data.ServiceShared{}
-	srv1A.Load = 1.0
-	srv1A.Cpu = 0.5
-	srv1A.Resources = 1.0
+	srvData1 := data.SharedData{
+		BaseShared: map[string]float64{
+			enum.METRIC_CPU_AVG.ToString(): 0.5,
+		},
+		UserShared: map[string]float64{
+			"LOAD": 1.0,
+		},
+	}
+	srvShared1 := data.ServiceShared{
+		Data:   srvData1,
+		Active: true,
+	}
 
-	srv2A := data.ServiceShared{}
-	srv2A.Load = 0.5
-	srv2A.Cpu = 0.2
-	srv2A.Resources = 1.0
+	srvData2 := data.SharedData{
+		BaseShared: map[string]float64{
+			enum.METRIC_CPU_AVG.ToString(): 0.2,
+		},
+		UserShared: map[string]float64{
+			"LOAD": 0.5,
+		},
+	}
+	srvShared2 := data.ServiceShared{
+		Data:   srvData2,
+		Active: true,
+	}
 
-	srv3A := data.ServiceShared{}
-	srv3A.Load = 0.9
-	srv3A.Cpu = 0.8
-	srv3A.Resources = 0.0
+	srvData3 := data.SharedData{
+		BaseShared: map[string]float64{
+			enum.METRIC_CPU_AVG.ToString(): 0.8,
+		},
+		UserShared: map[string]float64{
+			"LOAD": 0.9,
+		},
+	}
+	srvShared3 := data.ServiceShared{
+		Data:   srvData3,
+		Active: false,
+	}
 
-	srv4A := data.ServiceShared{}
-	srv4A.Load = 0.9
-	srv4A.Cpu = 0.8
-	srv4A.Resources = 1.0
+	srvData4 := data.SharedData{
+		BaseShared: map[string]float64{
+			enum.METRIC_CPU_AVG.ToString(): 0.8,
+		},
+		UserShared: map[string]float64{
+			"LOAD": 0.9,
+		},
+	}
+	srvShared4 := data.ServiceShared{
+		Data:   srvData4,
+		Active: false,
+	}
 
-	srv5A := data.ServiceShared{}
-	srv5A.Resources = 0.0
+	srvData5 := data.SharedData{
+		BaseShared: map[string]float64{
+			enum.METRIC_CPU_AVG.ToString(): 0.0,
+		},
+		UserShared: map[string]float64{
+			"LOAD": 0.0,
+		},
+	}
+	srvShared5 := data.ServiceShared{
+		Data:   srvData5,
+		Active: false,
+	}
 
 	shared.Service = map[string]data.ServiceShared{
-		"service1": srv1A,
-		"service2": srv2A,
-		"service3": srv3A,
-		"service4": srv4A,
-		"service5": srv5A,
+		"service1": srvShared1,
+		"service2": srvShared2,
+		"service3": srvShared3,
+		"service4": srvShared4,
+		"service5": srvShared5,
 	}
 
 	return shared
@@ -245,14 +256,21 @@ func createNode() cfg.Node {
 	return n
 }
 
-func createTuning() cfg.Tuning {
-	t := cfg.Tuning{}
-	t.Policy.Scalein.Cpu = 0.3
-	t.Policy.Scalein.Load = 0.3
-	t.Policy.Scaleout.Cpu = 0.8
-	t.Policy.Scaleout.Load = 0.8
-	t.Policy.Swap.Cpu = 0.6
-	t.Policy.Swap.Load = 0.6
+func createMockPolicy() cfg.Policy {
+	policy := cfg.Policy{
+		Scalein: cfg.PolicyConfig{
+			Enable:    true,
+			Threshold: 0.3,
+		},
+		Scaleout: cfg.PolicyConfig{
+			Enable:    true,
+			Threshold: 0.8,
+		},
+		Swap: cfg.PolicyConfig{
+			Enable:    true,
+			Threshold: 0.6,
+		},
+	}
 
-	return t
+	return policy
 }

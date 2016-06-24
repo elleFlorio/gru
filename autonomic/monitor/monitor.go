@@ -28,8 +28,9 @@ const c_B_SIZE = 20
 const c_MTR_THR = 20
 
 var (
-	stats      data.GruStats
-	instBuffer map[string]instanceMetricBuffer
+	stats            data.GruStats
+	instBuffer       map[string]instanceMetricBuffer
+	enableLogReading bool
 
 	ch_mnt_stats_err  chan error
 	ch_mnt_events_err chan error
@@ -74,6 +75,12 @@ func Run() data.GruStats {
 func initiailizeMonitoring() {
 	log.Debugln("Running autonomic monitoring")
 	ch_aut_err := chn.GetAutonomicErrChannel()
+	enableLogReading = cfg.GetAgentAutonomic().EnableLogReading
+
+	// Start log reader if needed
+	if enableLogReading {
+		lgr.StartLogReader()
+	}
 
 	// Get the list of containers (running or not) to monitor
 	containers, err := container.Docker().Client.ListContainers(true, false, "")
@@ -103,7 +110,7 @@ func initiailizeMonitoring() {
 			evt.HandleCreateEvent(e)
 			evt.HanldeStartEvent(e)
 			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, ch_mnt_stats_err)
-			if status == enum.PENDING {
+			if status == enum.PENDING && enableLogReading {
 				startMonitorLog(c.Id)
 			}
 		}
@@ -180,7 +187,9 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		}
 		e.Status = enum.PENDING
 		evt.HanldeStartEvent(e)
-		startMonitorLog(event.ID)
+		if enableLogReading {
+			startMonitorLog(event.ID)
+		}
 	case "stop":
 		log.WithField("image", e.Image).Debugln("Received stop signal")
 	case "kill":

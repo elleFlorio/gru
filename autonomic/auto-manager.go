@@ -9,6 +9,7 @@ import (
 	"github.com/elleFlorio/gru/autonomic/executor"
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
+	chn "github.com/elleFlorio/gru/channels"
 	"github.com/elleFlorio/gru/metric"
 )
 
@@ -18,8 +19,7 @@ var (
 )
 
 func init() {
-	ch_err = make(chan error)
-	ch_stop = make(chan struct{})
+	ch_err = chn.GetAutonomicErrChannel()
 }
 
 func Initialize(plannerStrategy string) {
@@ -27,7 +27,7 @@ func Initialize(plannerStrategy string) {
 }
 
 func Start() {
-	monitor.Start(ch_err, ch_stop)
+	monitor.Start()
 	executor.ListenToActionMessages()
 }
 
@@ -50,8 +50,6 @@ func RunLoop(loopTimeInterval int) {
 
 		case <-ch_err:
 			log.Debugln("Error running autonomic loop")
-		case <-ch_stop:
-			ticker.Stop()
 		}
 	}
 }

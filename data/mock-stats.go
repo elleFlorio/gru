@@ -11,7 +11,8 @@ func CreateMockStats() GruStats {
 		enum.METRIC_MEM_AVG.ToString(): 0.3,
 	}
 	srvUserMetrics1 := map[string]float64{
-		"EXECUTION_TIME": 3000,
+		"M1": 0.2,
+		"M2": 0.8,
 	}
 
 	srvMetrics1 := MetricData{
@@ -25,7 +26,8 @@ func CreateMockStats() GruStats {
 		enum.METRIC_MEM_AVG.ToString(): 0.1,
 	}
 	srvUserMetrics2 := map[string]float64{
-		"EXECUTION_TIME": 5000,
+		"M1": 0.2,
+		"M2": 0.8,
 	}
 
 	srvMetrics2 := MetricData{
@@ -39,7 +41,8 @@ func CreateMockStats() GruStats {
 		enum.METRIC_MEM_AVG.ToString(): 0.8,
 	}
 	srvUserMetrics3 := map[string]float64{
-		"EXECUTION_TIME": 10000,
+		"M1": 0.2,
+		"M2": 0.8,
 	}
 
 	srvMetrics3 := MetricData{

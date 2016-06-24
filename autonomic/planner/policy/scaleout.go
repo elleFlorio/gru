@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"fmt"
 	"math"
 
 	cfg "github.com/elleFlorio/gru/configuration"
@@ -67,19 +68,22 @@ func (p *scaleoutCreator) computeWeight(name string, clusterData data.Shared) fl
 	weights := []float64{}
 
 	for _, value := range clusterData.Service[name].Data.BaseShared {
+		fmt.Println(value)
 		weights = append(weights, p.computeMetricWeight(value, threshold))
 	}
 
 	for _, analytic := range analytics {
 		value := clusterData.Service[name].Data.UserShared[analytic]
+		fmt.Println(value)
 		weights = append(weights, p.computeMetricWeight(value, threshold))
 	}
 
 	policyValue := utils.Mean(weights)
+	fmt.Println(weights)
 
 	return policyValue
 }
 
 func (p *scaleoutCreator) computeMetricWeight(value float64, threshold float64) float64 {
-	return 1 - (math.Max(value, threshold) / (1 - threshold))
+	return (math.Max(value, threshold) - threshold) / (1 - threshold)
 }

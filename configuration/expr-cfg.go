@@ -1,7 +1,8 @@
 package configuration
 
 type Expression struct {
-	Analytic string
-	Expr     string
-	Vars     []string
+	Analytic    string
+	Expr        string
+	Metrics     []string
+	Constraints []string
 }
