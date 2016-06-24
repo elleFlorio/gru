@@ -22,8 +22,8 @@ func init() {
 	ch_err = chn.GetAutonomicErrChannel()
 }
 
-func Initialize(plannerStrategy string) {
-	planner.SetPlannerStrategy("probabilistic")
+func UpdatePlannerStrategy(plannerStrategy string) {
+	planner.SetPlannerStrategy(plannerStrategy)
 }
 
 func Start() {
@@ -32,9 +32,10 @@ func Start() {
 }
 
 func RunLoop(loopTimeInterval int) {
+	// Start the metric collector
+	metric.StartMetricCollector()
 	// Set the ticker for the periodic execution
 	ticker := time.NewTicker(time.Duration(loopTimeInterval) * time.Second)
-
 	log.Infoln("Running autonomic loop")
 	for {
 		select {
@@ -44,21 +45,10 @@ func RunLoop(loopTimeInterval int) {
 			policy := planner.Run(analytics)
 			executor.Run(policy)
 
-			collectMetrics()
-
 			log.Infoln("-------------------------")
 
 		case <-ch_err:
 			log.Debugln("Error running autonomic loop")
 		}
-	}
-}
-
-func collectMetrics() {
-	log.Debugln("Collecting metrics")
-	metric.UpdateMetrics()
-	err := metric.StoreMetrics(metric.Metrics())
-	if err != nil {
-		log.WithField("errr", err).Errorln("Error collecting agent metrics")
 	}
 }

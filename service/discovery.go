@@ -34,7 +34,7 @@ func GetDiscoveryPort(name string) string {
 
 func SaveInstanceAddress(id string, port string) {
 	hostIp := net.Config().IpAddress
-	address := "http://" + hostIp + ":" + port
+	address := hostIp + ":" + port
 	addressMap[id] = address
 }
 

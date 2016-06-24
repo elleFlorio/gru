@@ -65,7 +65,7 @@ func SendActionStartMessage(target *cfg.Service) {
 }
 
 func SendActionStopMessage(target *cfg.Service) {
-	message := ActionMessage{target, []enum.Action{enum.STOP}}
+	message := ActionMessage{target, []enum.Action{enum.STOP, enum.REMOVE}}
 	sendActionMessage(message)
 
 }

@@ -7,52 +7,16 @@ import (
 )
 
 func TestSetPlannerStrategy(t *testing.T) {
-	probabilistic := "probabilistic"
+	probcumulative := "probcumulative"
+	probdelta := "probdelta"
 	notSupported := "notsupported"
 
-	SetPlannerStrategy(probabilistic)
-	assert.Equal(t, probabilistic, currentStrategy.Name(), "(probabilistic) Current strategy should be probabilistic")
+	SetPlannerStrategy(probcumulative)
+	assert.Equal(t, probcumulative, currentStrategy.Name(), "(probcumulative) Current strategy should be probcumulative")
+
+	SetPlannerStrategy(probdelta)
+	assert.Equal(t, probdelta, currentStrategy.Name(), "(probdelta) Current strategy should be probdelta")
 
 	SetPlannerStrategy(notSupported)
 	assert.Equal(t, "dummy", currentStrategy.Name(), "(notsupported) Current strategy should be dummy")
 }
-
-// func TestSavePlan(t *testing.T) {
-// 	defer storage.DeleteAllData(enum.POLICIES)
-// 	plc := policy.CreateRandomMockPolicies(1)[0]
-
-// 	err := savePolicy(&plc)
-// 	assert.NoError(t, err)
-// }
-
-// func TestConvertPolicyToData(t *testing.T) {
-// 	plc := policy.CreateRandomMockPolicies(1)[0]
-// 	_, err := convertPolicyToData(&plc)
-// 	assert.NoError(t, err)
-// }
-
-// func TestConvertDataToPolicy(t *testing.T) {
-// 	plc := policy.CreateRandomMockPolicies(1)[0]
-// 	data_ok, err := convertPolicyToData(&plc)
-// 	data_bad := []byte{}
-
-// 	plc_data, err := convertDataToPolicy(data_ok)
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, plc, plc_data)
-
-// 	_, err = convertDataToPolicy(data_bad)
-// 	assert.Error(t, err)
-// }
-
-// func TestGetPlannerData(t *testing.T) {
-// 	defer storage.DeleteAllData(enum.POLICIES)
-// 	var err error
-
-// 	_, err = GetPlannerData()
-// 	assert.Error(t, err)
-
-// 	plc := policy.CreateRandomMockPolicies(1)[0]
-// 	StoreMockPolicy(plc)
-// 	_, err = GetPlannerData()
-// 	assert.NoError(t, err)
-// }

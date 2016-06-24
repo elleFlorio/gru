@@ -25,8 +25,30 @@ func SendStartAgentCommand(dest string) error {
 	return nil
 }
 
+func SendStopAgentCommand(dest string) error {
+	cmd := Command{"stop", "agent", nil}
+	err := sendCommand(dest, cmd)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error sending command to destination ", dest)
+		return err
+	}
+
+	return nil
+}
+
 func SendStartServiceCommand(dest string, name string) error {
 	cmd := Command{"start", "service", name}
+	err := sendCommand(dest, cmd)
+	if err != nil {
+		log.WithField("err", err).Errorln("Error sending command to destination ", dest)
+		return err
+	}
+
+	return nil
+}
+
+func SendStopServiceCommand(dest string, name string) error {
+	cmd := Command{"stop", "service", name}
 	err := sendCommand(dest, cmd)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error sending command to destination ", dest)

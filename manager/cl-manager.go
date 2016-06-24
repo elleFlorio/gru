@@ -124,6 +124,14 @@ func (m *Manager) ParseCommand(cmd string) bool {
 			m.show(cmd)
 		case "start":
 			m.start(cmd)
+		case "stop":
+			m.stop(cmd)
+		case "update":
+			m.update(cmd)
+		case "deploy":
+			m.deploy()
+		case "undeploy":
+			m.undeploy()
 		default:
 			unknown(cmd)
 		}
@@ -413,6 +421,111 @@ func (m *Manager) startService(what string, where []string) {
 	}
 }
 
+func (m *Manager) stop(cmd string) {
+	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
+	if len(args) < 3 {
+		fmt.Println("not enough arguments to 'stop' command")
+		return
+	}
+
+	if !m.isClusterSet() {
+		return
+	}
+
+	who := args[1]
+
+	switch who {
+	case "agent":
+		m.stopAgent(args[2:])
+	case "service":
+		m.stopService(args[2], args[3:])
+	default:
+		fmt.Println("Unrecognized target ", who)
+	}
+}
+
+func (m *Manager) stopAgent(where []string) {
+	var err error
+	nodes := cluster.ListNodes(m.Cluster, false)
+	if where[0] == "all" {
+		for name, addr := range nodes {
+			err = network.SendStopAgentCommand(addr)
+			if err != nil {
+				fmt.Println("Error sending stop agent command to node ", name)
+			}
+		}
+	} else {
+		for _, node := range where {
+			if addr, ok := nodes[node]; ok {
+				err = network.SendStopAgentCommand(addr)
+				if err != nil {
+					fmt.Println("Error sending stop agent command to node ", node)
+				}
+			} else {
+				fmt.Println("Cannot get address of node ", node)
+			}
+		}
+	}
+}
+
+func (m *Manager) stopService(what string, where []string) {
+	var err error
+	nodes := cluster.ListNodes(m.Cluster, false)
+	if where[0] == "all" {
+		for name, addr := range nodes {
+			err = network.SendStopServiceCommand(addr, what)
+			if err != nil {
+				fmt.Println("Error sending start service command to node ", name)
+			}
+		}
+	} else {
+		for _, node := range where {
+			if addr, ok := nodes[node]; ok {
+				err = network.SendStopServiceCommand(addr, what)
+				if err != nil {
+					fmt.Println("Error sending start service command to node ", node)
+				}
+			} else {
+				fmt.Println("Cannot get address of node ", node)
+			}
+		}
+	}
+}
+
+func (m *Manager) update(cmd string) {
+	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
+	if len(args) < 2 {
+		fmt.Println("not enough arguments to 'update' command")
+		return
+	}
+
+	if !m.isClusterSet() {
+		return
+	}
+
+	var err error
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
+	fmt.Fprintf(w, "NODE\tSTATUS\n")
+
+	nodes := cluster.ListNodes(m.Cluster, false)
+	for node, address := range nodes {
+		status := "done"
+		err = network.SendUpdateCommand(address, args[1], m.Cluster)
+		if err != nil {
+			fmt.Println("Error sending update command to node ", node)
+			status = "error"
+		}
+
+		fmt.Fprintf(w, "%s\t%s\n",
+			node,
+			status,
+		)
+	}
+
+	w.Flush()
+}
+
 func (m *Manager) show(cmd string) {
 	args := strings.Split(strings.TrimSuffix(strings.TrimSpace(cmd), ";"), " ")
 	if len(args) < 4 {
@@ -518,6 +631,100 @@ func showNode(clusterName string, nodeName string, what string) {
 		}
 	default:
 		fmt.Println("Unrecognized node property ", what)
+	}
+
+	w.Flush()
+}
+
+func (m *Manager) deploy() {
+	if !m.isClusterSet() {
+		return
+	}
+
+	var err error
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
+	fmt.Fprintf(w, "NODE\tSERVICE\tSTATUS\n")
+
+	services := cluster.ListServices(m.Cluster)
+	servicesNames := make([]string, 0, len(services))
+	for name, _ := range services {
+		servicesNames = append(servicesNames, name)
+	}
+
+	nodes := cluster.ListNodes(m.Cluster, false)
+	nodesNames := make([]string, 0, len(nodes))
+	for name, _ := range nodes {
+		nodesNames = append(nodesNames, name)
+	}
+
+	if len(nodes) < len(services) {
+		fmt.Println("Cannot deploy: not enough nodes")
+		return
+	}
+
+	for i := 0; i < len(services); i++ {
+		service := servicesNames[i]
+		node := nodesNames[i]
+		address := nodes[node]
+		status := "done"
+
+		err = network.SendUpdateCommand(address, "node-base-services", []string{service})
+		if err != nil {
+			fmt.Println("Error sending update command to ", address)
+			status = "error"
+
+		} else {
+			err = network.SendStartServiceCommand(address, service)
+			if err != nil {
+				fmt.Println("Error sending start service command to node ", node)
+				status = "error"
+			}
+		}
+
+		fmt.Fprintf(w, "%s\t%s\t%s\n",
+			node,
+			service,
+			status,
+		)
+
+	}
+
+	w.Flush()
+}
+
+func (m *Manager) undeploy() {
+	if !m.isClusterSet() {
+		return
+	}
+
+	var err error
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 1, '\t', 0)
+	fmt.Fprintf(w, "NODE\tSTATUS\n")
+
+	services := cluster.ListServices(m.Cluster)
+	nodes := cluster.ListNodes(m.Cluster, false)
+	for node, address := range nodes {
+		status := "done"
+		err = network.SendUpdateCommand(address, "node-base-services", []string{})
+		if err != nil {
+			fmt.Println("Error sending update command to ", address)
+			status = "error"
+		}
+
+		for service, _ := range services {
+			err = network.SendStopServiceCommand(address, service)
+			if err != nil {
+				fmt.Println("Error sending stop service command to node ", node)
+				status = "error"
+			}
+		}
+
+		fmt.Fprintf(w, "%s\t%s\n",
+			node,
+			status,
+		)
 	}
 
 	w.Flush()
