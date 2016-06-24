@@ -304,16 +304,10 @@ func setService(clusterName string, who string, what string, to_what []string) {
 	}
 	service := cluster.GetService(clusterName, who)
 	switch what {
-	case "mrt":
-		mrt := to_what[0]
-		if ok, value := checkValidMRT(mrt); ok {
-			service.Constraints.MaxRespTime = value
-			cluster.UpdateService(clusterName, who, service)
-			for _, address := range nodes {
-				network.SendUpdateCommand(address, "service-mrt", who)
-			}
-		} else {
-			fmt.Println("MRT value not valid. It should be a positive float value")
+	case "TODO":
+		cluster.UpdateService(clusterName, who, service)
+		for _, address := range nodes {
+			network.SendUpdateCommand(address, "TODO", who)
 		}
 	default:
 		fmt.Println("Unrecognized parameter ", what)
@@ -335,19 +329,6 @@ func checkValidServices(services []string, list []string) (bool, []string) {
 	}
 
 	return check, notValid
-}
-
-func checkValidMRT(mrt string) (bool, float64) {
-	value, err := strconv.ParseFloat(mrt, 64)
-	if err != nil {
-		return false, 0.0
-	}
-
-	if value < 0 {
-		return false, 0.0
-	}
-
-	return true, value
 }
 
 func (m *Manager) start(cmd string) {

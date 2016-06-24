@@ -8,11 +8,12 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/gorilla/mux"
 
 	"github.com/elleFlorio/gru/autonomic/monitor"
+	mtr "github.com/elleFlorio/gru/autonomic/monitor/metric"
 )
 
 // /gru/v1/stats
 func GetStatsNode(w http.ResponseWriter, r *http.Request) {
-	stats := monitor.GetNodeStats()
+	stats := monitor.GetStats()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
@@ -101,5 +102,22 @@ func GetStatsSystem(w http.ResponseWriter, r *http.Request) {
 			"request": "GetStatsSystem",
 			"error":   err,
 		}).Errorln("API Server")
+	}
+}
+
+// /gru/v1/stats/user/{service}/{metric}
+func PostUpdateMetrics(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	service := vars["service"]
+	metric := vars["metric"]
+	var userValue struct {
+		values []float64
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&userValue); err != nil {
+		//TODO
+	} else {
+		mtr.UpdateUserMetric(service, metric, userValue.values)
 	}
 }

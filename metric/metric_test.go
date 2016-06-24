@@ -38,20 +38,20 @@ func TestNew(t *testing.T) {
 func TestUpdateMetrics(t *testing.T) {
 	cfg.SetServices(service.CreateMockServices())
 
-	UpdateMetrics()
-	assert.Equal(t, 0.0, Metrics().Service["service1"].Stats.CpuTot)
-	assert.Equal(t, 0.0, Metrics().Service["service2"].Analytics.Cpu)
+	updateMetrics()
+	assert.Equal(t, 0.0, Metrics().Service["service1"].Stats.BaseMetrics[enum.METRIC_CPU_AVG.ToString()])
+	assert.Equal(t, 0.0, Metrics().Service["service2"].Analytics.BaseAnalytics[enum.METRIC_CPU_AVG.ToString()])
 	assert.Equal(t, "noaction", Metrics().Policy.Name)
 
-	data.StoreMockStats()
-	data.StoreMockAnalytics()
+	data.SaveMockStats()
+	data.SaveMockAnalytics()
 	data.SaveSharedCluster(data.CreateMockShared())
 	plc := data.CreateMockPolicy("policy", 1.0, []string{"pippo"}, map[string][]enum.Action{})
 	data.SavePolicy(plc)
-	UpdateMetrics()
-	assert.Equal(t, 0.7, Metrics().Service["service1"].Stats.CpuTot)
-	assert.Equal(t, 0.8, Metrics().Service["service2"].Analytics.Cpu)
-	assert.Equal(t, 0.7, metrics.Service["service1"].Shared.Load)
+	updateMetrics()
+	assert.Equal(t, 0.6, Metrics().Service["service1"].Stats.BaseMetrics[enum.METRIC_CPU_AVG.ToString()])
+	assert.Equal(t, 0.1, Metrics().Service["service2"].Analytics.BaseAnalytics[enum.METRIC_CPU_AVG.ToString()])
+	assert.Equal(t, 0.6, metrics.Service["service1"].Shared.BaseShared[enum.METRIC_CPU_AVG.ToString()])
 	assert.Equal(t, "policy", Metrics().Policy.Name)
 }
 

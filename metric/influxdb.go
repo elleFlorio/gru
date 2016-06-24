@@ -6,6 +6,7 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/influxdb/influxdb/client/v2"
 
+	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/utils"
 )
 
@@ -105,19 +106,19 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 		}
 		points = append(points, memPoint)
 
-		loadPoint, err := createInfluxLoadService(nodeName, service)
+		userStatsPoints, err := createInfluxUserStatsService(nodeName, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating load metrics for Service ", service.Name)
+			log.WithField("err", err).Errorln("Error creating user stats metrics for Service ", service.Name)
 			return points, err
 		}
-		points = append(points, loadPoint)
+		points = append(points, userStatsPoints)
 
-		healthPoint, err := createInfluxHealthService(nodeName, service)
+		userAnalyticsPoints, err := createInfluxUserAnalyticsService(nodeName, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating health metrics for Service ", service.Name)
+			log.WithField("err", err).Errorln("Error creating user analytics metrics for Service ", service.Name)
 			return points, err
 		}
-		points = append(points, healthPoint)
+		points = append(points, userAnalyticsPoints)
 
 	}
 
@@ -137,9 +138,8 @@ func createInfluxNode(node NodeMetrics) (*client.Point, error) {
 		"name": node.Name,
 	}
 	fields := map[string]interface{}{
-		"cpu":    node.Cpu,
-		"memory": node.Memory,
-		"health": node.Health,
+		"cpu":    node.Stats.BaseMetrics[enum.METRIC_CPU_AVG.ToString()],
+		"memory": node.Stats.BaseMetrics[enum.METRIC_MEM_AVG.ToString()],
 	}
 
 	point, err := client.NewPoint("node", tags, fields, time.Now())
@@ -185,10 +185,9 @@ func createInfluxCpuService(nodeName string, service ServiceMetric) (*client.Poi
 		"service_image": service.Image,
 	}
 	fields := map[string]interface{}{
-		"stats_tot":       service.Stats.CpuTot,
-		"stats_avg":       service.Stats.CpuAvg,
-		"analytics_value": service.Analytics.Cpu,
-		"shared_value":    service.Shared.Cpu,
+		"stats_value":     service.Stats.BaseMetrics[enum.METRIC_CPU_AVG.ToString()],
+		"analytics_value": service.Analytics.BaseAnalytics[enum.METRIC_CPU_AVG.ToString()],
+		"shared_value":    service.Shared.BaseShared[enum.METRIC_CPU_AVG.ToString()],
 	}
 
 	point, err := client.NewPoint("cpu_service", tags, fields, time.Now())
@@ -209,10 +208,9 @@ func createInfluxMemService(nodeName string, service ServiceMetric) (*client.Poi
 		"service_image": service.Image,
 	}
 	fields := map[string]interface{}{
-		"stats_tot":       service.Stats.MemTot,
-		"stats_avg":       service.Stats.MemAvg,
-		"analytics_value": service.Analytics.Memory,
-		"shared_value":    service.Shared.Memory,
+		"stats_value":     service.Stats.BaseMetrics[enum.METRIC_MEM_AVG.ToString()],
+		"analytics_value": service.Analytics.BaseAnalytics[enum.METRIC_MEM_AVG.ToString()],
+		"shared_value":    service.Shared.BaseShared[enum.METRIC_MEM_AVG.ToString()],
 	}
 
 	point, err := client.NewPoint("memory_service", tags, fields, time.Now())
@@ -225,45 +223,46 @@ func createInfluxMemService(nodeName string, service ServiceMetric) (*client.Poi
 	return point, nil
 }
 
-func createInfluxLoadService(nodeName string, service ServiceMetric) (*client.Point, error) {
+func createInfluxUserStatsService(nodeName string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
 		"node":          nodeName,
 		"service_name":  service.Name,
 		"service_type":  service.Type,
 		"service_image": service.Image,
 	}
-	fields := map[string]interface{}{
-		"analytics_value": service.Analytics.Load,
-		"shared_value":    service.Shared.Load,
+	fields := make(map[string]interface{}, len(service.Stats.UserMetrics))
+	for metric, value := range service.Stats.UserMetrics {
+		fields[metric] = value
 	}
 
-	point, err := client.NewPoint("load_service", tags, fields, time.Now())
+	point, err := client.NewPoint("user_stat_service", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
-	log.WithField("series", "load_service").Debugln("Created influx metrics")
+	log.WithField("series", "user_stat_service").Debugln("Created influx metrics")
 
 	return point, nil
 }
 
-func createInfluxHealthService(nodeName string, service ServiceMetric) (*client.Point, error) {
+func createInfluxUserAnalyticsService(nodeName string, service ServiceMetric) (*client.Point, error) {
 	tags := map[string]string{
 		"node":          nodeName,
 		"service_name":  service.Name,
 		"service_type":  service.Type,
 		"service_image": service.Image,
 	}
-	fields := map[string]interface{}{
-		"value": service.Analytics.Health,
+	fields := make(map[string]interface{}, len(service.Analytics.UserAnalytics))
+	for metric, value := range service.Analytics.UserAnalytics {
+		fields[metric] = value
 	}
 
-	point, err := client.NewPoint("health_service", tags, fields, time.Now())
+	point, err := client.NewPoint("user_analytics_service", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
-	log.WithField("series", "health_service").Debugln("Created influx metrics")
+	log.WithField("series", "user_analytics_service").Debugln("Created influx metrics")
 
 	return point, nil
 }

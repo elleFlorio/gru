@@ -27,7 +27,7 @@ type Command struct {
 const c_GRU_REMOTE = "/gru/"
 const c_CONFIG_REMOTE = "config"
 const c_SERVICES_REMOTE = "services"
-const c_TUNING_REMOTE = "tuning"
+const c_POLICY_REMOTE = "policy"
 
 func PostCommand(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -183,9 +183,9 @@ func updateCommand(cmd Command) {
 	case "services":
 		cluster := cmd.Object.(string)
 		updateServices(cluster)
-	case "tuning":
+	case "policy":
 		cluster := cmd.Object.(string)
-		updateTuning(cluster)
+		updatePolicy(cluster)
 	case "node-base-services":
 		data := cmd.Object.([]interface{})
 		upd := []string{}
@@ -205,11 +205,11 @@ func updateCommand(cmd Command) {
 		constraints := cfg.GetNodeConstraints()
 		constraints.CpuMax = upd
 		cfg.WriteNodeConstraints(cfg.GetNodeConfig().Remote, *constraints)
-	case "service-mrt":
+	case "service-constraints":
 		name := cmd.Object.(string)
 		srv, _ := service.GetServiceByName(name)
 		upd := cfg.ReadService(srv.Remote)
-		srv.Constraints.MaxRespTime = upd.Constraints.MaxRespTime
+		srv.Constraints = upd.Constraints
 	default:
 		log.WithField("target", cmd.Target).Errorln("Unrecognized target for command update")
 	}
@@ -218,7 +218,7 @@ func updateCommand(cmd Command) {
 func updateAll(cluster string) {
 	updateAgent(cluster)
 	updateServices(cluster)
-	updateTuning(cluster)
+	updatePolicy(cluster)
 }
 
 func updateAgent(cluster string) {
@@ -237,9 +237,9 @@ func updateServices(cluster string) {
 	log.WithField("services", services).Debugln("Services updated from remote")
 }
 
-func updateTuning(cluster string) {
-	remote := c_GRU_REMOTE + cluster + "/" + c_TUNING_REMOTE
-	tuning := cfg.ReadTuningConfig(remote)
-	cfg.SetTuning(tuning)
-	log.WithField("tuning", tuning).Debugln("Tuning updated from remote")
+func updatePolicy(cluster string) {
+	remote := c_GRU_REMOTE + cluster + "/" + c_POLICY_REMOTE
+	policy := cfg.ReadPolicyConfig(remote)
+	cfg.SetPolicy(policy)
+	log.WithField("policy", policy).Debugln("Policy updated from remote")
 }

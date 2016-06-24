@@ -27,7 +27,7 @@ func UpdatePlannerStrategy(plannerStrategy string) {
 }
 
 func Start() {
-	monitor.Start()
+	monitor.StartMonitor()
 	executor.ListenToActionMessages()
 }
 

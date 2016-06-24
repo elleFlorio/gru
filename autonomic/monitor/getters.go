@@ -6,15 +6,15 @@ func GetStats() data.GruStats {
 	return stats
 }
 
-func GetServiceMetrics(name string) data.MetricData {
+func GetServiceStats(name string) data.MetricData {
 	return stats.Metrics.Service[name]
 }
 
-func GetServicesMetrics() map[string]data.MetricData {
+func GetServicesStats() map[string]data.MetricData {
 	return stats.Metrics.Service
 }
 
-func GetInstanceMetrics(id string) data.MetricData {
+func GetInstanceStats(id string) data.MetricData {
 	return stats.Metrics.Instance[id]
 }
 
@@ -22,6 +22,6 @@ func GetInstancesStats() map[string]data.MetricData {
 	return stats.Metrics.Instance
 }
 
-func GetSystemMetrics() data.MetricData {
+func GetSystemStats() data.MetricData {
 	return stats.Metrics.System
 }

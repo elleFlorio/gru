@@ -12,7 +12,7 @@ import (
 
 // /gru/v1/analytics/
 func GetAnalyticsNode(w http.ResponseWriter, r *http.Request) {
-	analytics := analyzer.GetNodeAnalytics()
+	analytics := analyzer.GetAnalytics()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)

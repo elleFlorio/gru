@@ -1,5 +1,9 @@
 package metric
 
+import (
+	"github.com/elleFlorio/gru/data"
+)
+
 type GruMetric struct {
 	Node    NodeMetrics
 	Service map[string]ServiceMetric
@@ -7,11 +11,9 @@ type GruMetric struct {
 }
 
 type NodeMetrics struct {
-	UUID   string
-	Name   string
-	Cpu    float64
-	Memory float64
-	Health float64
+	UUID  string
+	Name  string
+	Stats data.MetricData
 }
 
 type ServiceMetric struct {
@@ -19,9 +21,9 @@ type ServiceMetric struct {
 	Type      string
 	Image     string
 	Instances InstancesMetric
-	Stats     StatsMetric
-	Analytics AnalyticsMetric
-	Shared    SharedMetric
+	Stats     data.MetricData
+	Analytics data.AnalyticData
+	Shared    data.SharedData
 }
 
 type InstancesMetric struct {
@@ -30,28 +32,6 @@ type InstancesMetric struct {
 	Running int
 	Stopped int
 	Paused  int
-}
-
-type StatsMetric struct {
-	CpuAvg float64
-	CpuTot float64
-	MemAvg float64
-	MemTot float64
-}
-
-type AnalyticsMetric struct {
-	Cpu       float64
-	Memory    float64
-	Resources float64
-	Load      float64
-	Health    float64
-}
-
-type SharedMetric struct {
-	Cpu       float64
-	Memory    float64
-	Resources float64
-	Load      float64
 }
 
 type PolicyMetric struct {

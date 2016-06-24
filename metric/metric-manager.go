@@ -8,6 +8,7 @@ import (
 
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
+	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -118,17 +119,13 @@ func updateMetrics() {
 		if err != nil {
 			log.WithField("err", err).Warnln("Cannot update stats metrics")
 		} else {
-			if srv_stats, ok := stats.Service[name]; ok {
-				srv_metrics.Stats.CpuAvg = srv_stats.Cpu.Avg
-				srv_metrics.Stats.CpuTot = srv_stats.Cpu.Tot
-				srv_metrics.Stats.MemAvg = srv_stats.Memory.Avg
-				srv_metrics.Stats.MemTot = srv_stats.Memory.Tot
-
-				metrics.Node.Cpu = stats.System.Cpu
-				metrics.Node.Memory = 0.0 // TODO
+			if srv_stats, ok := stats.Metrics.Service[name]; ok {
+				srv_metrics.Stats = srv_stats
 			} else {
 				log.Warnln("Cannot find stats metrics for service ", name)
 			}
+
+			metrics.Node.Stats = stats.Metrics.System
 		}
 
 		analytics, err := data.GetAnalytics()
@@ -136,11 +133,7 @@ func updateMetrics() {
 			log.WithField("err", err).Warnln("Cannot update analytics metrics")
 		} else {
 			if srv_analytisc, ok := analytics.Service[name]; ok {
-				srv_metrics.Analytics.Cpu = srv_analytisc.Resources.Cpu
-				srv_metrics.Analytics.Memory = srv_analytisc.Resources.Memory
-				srv_metrics.Analytics.Resources = srv_analytisc.Resources.Available
-				srv_metrics.Analytics.Load = srv_analytisc.Load
-				srv_metrics.Analytics.Health = srv_analytisc.Health
+				srv_metrics.Analytics = srv_analytisc
 			} else {
 				log.Debugln("Cannot find analytics metrics for service ", name)
 			}
@@ -151,10 +144,7 @@ func updateMetrics() {
 			log.WithField("err", err).Warnln("Cannot update shared data metrics")
 		} else {
 			if srv_shared, ok := shared.Service[name]; ok {
-				srv_metrics.Shared.Cpu = srv_shared.Cpu
-				srv_metrics.Shared.Memory = srv_shared.Memory
-				srv_metrics.Shared.Load = srv_shared.Load
-				srv_metrics.Shared.Resources = srv_shared.Resources
+				srv_metrics.Shared = srv_shared.Data
 			}
 		}
 
@@ -172,24 +162,51 @@ func updateMetrics() {
 }
 
 func newMetrics() GruMetric {
-	new_metrics := GruMetric{Service: make(map[string]ServiceMetric)}
-	node_new := NodeMetrics{"", "", 0.0, 0.0, 1.0}
-	new_metrics.Node = node_new
-	for _, name := range service.List() {
-		service_new := ServiceMetric{}
-
-		stats_new := StatsMetric{0.0, 0.0, 0.0, 0.0}
-		service_new.Stats = stats_new
-
-		analytics_new := AnalyticsMetric{0.0, 0.0, 1.0, 0.0, 1.0}
-		service_new.Analytics = analytics_new
-
-		new_metrics.Service[name] = service_new
+	metricsEmpty := GruMetric{Service: make(map[string]ServiceMetric)}
+	metricDataEmpty := data.MetricData{
+		BaseMetrics: map[string]float64{
+			enum.METRIC_CPU_AVG.ToString(): 0.0,
+			enum.METRIC_MEM_AVG.ToString(): 0.0,
+		},
+		UserMetrics: map[string]float64{
+			"nodata": 0.0,
+		},
 	}
-	policy_new := PolicyMetric{Name: "noaction", Weight: 1.0}
-	new_metrics.Policy = policy_new
+	analyticsDataEmpty := data.AnalyticData{
+		BaseAnalytics: map[string]float64{
+			enum.METRIC_CPU_AVG.ToString(): 0.0,
+			enum.METRIC_MEM_AVG.ToString(): 0.0,
+		},
+		UserAnalytics: map[string]float64{
+			"nodata": 0.0,
+		},
+	}
+	sharedDataEmpty := data.SharedData{
+		BaseShared: map[string]float64{
+			enum.METRIC_CPU_AVG.ToString(): 0.0,
+			enum.METRIC_MEM_AVG.ToString(): 0.0,
+		},
+		UserShared: map[string]float64{
+			"nodata": 0.0,
+		},
+	}
 
-	return new_metrics
+	metricsEmpty.Node = NodeMetrics{
+		Stats: metricDataEmpty,
+	}
+
+	for _, name := range service.List() {
+		metricsEmpty.Service[name] = ServiceMetric{
+			Stats:     metricDataEmpty,
+			Analytics: analyticsDataEmpty,
+			Shared:    sharedDataEmpty,
+		}
+	}
+
+	policyEmpty := PolicyMetric{Name: "noaction", Weight: 1.0}
+	metricsEmpty.Policy = policyEmpty
+
+	return metricsEmpty
 }
 
 func storeMetrics(metrics GruMetric) error {
