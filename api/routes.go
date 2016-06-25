@@ -65,6 +65,13 @@ var routes = Routes{
 		GetStatsSystem,
 	},
 
+	Route{
+		"ServiceMetrics",
+		"POST",
+		"/gru/v1/stats/user/{service}/{metric}",
+		PostServiceMetrics,
+	},
+
 	//ANALYTICS
 	Route{
 		"AnalyticsNode",

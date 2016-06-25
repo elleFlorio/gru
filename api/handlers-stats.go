@@ -106,7 +106,7 @@ func GetStatsSystem(w http.ResponseWriter, r *http.Request) {
 }
 
 // /gru/v1/stats/user/{service}/{metric}
-func PostUpdateMetrics(w http.ResponseWriter, r *http.Request) {
+func PostServiceMetrics(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	service := vars["service"]
 	metric := vars["metric"]
@@ -116,8 +116,14 @@ func PostUpdateMetrics(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&userValue); err != nil {
-		//TODO
+		log.WithFields(log.Fields{
+			"status":  "http post",
+			"request": "PostUpdateMetrics",
+			"error":   err,
+		}).Errorln("API Server")
+		w.WriteHeader(http.StatusBadRequest)
 	} else {
 		mtr.UpdateUserMetric(service, metric, userValue.values)
+		w.WriteHeader(http.StatusOK)
 	}
 }

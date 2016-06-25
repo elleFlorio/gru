@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"math"
 	"strconv"
 	"strings"
 
@@ -29,6 +30,9 @@ func ComputeMetricAnalytics(service string, metrics map[string]float64) map[stri
 
 				metricAnalytics[expr] = 0.0
 			} else {
+				value := evaler.BigratToFloat(result)
+				value = math.Min(value, 1.0)
+				value = math.Max(value, 0.0)
 				metricAnalytics[expr] = evaler.BigratToFloat(result)
 			}
 		} else {
