@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/soniah/evaler"
+	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/soniah/evaler"
 
 	cfg "github.com/elleFlorio/gru/configuration"
 	srv "github.com/elleFlorio/gru/service"

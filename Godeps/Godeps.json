@@ -63,10 +63,6 @@
 			"Rev": "c7a0863371ea3f893eacd55b2f81444bb2cce3ed"
 		},
 		{
-			"ImportPath": "github.com/jbrukh/window",
-			"Rev": "b4044121a7425712565d73a2074304309e7ca2c7"
-		},
-		{
 			"ImportPath": "github.com/peterh/liner",
 			"Rev": "4d47685ab2fd2dbb46c66b831344d558bc4be5b9"
 		},
@@ -77,6 +73,11 @@
 		{
 			"ImportPath": "github.com/samalba/dockerclient",
 			"Rev": "f274bbd0e2eb35ad1444dc6e6660214f9fbbc08c"
+		},
+		{
+			"ImportPath": "github.com/soniah/evaler",
+			"Comment": "v1.0-10-g5fddf0c",
+			"Rev": "5fddf0c45aa167a5a343d4fc28e889c058e29da7"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
