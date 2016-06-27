@@ -76,6 +76,7 @@ func initiailizeMonitoring() {
 	defer log.Infoln("Initializing autonomic monitoring")
 	ch_aut_err := chn.GetAutonomicErrChannel()
 	enableLogReading = cfg.GetAgentAutonomic().EnableLogReading
+	mtr.Initialize(srv.List())
 
 	// Start log reader if needed
 	if enableLogReading {
@@ -110,6 +111,13 @@ func initiailizeMonitoring() {
 
 			evt.HandleCreateEvent(e)
 			evt.HanldeStartEvent(e)
+			mtr.AddInstance(c.Id)
+			if _, ok := instBuffer[c.Id]; !ok {
+				instBuffer[c.Id] = instanceMetricBuffer{
+					cpuInst: utils.BuildBuffer(c_B_SIZE),
+					cpuSys:  utils.BuildBuffer(c_B_SIZE),
+				}
+			}
 			container.Docker().Client.StartMonitorStats(c.Id, statCallBack, ch_mnt_stats_err)
 			if status == enum.PENDING && enableLogReading {
 				startMonitorLog(c.Id)
@@ -188,6 +196,7 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 		}
 		e.Status = enum.PENDING
 		evt.HanldeStartEvent(e)
+		mtr.AddInstance(e.Instance)
 		if enableLogReading {
 			startMonitorLog(event.ID)
 		}
@@ -198,6 +207,7 @@ func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}
 	case "die":
 		log.WithField("image", e.Image).Debugln("Received die signal")
 		delete(instBuffer, e.Instance)
+		mtr.RemoveInstance(e.Instance)
 		evt.HandleStopEvent(e)
 	case "destroy":
 		log.WithField("id", e.Instance).Debugln("Received destroy signal")
@@ -225,12 +235,15 @@ func startMonitorLog(id string) {
 }
 
 func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...interface{}) {
+
 	metricBuffer := instBuffer[id]
 	cpuInst := float64(stats.CpuStats.CpuUsage.TotalUsage)
 	cpuSys := float64(stats.CpuStats.SystemUsage)
 
 	toAddInst := metricBuffer.cpuInst.PushValue(cpuInst)
 	toAddSys := metricBuffer.cpuSys.PushValue(cpuSys)
+
+	instBuffer[id] = metricBuffer
 
 	if toAddInst != nil && toAddSys != nil {
 		mtr.UpdateCpuMetric(id, toAddInst, toAddSys)

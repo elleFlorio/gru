@@ -68,7 +68,10 @@ func computeSharedData(analytics data.GruAnalytics) data.Shared {
 }
 
 func computeLocaShared(analytics data.GruAnalytics) data.Shared {
-	local := data.Shared{}
+	local := data.Shared{
+		Service: make(map[string]data.ServiceShared),
+	}
+
 	srvActive := []string{}
 	for name, values := range analytics.Service {
 		srvShared := data.ServiceShared{}

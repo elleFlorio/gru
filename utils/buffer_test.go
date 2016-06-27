@@ -13,8 +13,10 @@ func TestPushValue(t *testing.T) {
 
 	b = BuildBuffer(10)
 	res = b.PushValue(value)
+	res = b.PushValue(value)
+	res = b.PushValue(value)
 	assert.Nil(t, res)
-	assert.Len(t, b.values, 1)
+	assert.Len(t, b.values, 3)
 
 	b = BuildBuffer(1)
 	res = b.PushValue(value)

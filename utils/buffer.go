@@ -26,6 +26,7 @@ func (b *Buffer) PushValue(value float64) []float64 {
 
 // return values if full
 func (b *Buffer) PushValues(values []float64) []float64 {
+
 	free := b.capacity - len(b.values)
 
 	if len(values) < free {

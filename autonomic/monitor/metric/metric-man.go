@@ -117,20 +117,16 @@ func updateMetric(target string, metricType enum.MetricType, metric string, toAd
 			}).Errorln("Cannot update service metric: unknown service")
 		}
 	}
-
-	log.WithFields(log.Fields{
-		"target":      target,
-		"metric-type": metricType.ToString(),
-		"metric":      metric,
-		"values":      toAdd,
-	}).Debugln("Updated metric")
 }
 
 func computeMetrics() data.MetricStats {
 	metrics := data.MetricStats{}
 	instMetrics := computeInstancesMetrics()
+	log.WithField("instMetrics", instMetrics).Debugln("Computed instances metrics")
 	servMetrics := computeServicesMetrics(instMetrics)
+	log.WithField("servMetrics", servMetrics).Debugln("Computed service metrics")
 	sysMetrics := computeSysMetrics(servMetrics)
+	log.WithField("sysMetrics", sysMetrics).Debugln("Computed system metrics")
 
 	metrics.Instance = instMetrics
 	metrics.Service = servMetrics

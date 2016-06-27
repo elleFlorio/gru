@@ -104,7 +104,7 @@ func updateMetrics() {
 
 	for _, name := range service.List() {
 		srv, _ := service.GetServiceByName(name)
-		srv_metrics := ServiceMetric{}
+		srv_metrics := metrics.Service[name]
 		srv_metrics.Name = name
 		srv_metrics.Image = srv.Image
 		srv_metrics.Type = srv.Type
