@@ -43,6 +43,8 @@ func AddInstance(id string) {
 	instancesMetrics[id] = Metric{
 		BaseMetrics: make(map[string][]float64),
 	}
+
+	log.WithField("id", id).Debugln("Added instance to metric collector")
 }
 
 func RemoveInstance(id string) {
@@ -50,6 +52,8 @@ func RemoveInstance(id string) {
 
 	mutex_instMet.Lock()
 	delete(instancesMetrics, id)
+
+	log.WithField("id", id).Debugln("Removed instance from metric collector")
 }
 
 func UpdateCpuMetric(id string, toAddInst []float64, toAddSys []float64) {
@@ -113,6 +117,13 @@ func updateMetric(target string, metricType enum.MetricType, metric string, toAd
 			}).Errorln("Cannot update service metric: unknown service")
 		}
 	}
+
+	log.WithFields(log.Fields{
+		"target":      target,
+		"metric-type": metricType.ToString(),
+		"metric":      metric,
+		"values":      toAdd,
+	}).Debugln("Updated metric")
 }
 
 func computeMetrics() data.MetricStats {

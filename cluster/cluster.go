@@ -16,6 +16,7 @@ const c_GRU_REMOTE = "/gru/"
 const c_NODES_REMOTE = "nodes/"
 const c_CONFIG_REMOTE = "config/"
 const c_SERVICES_REMOTE = "services/"
+const c_EXPR_REMOTE = "expressions/"
 const c_TTL = 5
 
 type Cluster struct {
@@ -57,6 +58,12 @@ func RegisterCluster(name string, id string) {
 		log.Errorln("Error creating config key")
 	}
 	log.Debugln("Created config key")
+
+	err = discovery.Set(c_GRU_REMOTE+name+"/"+c_EXPR_REMOTE, "", opt)
+	if err != nil {
+		log.Errorln("Error creating expressions folder")
+	}
+	log.Debugln("Created expressions folder")
 }
 
 func JoinCluster(name string) error {

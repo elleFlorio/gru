@@ -20,6 +20,7 @@ func ComputeMetricAnalytics(service string, metrics map[string]float64) map[stri
 
 	for _, expr := range srvExprList {
 		if curExpr, ok := expressions[expr]; ok {
+			log.WithField("expr", expr).Debugln("Evaluating expression")
 			toEval := buildExpression(curExpr, metrics, srvConstraints)
 			result, err := evaler.Eval(toEval)
 			if err != nil {
@@ -35,6 +36,13 @@ func ComputeMetricAnalytics(service string, metrics map[string]float64) map[stri
 				value = math.Max(value, 0.0)
 				metricAnalytics[expr] = evaler.BigratToFloat(result)
 			}
+
+			log.WithFields(log.Fields{
+				"service": service,
+				"expr":    expr,
+				"value":   metricAnalytics[expr],
+			}).Debugln("Expression evaluated")
+
 		} else {
 			log.WithField("expr", expr).Errorln("Cannot compute expression: expression unknown")
 		}

@@ -25,6 +25,7 @@ const c_GRU_REMOTE = "/gru/"
 const c_CONFIG_REMOTE = "config"
 const c_SERVICES_REMOTE = "services"
 const c_POLICY_REMOTE = "policy"
+const c_EXPR_REMOTE = "expressions"
 
 func join(c *cli.Context) {
 	var clusterName string
@@ -46,6 +47,7 @@ func join(c *cli.Context) {
 	initializeAgent(clusterName)
 	initializeServices(clusterName)
 	initializePolicy(clusterName)
+	initializeExpressions(clusterName)
 	// Core agent services
 	initializeStorage()
 	initializeMetricSerivice()
@@ -95,6 +97,13 @@ func initializePolicy(clusterName string) {
 	policy := cfg.ReadPolicyConfig(remote)
 	cfg.SetPolicy(policy)
 	log.WithField("Policy", policy).Debugln("Policy read from remote")
+}
+
+func initializeExpressions(clusterName string) {
+	remote := c_GRU_REMOTE + clusterName + "/" + c_EXPR_REMOTE
+	expressions := cfg.ReadExpressions(remote)
+	cfg.SetExpr(expressions)
+	log.WithField("exprs", expressions).Debugln("Expressions read from remote")
 }
 
 func initializeStorage() {

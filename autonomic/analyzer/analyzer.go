@@ -19,7 +19,6 @@ func init() {
 	analytics = data.GruAnalytics{}
 }
 
-// TODO - What if I have no stats?
 func Run(stats data.GruStats) data.Shared {
 	log.WithField("status", "init").Debugln("Gru Monitor")
 	defer log.WithField("status", "done").Debugln("Gru Monitor")

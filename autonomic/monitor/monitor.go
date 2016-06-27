@@ -73,13 +73,14 @@ func Run() data.GruStats {
 }
 
 func initiailizeMonitoring() {
-	log.Debugln("Running autonomic monitoring")
+	defer log.Infoln("Initializing autonomic monitoring")
 	ch_aut_err := chn.GetAutonomicErrChannel()
 	enableLogReading = cfg.GetAgentAutonomic().EnableLogReading
 
 	// Start log reader if needed
 	if enableLogReading {
 		lgr.StartLogReader()
+		log.WithField("logreader", enableLogReading).Debugln("Log reading is enabled")
 	}
 
 	// Get the list of containers (running or not) to monitor
@@ -118,7 +119,7 @@ func initiailizeMonitoring() {
 }
 
 func startMonitoring() {
-	log.Debugln("Running autonomic monitoring")
+	log.Infoln("Running autonomic monitoring")
 	ch_aut_err := chn.GetAutonomicErrChannel()
 
 	container.Docker().Client.StartMonitorEvents(eventCallback, ch_mnt_events_err)
