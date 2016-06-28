@@ -80,6 +80,7 @@ func initiailizeMonitoring() {
 
 	// Start log reader if needed
 	if enableLogReading {
+		lgr.Initialize(srv.List())
 		lgr.StartLogReader()
 		log.WithField("logreader", enableLogReading).Debugln("Log reading is enabled")
 	}
