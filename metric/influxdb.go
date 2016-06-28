@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"errors"
 	"time"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
@@ -79,55 +80,69 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 	nodePoint, err := createInfluxNode(metrics.Node)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error creating node metrics")
-		return points, err
+	} else {
+		points = append(points, nodePoint)
 	}
-	points = append(points, nodePoint)
 
 	for _, service := range metrics.Service {
 		log.WithField("service", service.Name).Debugln("Computing influx metrics of service")
 		statusPoint, err := createInfluxInstanceStatus(nodeName, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating instance status metrics for Service ", service.Name)
-			return points, err
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": service,
+			}).Warnln("Error creating instance status metrics")
+		} else {
+			points = append(points, statusPoint)
 		}
-		points = append(points, statusPoint)
 
 		cpuPoint, err := createInfluxCpuService(nodeName, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating cpu metrics for Service ", service.Name)
-			return points, err
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": service,
+			}).Warnln("Error creating cpu metrics")
+		} else {
+			points = append(points, cpuPoint)
 		}
-		points = append(points, cpuPoint)
 
 		memPoint, err := createInfluxMemService(nodeName, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating memory metrics for Service ", service.Name)
-			return points, err
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": service,
+			}).Warnln("Error creating memory metrics")
+		} else {
+			points = append(points, memPoint)
 		}
-		points = append(points, memPoint)
 
 		userStatsPoints, err := createInfluxUserStatsService(nodeName, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating user stats metrics for Service ", service.Name)
-			return points, err
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": service,
+			}).Warnln("Error creating user stats metrics")
+		} else {
+			points = append(points, userStatsPoints)
 		}
-		points = append(points, userStatsPoints)
 
 		userAnalyticsPoints, err := createInfluxUserAnalyticsService(nodeName, service)
 		if err != nil {
-			log.WithField("err", err).Errorln("Error creating user analytics metrics for Service ", service.Name)
-			return points, err
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": service,
+			}).Warnln("Error creating user analytics metrics")
+		} else {
+			points = append(points, userAnalyticsPoints)
 		}
-		points = append(points, userAnalyticsPoints)
-
 	}
 
 	policyPoint, err := createInfluxPolicy(nodeName, metrics.Policy)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error creating policy metrics")
-		return points, err
+	} else {
+		points = append(points, policyPoint)
 	}
-	points = append(points, policyPoint)
 
 	return points, nil
 }
@@ -235,6 +250,10 @@ func createInfluxUserStatsService(nodeName string, service ServiceMetric) (*clie
 		fields[metric] = value
 	}
 
+	if len(fields) == 0 {
+		return nil, errors.New("No user stats")
+	}
+
 	point, err := client.NewPoint("user_stat_service", tags, fields, time.Now())
 	if err != nil {
 		return nil, err
@@ -253,8 +272,13 @@ func createInfluxUserAnalyticsService(nodeName string, service ServiceMetric) (*
 		"service_image": service.Image,
 	}
 	fields := make(map[string]interface{}, len(service.Analytics.UserAnalytics))
-	for metric, value := range service.Analytics.UserAnalytics {
-		fields[metric] = value
+
+	for analytic, value := range service.Analytics.UserAnalytics {
+		fields[analytic] = value
+	}
+
+	if len(fields) == 0 {
+		return nil, errors.New("No user analytic")
 	}
 
 	point, err := client.NewPoint("user_analytics_service", tags, fields, time.Now())

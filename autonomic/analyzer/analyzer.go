@@ -11,28 +11,31 @@ import (
 )
 
 var (
-	analytics             data.GruAnalytics
 	ErrNoRunningInstances error = errors.New("No active instance to analyze")
 )
 
-func init() {
-	analytics = data.GruAnalytics{}
-}
-
 func Run(stats data.GruStats) data.Shared {
-	log.WithField("status", "init").Debugln("Gru Monitor")
-	defer log.WithField("status", "done").Debugln("Gru Monitor")
+	log.WithField("status", "init").Debugln("Gru Analyzer")
+	defer log.WithField("status", "done").Debugln("Gru Analyzer")
 
 	if len(stats.Metrics.Service) == 0 {
 		log.Debugln("No stats to compute")
 		return data.Shared{}
 	}
 
-	analytics.Service = computeServicesAnalytics(stats.Metrics.Service)
-	analytics.System = computeSystemAnalytics(stats.Metrics.System)
+	analytics := computeAnalyticsData(stats.Metrics)
 	shared := computeSharedData(analytics)
 
 	return shared
+}
+
+func computeAnalyticsData(stats data.MetricStats) data.GruAnalytics {
+	analytics := data.GruAnalytics{}
+	analytics.Service = computeServicesAnalytics(stats.Service)
+	analytics.System = computeSystemAnalytics(stats.System)
+	data.SaveAnalytics(analytics)
+
+	return analytics
 }
 
 func computeServicesAnalytics(servStats map[string]data.MetricData) map[string]data.AnalyticData {

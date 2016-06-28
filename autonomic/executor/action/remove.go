@@ -58,4 +58,5 @@ func (p *Remove) Run(config Action) error {
 func waitForRemoval() {
 	log.Debugln("Waiting for removal confirmation...")
 	<-ch.GetRemovalChannel()
+	log.Debugln("Remove complete")
 }

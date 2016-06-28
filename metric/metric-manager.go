@@ -117,7 +117,10 @@ func updateMetrics() {
 
 		stats, err := data.GetStats()
 		if err != nil {
-			log.WithField("err", err).Warnln("Cannot update stats metrics")
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": name,
+			}).Warnln("Cannot update stats metrics")
 		} else {
 			if srv_stats, ok := stats.Metrics.Service[name]; ok {
 				srv_metrics.Stats = srv_stats
@@ -130,7 +133,10 @@ func updateMetrics() {
 
 		analytics, err := data.GetAnalytics()
 		if err != nil {
-			log.WithField("err", err).Warnln("Cannot update analytics metrics")
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": name,
+			}).Warnln("Cannot update analytics metrics")
 		} else {
 			if srv_analytisc, ok := analytics.Service[name]; ok {
 				srv_metrics.Analytics = srv_analytisc
@@ -141,7 +147,10 @@ func updateMetrics() {
 
 		shared, err := data.GetSharedCluster()
 		if err != nil {
-			log.WithField("err", err).Warnln("Cannot update shared data metrics")
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": name,
+			}).Warnln("Cannot update shared data metrics")
 		} else {
 			if srv_shared, ok := shared.Service[name]; ok {
 				srv_metrics.Shared = srv_shared.Data
@@ -168,27 +177,21 @@ func newMetrics() GruMetric {
 			enum.METRIC_CPU_AVG.ToString(): 0.0,
 			enum.METRIC_MEM_AVG.ToString(): 0.0,
 		},
-		UserMetrics: map[string]float64{
-			"nodata": 0.0,
-		},
+		UserMetrics: map[string]float64{},
 	}
 	analyticsDataEmpty := data.AnalyticData{
 		BaseAnalytics: map[string]float64{
 			enum.METRIC_CPU_AVG.ToString(): 0.0,
 			enum.METRIC_MEM_AVG.ToString(): 0.0,
 		},
-		UserAnalytics: map[string]float64{
-			"nodata": 0.0,
-		},
+		UserAnalytics: map[string]float64{},
 	}
 	sharedDataEmpty := data.SharedData{
 		BaseShared: map[string]float64{
 			enum.METRIC_CPU_AVG.ToString(): 0.0,
 			enum.METRIC_MEM_AVG.ToString(): 0.0,
 		},
-		UserShared: map[string]float64{
-			"nodata": 0.0,
-		},
+		UserShared: map[string]float64{},
 	}
 
 	metricsEmpty.Node = NodeMetrics{

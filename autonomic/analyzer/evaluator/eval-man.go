@@ -27,7 +27,7 @@ func ComputeMetricAnalytics(service string, metrics map[string]float64) map[stri
 				log.WithFields(log.Fields{
 					"err":  err,
 					"expr": toEval,
-				}).Errorln("Error evaluating expression")
+				}).Warnln("Error evaluating expression")
 
 				metricAnalytics[expr] = 0.0
 			} else {
@@ -58,7 +58,7 @@ func buildExpression(expr cfg.Expression, metrics map[string]float64, constraint
 		if value, ok := metrics[metric]; ok {
 			toBuild = strings.Replace(toBuild, metric, strconv.FormatFloat(value, 'f', -1, 64), -1)
 		} else {
-			log.WithField("metric", metric).Errorln("Cannot build expression: metric unknown")
+			log.WithField("metric", metric).Debugln("Cannot build expression: metric unknown")
 			return "noexp"
 		}
 
@@ -68,7 +68,7 @@ func buildExpression(expr cfg.Expression, metrics map[string]float64, constraint
 		if value, ok := constraints[constraint]; ok {
 			toBuild = strings.Replace(toBuild, constraint, strconv.FormatFloat(value, 'f', -1, 64), -1)
 		} else {
-			log.WithField("constraint", constraint).Errorln("Cannot build expression: constraint unknown")
+			log.WithField("constraint", constraint).Debugln("Cannot build expression: constraint unknown")
 			return "noexp"
 		}
 
