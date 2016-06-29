@@ -125,7 +125,7 @@ func computeMetrics() data.MetricStats {
 	log.WithField("instMetrics", instMetrics).Debugln("Computed instances metrics")
 	servMetrics := computeServicesMetrics(instMetrics)
 	log.WithField("servMetrics", servMetrics).Debugln("Computed service metrics")
-	sysMetrics := computeSysMetrics(servMetrics)
+	sysMetrics := computeSysMetrics(instMetrics)
 	log.WithField("sysMetrics", sysMetrics).Debugln("Computed system metrics")
 
 	metrics.Instance = instMetrics
@@ -140,9 +140,10 @@ func computeInstancesMetrics() map[string]data.MetricData {
 
 	mutex_instMet.RLock()
 	instMetrics := make(map[string]data.MetricData)
-	baseMetrics := make(map[string]float64)
 
 	for instance, metrics := range instancesMetrics {
+		baseMetrics := make(map[string]float64)
+
 		// CPU
 		instCpus := metrics.BaseMetrics[enum.METRIC_CPU_INST.ToString()]
 		sysCpus := metrics.BaseMetrics[enum.METRIC_CPU_SYS.ToString()]
@@ -250,20 +251,47 @@ func computeServiceCpuPerc(name string, instMetrics map[string]data.MetricData) 
 	return utils.Mean(values)
 }
 
-func computeSysMetrics(servMetrics map[string]data.MetricData) data.MetricData {
+// DEPRECATED
+// func computeSysMetrics(servMetrics map[string]data.MetricData) data.MetricData {
+// 	// TODO - improve by adding capacity
+// 	baseMetrics := make(map[string]float64)
+// 	cpuSys := make([]float64, 0, len(servMetrics))
+// 	memSys := make([]float64, 0, len(servMetrics))
+// 	for _, metrics := range servMetrics {
+// 		// CPU
+// 		cpuSys = append(cpuSys, metrics.BaseMetrics[enum.METRIC_CPU_AVG.ToString()])
+
+// 		// MEM
+// 		// TODO
+// 	}
+
+// 	baseMetrics[enum.METRIC_CPU_AVG.ToString()] = utils.Mean(cpuSys)
+// 	baseMetrics[enum.METRIC_MEM_AVG.ToString()] = utils.Mean(memSys)
+// 	sysMetrics := data.MetricData{
+// 		BaseMetrics: baseMetrics,
+// 	}
+
+// 	return sysMetrics
+
+// }
+
+func computeSysMetrics(instMetrics map[string]data.MetricData) data.MetricData {
 	// TODO - improve by adding capacity
 	baseMetrics := make(map[string]float64)
-	cpuSys := make([]float64, 0, len(servMetrics))
-	memSys := make([]float64, 0, len(servMetrics))
-	for _, metrics := range servMetrics {
+	cpuSys := 0.0
+	memSys := make([]float64, 0, len(instMetrics))
+	for instance, metrics := range instMetrics {
+		service, _ := srv.GetServiceById(instance)
+		instCpus := service.Docker.CPUnumber
+		instCpuValue := metrics.BaseMetrics[enum.METRIC_CPU_AVG.ToString()] * float64(instCpus)
 		// CPU
-		cpuSys = append(cpuSys, metrics.BaseMetrics[enum.METRIC_CPU_AVG.ToString()])
+		cpuSys += instCpuValue
 
 		// MEM
 		// TODO
 	}
 
-	baseMetrics[enum.METRIC_CPU_AVG.ToString()] = utils.Mean(cpuSys)
+	baseMetrics[enum.METRIC_CPU_AVG.ToString()] = cpuSys / float64(res.GetResources().CPU.Total)
 	baseMetrics[enum.METRIC_MEM_AVG.ToString()] = utils.Mean(memSys)
 	sysMetrics := data.MetricData{
 		BaseMetrics: baseMetrics,

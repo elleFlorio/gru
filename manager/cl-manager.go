@@ -1,6 +1,6 @@
 package manager
 
-// This wa inspired by the command line client of influxdb:
+// This was inspired by the command line client of influxdb:
 // https://github.com/influxdb/influxdb/blob/master/cmd/influx/cli/cli.go
 
 import (

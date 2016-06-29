@@ -18,10 +18,13 @@ func CreateMockServices() []cfg.Service {
 		Paused:  paused1,
 	}
 	service1 := cfg.Service{
-		Name:        "service1",
-		Type:        "webserver",
-		Image:       "test/tomcat",
-		Instances:   instances1,
+		Name:      "service1",
+		Type:      "webserver",
+		Image:     "test/tomcat",
+		Instances: instances1,
+		Docker: cfg.ServiceDocker{
+			CPUnumber: 1,
+		},
 		Expressions: []string{"expr1"},
 		Constraints: map[string]float64{
 			"MAX_RESP_TIME": 2000,
@@ -35,10 +38,13 @@ func CreateMockServices() []cfg.Service {
 		Running: running2,
 	}
 	service2 := cfg.Service{
-		Name:        "service2",
-		Type:        "webserver",
-		Image:       "test/jetty",
-		Instances:   instances2,
+		Name:      "service2",
+		Type:      "webserver",
+		Image:     "test/jetty",
+		Instances: instances2,
+		Docker: cfg.ServiceDocker{
+			CPUnumber: 2,
+		},
 		Expressions: []string{"expr2"},
 		Constraints: map[string]float64{
 			"MAX_RESP_TIME": 6000,
