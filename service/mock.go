@@ -25,7 +25,7 @@ func CreateMockServices() []cfg.Service {
 		Docker: cfg.ServiceDocker{
 			CPUnumber: 1,
 		},
-		Expressions: []string{"expr1"},
+		Analytics: []string{"expr1"},
 		Constraints: map[string]float64{
 			"MAX_RESP_TIME": 2000,
 		},
@@ -45,17 +45,17 @@ func CreateMockServices() []cfg.Service {
 		Docker: cfg.ServiceDocker{
 			CPUnumber: 2,
 		},
-		Expressions: []string{"expr2"},
+		Analytics: []string{"expr2"},
 		Constraints: map[string]float64{
 			"MAX_RESP_TIME": 6000,
 		},
 	}
 
 	service3 := cfg.Service{
-		Name:        "service3",
-		Type:        "database",
-		Image:       "test/mysql",
-		Expressions: []string{"expr3"},
+		Name:      "service3",
+		Type:      "database",
+		Image:     "test/mysql",
+		Analytics: []string{"expr3"},
 		Constraints: map[string]float64{
 			"MAX_RESP_TIME": 1000,
 		},

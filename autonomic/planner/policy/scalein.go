@@ -61,7 +61,7 @@ func (p *scaleinCreator) computeWeight(name string, clusterData data.Shared) flo
 		return 0.0
 	}
 
-	analytics := srv.GetServiceExpressionsList(name)
+	analytics := srv.GetServiceAnalyticsExprList(name)
 	threshold := cfg.GetPolicy().Scalein.Threshold
 	weights := []float64{}
 

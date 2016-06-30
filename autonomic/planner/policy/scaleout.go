@@ -62,7 +62,7 @@ func (p *scaleoutCreator) computeWeight(name string, clusterData data.Shared) fl
 		}
 	}
 
-	analytics := srv.GetServiceExpressionsList(name)
+	analytics := srv.GetServiceAnalyticsExprList(name)
 	threshold := cfg.GetPolicy().Scaleout.Threshold
 	weights := []float64{}
 

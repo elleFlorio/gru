@@ -135,6 +135,16 @@ func createInfluxMetrics(metrics GruMetric) ([]*client.Point, error) {
 		} else {
 			points = append(points, userAnalyticsPoints)
 		}
+
+		userSharedPoints, err := createInfluxUserSharedService(nodeName, service)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"err":     err,
+				"service": service,
+			}).Warnln("Error creating user shared metrics")
+		} else {
+			points = append(points, userSharedPoints)
+		}
 	}
 
 	policyPoint, err := createInfluxPolicy(nodeName, metrics.Policy)
@@ -287,6 +297,33 @@ func createInfluxUserAnalyticsService(nodeName string, service ServiceMetric) (*
 	}
 
 	log.WithField("series", "user_analytics_service").Debugln("Created influx metrics")
+
+	return point, nil
+}
+
+func createInfluxUserSharedService(nodeName string, service ServiceMetric) (*client.Point, error) {
+	tags := map[string]string{
+		"node":          nodeName,
+		"service_name":  service.Name,
+		"service_type":  service.Type,
+		"service_image": service.Image,
+	}
+	fields := make(map[string]interface{}, len(service.Shared.UserShared))
+
+	for shared, value := range service.Shared.UserShared {
+		fields[shared] = value
+	}
+
+	if len(fields) == 0 {
+		return nil, errors.New("No user analytic")
+	}
+
+	point, err := client.NewPoint("user_shared_service", tags, fields, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	log.WithField("series", "user_shared_service").Debugln("Created influx metrics")
 
 	return point, nil
 }

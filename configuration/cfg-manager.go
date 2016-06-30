@@ -20,11 +20,11 @@ var (
 	node        Node
 	services    []Service = []Service{}
 	policy      Policy
-	expressions map[string]Expression
+	expressions map[string]AnalyticExpr
 )
 
 func init() {
-	expressions = make(map[string]Expression)
+	expressions = make(map[string]AnalyticExpr)
 }
 
 func SetAgent(cfg Agent) {
@@ -165,10 +165,10 @@ func GetPolicy() *Policy {
 	return &policy
 }
 
-func SetExpr(cfg map[string]Expression) {
+func SetAnalyticExpr(cfg map[string]AnalyticExpr) {
 	expressions = cfg
 }
 
-func GetExpr() map[string]Expression {
+func GetAnalyticExpr() map[string]AnalyticExpr {
 	return expressions
 }

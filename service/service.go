@@ -140,6 +140,10 @@ func AddServiceInstance(name string, instance string, status enum.Status) error 
 }
 
 func ChangeServiceInstanceStatus(name string, instance string, prev enum.Status, upd enum.Status) error {
+	if prev == upd {
+		return nil
+	}
+
 	service, err := getServiceBy("name", name)
 	if err != nil {
 		log.WithField("service", name).Errorln("Cannot change service instance status: service unknown")
@@ -247,14 +251,14 @@ func IsServiceActive(service string) bool {
 	return (len(srv.Instances.Pending) + len(srv.Instances.Running)) > 0
 }
 
-func GetServiceExpressionsList(service string) []string {
+func GetServiceAnalyticsExprList(service string) []string {
 	srv, err := getServiceBy("name", service)
 	if err != nil {
 		log.WithField("service", service).Errorln("Cannot return service expressions: unknown service")
 		return []string{}
 	}
 
-	return srv.Expressions
+	return srv.Analytics
 }
 
 func GetServiceConstraints(service string) map[string]float64 {

@@ -86,3 +86,7 @@ func GetInstanceChannel(id string) (chan struct{}, error) {
 
 	return nil, errors.New("Cannot find channel for such instance")
 }
+
+func RemoveInstanceChannel(id string) {
+	delete(ch_instances, id)
+}

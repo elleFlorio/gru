@@ -77,31 +77,31 @@ func TestComputeSystemAnalytics(t *testing.T) {
 }
 
 func setMockExpressions() {
-	expr1 := cfg.Expression{
-		Analytic: "expr1",
-		Expr:     "(M1 + M2) / 2",
-		Metrics:  []string{"M1", "M2"},
+	expr1 := cfg.AnalyticExpr{
+		Name:    "expr1",
+		Expr:    "(M1 + M2) / 2",
+		Metrics: []string{"M1", "M2"},
 	}
-	expr2 := cfg.Expression{
-		Analytic:    "expr2",
+	expr2 := cfg.AnalyticExpr{
+		Name:        "expr2",
 		Expr:        "M1 / C1 + M2 / C2",
 		Metrics:     []string{"M1", "M2"},
 		Constraints: []string{"C1", "C2"},
 	}
-	expr3 := cfg.Expression{
-		Analytic:    "expr3",
+	expr3 := cfg.AnalyticExpr{
+		Name:        "expr3",
 		Expr:        "M1 * C1 + M3 / C3",
 		Metrics:     []string{"M1", "M3"},
 		Constraints: []string{"C1", "C3"},
 	}
 
-	expressions := map[string]cfg.Expression{
+	expressions := map[string]cfg.AnalyticExpr{
 		"expr1": expr1,
 		"expr2": expr2,
 		"expr3": expr3,
 	}
 
-	cfg.SetExpr(expressions)
+	cfg.SetAnalyticExpr(expressions)
 }
 
 // func TestAnalyzeServices(t *testing.T) {

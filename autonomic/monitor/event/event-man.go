@@ -107,19 +107,27 @@ func promotePendingToRunning(name string, instance string) {
 }
 
 func stopInstance(name string, instance string) {
+	log.Debugln("Changing instance status to stop...")
 	status := srv.GetServiceInstanceStatus(name, instance)
+	if status == enum.STOPPED {
+		log.Debugln("Instance already stopped")
+		return
+	}
+
 	err := srv.ChangeServiceInstanceStatus(name, instance, status, enum.STOPPED)
 	if err != nil {
 		log.WithField("err", err).Errorln("Cannot stop service instance")
 		return
 	}
 
+	log.Debugln("Updating events...")
 	evt_mutex.Lock()
 	srvEvents := events.Service[name]
 	srvEvents.Stop = append(srvEvents.Stop, instance)
 	events.Service[name] = srvEvents
 	evt_mutex.Unlock()
 
+	log.Debugln("Unregistering instance...")
 	srv.UnregisterServiceInstance(name, instance)
 
 	log.WithFields(log.Fields{
@@ -145,8 +153,11 @@ func removeInstance(name string, instance string) {
 }
 
 func notifyRemoval() {
+	log.Debugln("Checking removal notification...")
 	if chn.NeedsRemovalNotification() {
+		log.Debugln("Needs removal notification. Sending message...")
 		chn.GetRemovalChannel() <- struct{}{}
+		log.Debugln("Removal notified")
 		chn.SetRemovalNotification(false)
 	}
 }

@@ -7,7 +7,7 @@ type Service struct {
 	Remote        string             `json:"remote"`
 	DiscoveryPort string             `json:"discoveryport"`
 	Instances     ServiceStatus      `json:"instances"`
-	Expressions   []string           `json:"expressions"`
+	Analytics     []string           `json:"analytics"`
 	Constraints   map[string]float64 `json:"constraints"`
 	Docker        ServiceDocker      `json:"configuration"`
 }

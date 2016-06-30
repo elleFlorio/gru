@@ -105,7 +105,7 @@ func (p *swapCreator) computeWeight(running string, candidate string, clusterDat
 	candShared := clusterData.Service[candidate]
 	threshold := cfg.GetPolicy().Swap.Threshold
 	weights := []float64{}
-	analytics := srv.GetServiceExpressionsList(running)
+	analytics := srv.GetServiceAnalyticsExprList(running)
 
 	for analytic, value := range runShared.Data.BaseShared {
 		delta := candShared.Data.BaseShared[analytic] - value

@@ -13,8 +13,8 @@ import (
 )
 
 func ComputeMetricAnalytics(service string, metrics map[string]float64) map[string]float64 {
-	expressions := cfg.GetExpr()
-	srvExprList := srv.GetServiceExpressionsList(service)
+	expressions := cfg.GetAnalyticExpr()
+	srvExprList := srv.GetServiceAnalyticsExprList(service)
 	srvConstraints := srv.GetServiceConstraints(service)
 	metricAnalytics := make(map[string]float64, len(expressions))
 
@@ -51,7 +51,7 @@ func ComputeMetricAnalytics(service string, metrics map[string]float64) map[stri
 	return metricAnalytics
 }
 
-func buildExpression(expr cfg.Expression, metrics map[string]float64, constraints map[string]float64) string {
+func buildExpression(expr cfg.AnalyticExpr, metrics map[string]float64, constraints map[string]float64) string {
 	toBuild := expr.Expr
 
 	for _, metric := range expr.Metrics {

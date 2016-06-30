@@ -93,6 +93,7 @@ func keepAlive(name string, id string) {
 				}).Errorln("Error keeping instance alive")
 			}
 		case <-ch_stop:
+			log.Debugln("Stopping keep alive routine")
 			return
 		}
 	}
@@ -112,4 +113,5 @@ func UnregisterServiceInstance(name string, id string) {
 		return
 	}
 	ch_stop <- struct{}{}
+	ch.RemoveInstanceChannel(id)
 }

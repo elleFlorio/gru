@@ -102,7 +102,7 @@ func initializePolicy(clusterName string) {
 func initializeExpressions(clusterName string) {
 	remote := c_GRU_REMOTE + clusterName + "/" + c_EXPR_REMOTE
 	expressions := cfg.ReadExpressions(remote)
-	cfg.SetExpr(expressions)
+	cfg.SetAnalyticExpr(expressions)
 	log.WithField("exprs", expressions).Debugln("Expressions read from remote")
 }
 

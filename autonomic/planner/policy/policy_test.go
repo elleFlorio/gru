@@ -142,29 +142,29 @@ func createServices() []cfg.Service {
 	srv1.Name = "service1"
 	srv1.Instances.Running = []string{"instance1_1"}
 	srv1.Docker.CPUnumber = 2
-	srv1.Expressions = []string{"LOAD"}
+	srv1.Analytics = []string{"LOAD"}
 
 	srv2 := cfg.Service{}
 	srv2.Name = "service2"
 	srv2.Instances.Running = []string{"instance2_1"}
 	srv2.Instances.Pending = []string{"instance2_2"}
 	srv2.Docker.CPUnumber = 2
-	srv2.Expressions = []string{"LOAD"}
+	srv2.Analytics = []string{"LOAD"}
 
 	srv3 := cfg.Service{}
 	srv3.Name = "service3"
 	srv3.Docker.CPUnumber = 2
-	srv3.Expressions = []string{"LOAD"}
+	srv3.Analytics = []string{"LOAD"}
 
 	srv4 := cfg.Service{}
 	srv4.Name = "service4"
 	srv4.Docker.CPUnumber = 1
-	srv4.Expressions = []string{"LOAD"}
+	srv4.Analytics = []string{"LOAD"}
 
 	srv5 := cfg.Service{}
 	srv5.Name = "service5"
 	srv5.Docker.CPUnumber = 2
-	srv5.Expressions = []string{"LOAD"}
+	srv5.Analytics = []string{"LOAD"}
 
 	services := []cfg.Service{srv1, srv2, srv3, srv4, srv5}
 

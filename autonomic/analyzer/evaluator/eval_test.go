@@ -24,28 +24,28 @@ func TestBuildExpression(t *testing.T) {
 		"C2": 2.0,
 	}
 
-	expr1 := cfg.Expression{
+	expr1 := cfg.AnalyticExpr{
 		Expr:        "M1 + M2 / C1",
 		Metrics:     []string{"M1", "M2"},
 		Constraints: []string{"C1"},
 	}
 	expct1 := "0.5 + 0.8 / 0.8"
 
-	expr2 := cfg.Expression{
+	expr2 := cfg.AnalyticExpr{
 		Expr:        "(M1 + C1) * (M2 + C2)",
 		Metrics:     []string{"M1", "M2"},
 		Constraints: []string{"C1", "C2"},
 	}
 	expct2 := "(0.5 + 0.8) * (0.8 + 2)"
 
-	expr3 := cfg.Expression{
+	expr3 := cfg.AnalyticExpr{
 		Expr:        "M3 + M2 / C1",
 		Metrics:     []string{"M3", "M2"},
 		Constraints: []string{"C1"},
 	}
 	expct3 := "noexp"
 
-	expr4 := cfg.Expression{
+	expr4 := cfg.AnalyticExpr{
 		Expr:        "M1 + M2 / C3",
 		Metrics:     []string{"M1", "M2"},
 		Constraints: []string{"C3"},
@@ -101,29 +101,29 @@ func TestComputeMetricAnalytics(t *testing.T) {
 }
 
 func setMockExpressions() {
-	expr1 := cfg.Expression{
-		Analytic: "expr1",
-		Expr:     "(M1 + M2) / 2",
-		Metrics:  []string{"M1", "M2"},
+	expr1 := cfg.AnalyticExpr{
+		Name:    "expr1",
+		Expr:    "(M1 + M2) / 2",
+		Metrics: []string{"M1", "M2"},
 	}
-	expr2 := cfg.Expression{
-		Analytic:    "expr2",
+	expr2 := cfg.AnalyticExpr{
+		Name:        "expr2",
 		Expr:        "M1 / C1 + M2 / C2",
 		Metrics:     []string{"M1", "M2"},
 		Constraints: []string{"C1", "C2"},
 	}
-	expr3 := cfg.Expression{
-		Analytic:    "expr3",
+	expr3 := cfg.AnalyticExpr{
+		Name:        "expr3",
 		Expr:        "M1 * C1 + M3 / C3",
 		Metrics:     []string{"M1", "M3"},
 		Constraints: []string{"C1", "C3"},
 	}
 
-	expressions := map[string]cfg.Expression{
+	expressions := map[string]cfg.AnalyticExpr{
 		"expr1": expr1,
 		"expr2": expr2,
 		"expr3": expr3,
 	}
 
-	cfg.SetExpr(expressions)
+	cfg.SetAnalyticExpr(expressions)
 }
