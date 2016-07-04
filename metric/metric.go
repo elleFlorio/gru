@@ -11,9 +11,20 @@ type GruMetric struct {
 }
 
 type NodeMetrics struct {
-	UUID  string
-	Name  string
-	Stats data.MetricData
+	UUID           string
+	Name           string
+	Stats          data.MetricData
+	Resources      ResourceMetrics
+	ActiveServices int
+}
+
+type ResourceMetrics struct {
+	CPU CpuMetrics
+}
+
+type CpuMetrics struct {
+	Availabe int64
+	Total    int64
 }
 
 type ServiceMetric struct {

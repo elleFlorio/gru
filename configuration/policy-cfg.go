@@ -9,4 +9,6 @@ type Policy struct {
 type PolicyConfig struct {
 	Enable    bool
 	Threshold float64
+	Metrics   []string
+	Analytics []string
 }

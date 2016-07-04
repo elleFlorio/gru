@@ -61,17 +61,22 @@ func (p *scaleinCreator) computeWeight(name string, clusterData data.Shared) flo
 		return 0.0
 	}
 
-	analytics := srv.GetServiceAnalyticsExprList(name)
-	threshold := cfg.GetPolicy().Scalein.Threshold
+	policy := cfg.GetPolicy().Scalein
+	metrics := policy.Metrics
+	analytics := policy.Analytics
+	threshold := policy.Threshold
 	weights := []float64{}
 
-	for _, value := range clusterData.Service[name].Data.BaseShared {
-		weights = append(weights, p.computeMetricWeight(value, threshold))
+	for _, metric := range metrics {
+		if value, ok := clusterData.Service[name].Data.BaseShared[metric]; ok {
+			weights = append(weights, p.computeMetricWeight(value, threshold))
+		}
 	}
 
 	for _, analytic := range analytics {
-		value := clusterData.Service[name].Data.UserShared[analytic]
-		weights = append(weights, p.computeMetricWeight(value, threshold))
+		if value, ok := clusterData.Service[name].Data.UserShared[analytic]; ok {
+			weights = append(weights, p.computeMetricWeight(value, threshold))
+		}
 	}
 
 	policyValue := utils.Mean(weights)

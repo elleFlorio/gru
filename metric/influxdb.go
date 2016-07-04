@@ -163,8 +163,11 @@ func createInfluxNode(node NodeMetrics) (*client.Point, error) {
 		"name": node.Name,
 	}
 	fields := map[string]interface{}{
-		"cpu":    node.Stats.BaseMetrics[enum.METRIC_CPU_AVG.ToString()],
-		"memory": node.Stats.BaseMetrics[enum.METRIC_MEM_AVG.ToString()],
+		"cpu":             node.Stats.BaseMetrics[enum.METRIC_CPU_AVG.ToString()],
+		"memory":          node.Stats.BaseMetrics[enum.METRIC_MEM_AVG.ToString()],
+		"cores_total":     node.Resources.CPU.Total,
+		"cores_free":      node.Resources.CPU.Availabe,
+		"active_services": node.ActiveServices,
 	}
 
 	point, err := client.NewPoint("node", tags, fields, time.Now())

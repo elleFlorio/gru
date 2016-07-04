@@ -9,6 +9,7 @@ import (
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
+	res "github.com/elleFlorio/gru/resources"
 	"github.com/elleFlorio/gru/service"
 )
 
@@ -101,6 +102,14 @@ func updateMetrics() {
 	metrics = newMetrics()
 	metrics.Node.UUID = cfg.GetNodeConfig().UUID
 	metrics.Node.Name = cfg.GetNodeConfig().Name
+	metrics.Node.Resources.CPU.Total = res.GetResources().CPU.Total
+	metrics.Node.Resources.CPU.Availabe = res.GetResources().CPU.Total - res.GetResources().CPU.Used
+	localShared, err := data.GetSharedLocal()
+	if err != nil {
+		log.WithField("err", err).Warnln("Cannot update node active metric")
+	} else {
+		metrics.Node.ActiveServices = len(localShared.System.ActiveServices)
+	}
 
 	for _, name := range service.List() {
 		srv, _ := service.GetServiceByName(name)

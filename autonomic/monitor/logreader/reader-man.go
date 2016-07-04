@@ -22,7 +22,7 @@ type srvMetricBuffer struct {
 	userDef map[string]utils.Buffer
 }
 
-const c_B_SIZE = 10
+const c_B_SIZE = 1
 
 var (
 	srvMetrics      map[string]srvMetricBuffer

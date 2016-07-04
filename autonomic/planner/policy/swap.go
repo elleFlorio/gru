@@ -3,6 +3,8 @@ package policy
 import (
 	"math"
 
+	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
@@ -103,22 +105,63 @@ func (p *swapCreator) computeWeight(running string, candidate string, clusterDat
 
 	runShared := clusterData.Service[running]
 	candShared := clusterData.Service[candidate]
-	threshold := cfg.GetPolicy().Swap.Threshold
+	policy := cfg.GetPolicy().Swap
+	metrics := policy.Metrics
+	analytics := policy.Analytics
+	threshold := policy.Threshold
 	weights := []float64{}
-	analytics := srv.GetServiceAnalyticsExprList(running)
 
-	for analytic, value := range runShared.Data.BaseShared {
-		delta := candShared.Data.BaseShared[analytic] - value
-		weight := math.Min(1.0, delta/threshold)
-		weights = append(weights, weight)
-	}
+	candValue := 0.0
+	runValue := 0.0
+	for _, metric := range metrics {
+		if value, ok := candShared.Data.BaseShared[metric]; ok {
+			candValue = value
+		} else {
+			candValue = -1.0
+		}
 
-	for _, analytic := range analytics {
-		runValue := runShared.Data.UserShared[analytic]
-		if candValue, ok := candShared.Data.UserShared[analytic]; ok {
+		if value, ok := runShared.Data.BaseShared[metric]; ok {
+			runValue = value
+		} else {
+			runValue = -1.0
+		}
+
+		if candValue != -1.0 && runValue != -1.0 {
 			delta := candValue - runValue
 			weight := math.Min(1.0, delta/threshold)
 			weights = append(weights, weight)
+		} else {
+			log.WithFields(log.Fields{
+				"metric":    metric,
+				"running":   running,
+				"candidate": candidate,
+			}).Warnln("Cannot compare services: metric not present in both services")
+		}
+	}
+
+	for _, analytic := range analytics {
+		if value, ok := candShared.Data.UserShared[analytic]; ok {
+			candValue = value
+		} else {
+			candValue = -1.0
+		}
+
+		if value, ok := runShared.Data.UserShared[analytic]; ok {
+			runValue = value
+		} else {
+			runValue = -1.0
+		}
+
+		if candValue != -1.0 && runValue != -1.0 {
+			delta := candValue - runValue
+			weight := math.Min(1.0, delta/threshold)
+			weights = append(weights, weight)
+		} else {
+			log.WithFields(log.Fields{
+				"analytic":  analytic,
+				"running":   running,
+				"candidate": candidate,
+			}).Warnln("Cannot compare services: analytic not present in both services")
 		}
 	}
 

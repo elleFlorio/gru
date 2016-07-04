@@ -14,6 +14,7 @@ import (
 	"github.com/elleFlorio/gru/container"
 	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
+	res "github.com/elleFlorio/gru/resources"
 	srv "github.com/elleFlorio/gru/service"
 	"github.com/elleFlorio/gru/utils"
 )
@@ -61,6 +62,7 @@ func Run() data.GruStats {
 	defer log.WithField("status", "done").Debugln("Gru Monitor")
 
 	services := srv.List()
+	updateNodeResources()
 	updateRunningInstances(services, c_MTR_THR)
 	updateSystemInstances(services)
 	metrics := mtr.GetMetricsStats()
@@ -252,6 +254,17 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 
 	// TODO - ADD MEMORY
 
+}
+
+func updateNodeResources() {
+	res.ComputeUsedResources()
+
+	log.WithFields(log.Fields{
+		"totalcpu": res.GetResources().CPU.Total,
+		"usedcpu":  res.GetResources().CPU.Used,
+		"totalmem": res.GetResources().Memory.Total,
+		"usedmem":  res.GetResources().Memory.Used,
+	}).Debugln("Updated node resources")
 }
 
 func updateRunningInstances(services []string, threshold int) {

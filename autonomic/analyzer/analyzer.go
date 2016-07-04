@@ -20,9 +20,11 @@ func Run(stats data.GruStats) data.Shared {
 
 	if len(stats.Metrics.Service) == 0 {
 		log.Debugln("No stats to compute")
+		data.SaveAnalytics(data.GruAnalytics{})
+		data.SaveSharedLocal(data.Shared{})
+		data.SaveSharedCluster(data.Shared{})
 		return data.Shared{}
 	}
-
 	analytics := computeAnalyticsData(stats.Metrics)
 	shared := computeSharedData(analytics)
 
@@ -102,6 +104,7 @@ func computeClusterShared(local data.Shared) data.Shared {
 	storedCluster, err := data.GetSharedCluster()
 	if err != nil {
 		log.WithField("err", err).Debugln("Cannot compute cluster data")
+		data.SaveSharedCluster(local)
 		return local
 	}
 

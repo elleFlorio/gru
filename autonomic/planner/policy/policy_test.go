@@ -261,14 +261,32 @@ func createMockPolicy() cfg.Policy {
 		Scalein: cfg.PolicyConfig{
 			Enable:    true,
 			Threshold: 0.3,
+			Metrics: []string{
+				"cpu_avg",
+			},
+			Analytics: []string{
+				"LOAD",
+			},
 		},
 		Scaleout: cfg.PolicyConfig{
 			Enable:    true,
 			Threshold: 0.8,
+			Metrics: []string{
+				"cpu_avg",
+			},
+			Analytics: []string{
+				"LOAD",
+			},
 		},
 		Swap: cfg.PolicyConfig{
 			Enable:    true,
 			Threshold: 0.6,
+			Metrics: []string{
+				"cpu_avg",
+			},
+			Analytics: []string{
+				"LOAD",
+			},
 		},
 	}
 
