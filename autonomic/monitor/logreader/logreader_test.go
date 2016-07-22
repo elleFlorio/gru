@@ -9,6 +9,10 @@ import (
 	"github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 )
 
+func init() {
+	c_B_SIZE = 10
+}
+
 func TestLogReading(t *testing.T) {
 	logFile := createMockLog()
 	logStream, _ := os.Open(logFile)

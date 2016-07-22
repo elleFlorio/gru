@@ -22,7 +22,8 @@ type srvMetricBuffer struct {
 	userDef map[string]utils.Buffer
 }
 
-const c_B_SIZE = 1
+// TODO this should be done in a better way.
+var c_B_SIZE = 1
 
 var (
 	srvMetrics      map[string]srvMetricBuffer
