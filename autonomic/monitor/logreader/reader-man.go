@@ -8,7 +8,6 @@ import (
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	mtr "github.com/elleFlorio/gru/autonomic/monitor/metric"
-	"github.com/elleFlorio/gru/utils"
 )
 
 type logEntry struct {
@@ -18,15 +17,7 @@ type logEntry struct {
 	unit    string
 }
 
-type srvMetricBuffer struct {
-	userDef map[string]utils.Buffer
-}
-
-// TODO this should be done in a better way.
-var c_B_SIZE = 1
-
 var (
-	srvMetrics      map[string]srvMetricBuffer
 	ch_entry        chan logEntry
 	ch_stop         chan struct{}
 	regex           = regexp.MustCompile("gru")
@@ -36,15 +27,6 @@ var (
 func init() {
 	ch_entry = make(chan logEntry)
 	ch_stop = make(chan struct{})
-	srvMetrics = make(map[string]srvMetricBuffer)
-}
-
-func Initialize(services []string) {
-	for _, service := range services {
-		srvMetrics[service] = srvMetricBuffer{
-			userDef: make(map[string]utils.Buffer),
-		}
-	}
 }
 
 func StartLogReader() {
@@ -75,20 +57,10 @@ func addValue(entry logEntry) {
 		return
 	}
 
-	metrics := srvMetrics[entry.service]
-	if _, ok := metrics.userDef[entry.metric]; !ok {
-		newMetric := utils.BuildBuffer(c_B_SIZE)
-		metrics.userDef[entry.metric] = newMetric
-	}
+	values := make([]float64, 0, 1)
+	values = append(values, entry.value)
+	mtr.UpdateUserMetric(entry.service, entry.metric, values)
 
-	metric := metrics.userDef[entry.metric]
-	values := metric.PushValue(entry.value)
-	if values != nil {
-		mtr.UpdateUserMetric(entry.service, entry.metric, values)
-	}
-
-	metrics.userDef[entry.metric] = metric
-	srvMetrics[entry.service] = metrics
 }
 
 func StartCollector(contLog io.ReadCloser) {

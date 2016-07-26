@@ -204,27 +204,27 @@ func ReadPolicyConfig(remote string) Policy {
 	return policy
 }
 
-func ReadExpressions(remote string) map[string]AnalyticExpr {
+func ReadAnalytics(remote string) map[string]AnalyticExpr {
 	expressions := make(map[string]AnalyticExpr)
 	resp, err := discovery.Get(remote, discovery.Options{})
 	if err != nil {
-		log.WithField("err", err).Errorln("Error reading expressions from ", remote)
+		log.WithField("err", err).Errorln("Error reading analytics from ", remote)
 		return expressions
 	}
 
 	for exprPath, _ := range resp {
-		expr := ReadExpression(exprPath)
+		expr := ReadAnalytic(exprPath)
 		expressions[expr.Name] = expr
 	}
 
 	return expressions
 }
 
-func ReadExpression(remote string) AnalyticExpr {
+func ReadAnalytic(remote string) AnalyticExpr {
 	expr := AnalyticExpr{}
 	err := readData(remote, &expr)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error reading expression")
+		log.WithField("err", err).Errorln("Error reading analytic")
 	}
 
 	return expr
