@@ -186,6 +186,10 @@ func (m *Manager) list(cmd string) {
 	for name, _ := range names {
 		fmt.Fprintf(w, "%s\t%s\n", name, names[name])
 	}
+
+	fmt.Fprintf(w, "-------------------\n")
+	fmt.Fprintf(w, "TOTAL ACTIVE: %d\n", len(names))
+
 	w.Flush()
 }
 

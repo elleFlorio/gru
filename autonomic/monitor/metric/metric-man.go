@@ -251,44 +251,26 @@ func computeServiceCpuPerc(name string, instMetrics map[string]data.MetricData) 
 	return utils.Mean(values)
 }
 
-// DEPRECATED
-// func computeSysMetrics(servMetrics map[string]data.MetricData) data.MetricData {
-// 	// TODO - improve by adding capacity
-// 	baseMetrics := make(map[string]float64)
-// 	cpuSys := make([]float64, 0, len(servMetrics))
-// 	memSys := make([]float64, 0, len(servMetrics))
-// 	for _, metrics := range servMetrics {
-// 		// CPU
-// 		cpuSys = append(cpuSys, metrics.BaseMetrics[enum.METRIC_CPU_AVG.ToString()])
-
-// 		// MEM
-// 		// TODO
-// 	}
-
-// 	baseMetrics[enum.METRIC_CPU_AVG.ToString()] = utils.Mean(cpuSys)
-// 	baseMetrics[enum.METRIC_MEM_AVG.ToString()] = utils.Mean(memSys)
-// 	sysMetrics := data.MetricData{
-// 		BaseMetrics: baseMetrics,
-// 	}
-
-// 	return sysMetrics
-
-// }
-
 func computeSysMetrics(instMetrics map[string]data.MetricData) data.MetricData {
 	// TODO - improve by adding capacity
 	baseMetrics := make(map[string]float64)
 	cpuSys := 0.0
 	memSys := make([]float64, 0, len(instMetrics))
 	for instance, metrics := range instMetrics {
-		service, _ := srv.GetServiceById(instance)
-		instCpus := service.Docker.CPUnumber
-		instCpuValue := metrics.BaseMetrics[enum.METRIC_CPU_AVG.ToString()] * float64(instCpus)
-		// CPU
-		cpuSys += instCpuValue
+		service, err := srv.GetServiceById(instance)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"instance": instance,
+			}).Errorln("Cannot find service by instance")
+		} else {
+			instCpus := service.Docker.CPUnumber
+			instCpuValue := metrics.BaseMetrics[enum.METRIC_CPU_AVG.ToString()] * float64(instCpus)
+			// CPU
+			cpuSys += instCpuValue
 
-		// MEM
-		// TODO
+			// MEM
+			// TODO
+		}
 	}
 
 	baseMetrics[enum.METRIC_CPU_AVG.ToString()] = cpuSys / float64(res.GetResources().CPU.Total)
