@@ -23,6 +23,7 @@ import (
 type instanceMetricBuffer struct {
 	cpuInst utils.Buffer
 	cpuSys  utils.Buffer
+	memory  utils.Buffer
 }
 
 const c_B_SIZE = 20
@@ -241,9 +242,11 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 	metricBuffer := instBuffer[id]
 	cpuInst := float64(stats.CpuStats.CpuUsage.TotalUsage)
 	cpuSys := float64(stats.CpuStats.SystemUsage)
+	mem := float64(stats.MemoryStats.Usage)
 
 	toAddInst := metricBuffer.cpuInst.PushValue(cpuInst)
 	toAddSys := metricBuffer.cpuSys.PushValue(cpuSys)
+	toAddMem := metricBuffer.memory.PushValue(mem)
 
 	instBuffer[id] = metricBuffer
 
@@ -251,7 +254,9 @@ func statCallBack(id string, stats *dockerclient.Stats, ec chan error, args ...i
 		mtr.UpdateCpuMetric(id, toAddInst, toAddSys)
 	}
 
-	// TODO - ADD MEMORY
+	if toAddMem != nil {
+		mtr.UpdateMemMetric(id, toAddMem)
+	}
 
 }
 

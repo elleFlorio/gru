@@ -24,6 +24,7 @@ func CreateMockServices() []cfg.Service {
 		Instances: instances1,
 		Docker: cfg.ServiceDocker{
 			CPUnumber: 1,
+			Memory:    "1g",
 		},
 		Analytics: []string{"expr1"},
 		Constraints: map[string]float64{
@@ -44,6 +45,7 @@ func CreateMockServices() []cfg.Service {
 		Instances: instances2,
 		Docker: cfg.ServiceDocker{
 			CPUnumber: 2,
+			Memory:    "512m",
 		},
 		Analytics: []string{"expr2"},
 		Constraints: map[string]float64{

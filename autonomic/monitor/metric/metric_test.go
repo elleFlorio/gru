@@ -10,10 +10,11 @@ import (
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
 	srv "github.com/elleFlorio/gru/service"
+	"github.com/elleFlorio/gru/utils"
 )
 
 func init() {
-	res.CreateMockResources(1, "1G", 0, "0G")
+	res.CreateMockResources(1, "4GB", 0, "0g")
 	resetMockServices()
 	Initialize(srv.List())
 }
@@ -126,8 +127,10 @@ func TestComputeInstanceCpuPerc(t *testing.T) {
 }
 
 func TestComputeInstancesMetrics(t *testing.T) {
-	id1 := "id1"
-	id2 := "id2"
+	id1 := "instance1_1"
+	id2 := "instance2_1"
+	instMemBytes, _ := utils.RAMInBytes("512m")
+	instMemValue := float64(instMemBytes)
 	defer delete(instancesMetrics, id1)
 	defer delete(instancesMetrics, id2)
 
@@ -136,16 +139,19 @@ func TestComputeInstancesMetrics(t *testing.T) {
 	}
 	instancesMetrics[id1].BaseMetrics[enum.METRIC_CPU_INST.ToString()] = []float64{10000, 20000, 30000, 40000, 50000, 60000}
 	instancesMetrics[id1].BaseMetrics[enum.METRIC_CPU_SYS.ToString()] = []float64{1000000, 1100000, 1200000, 1300000, 1400000, 1500000}
+	instancesMetrics[id1].BaseMetrics[enum.METRIC_MEM_INST.ToString()] = []float64{instMemValue, instMemValue}
 
 	instancesMetrics[id2] = Metric{
 		BaseMetrics: make(map[string][]float64),
 	}
 	instancesMetrics[id2].BaseMetrics[enum.METRIC_CPU_INST.ToString()] = []float64{10000, 30000, 50000, 70000, 110000, 130000}
 	instancesMetrics[id2].BaseMetrics[enum.METRIC_CPU_SYS.ToString()] = []float64{1000000, 1100000, 1200000, 1300000, 1400000, 1500000}
+	instancesMetrics[id2].BaseMetrics[enum.METRIC_MEM_INST.ToString()] = []float64{instMemValue, instMemValue}
 
 	instMet := computeInstancesMetrics()
 	assert.Equal(t, 0.1, instMet[id1].BaseMetrics[enum.METRIC_CPU_AVG.ToString()])
 	assert.Equal(t, 0.24, instMet[id2].BaseMetrics[enum.METRIC_CPU_AVG.ToString()])
+	assert.Equal(t, 0.5, instMet[id1].BaseMetrics[enum.METRIC_MEM_AVG.ToString()])
 }
 
 func TestComputeServicesMetrics(t *testing.T) {
@@ -184,34 +190,6 @@ func TestComputeServicesMetrics(t *testing.T) {
 	assert.Equal(t, 3000.0, serviceMet["service2"].UserMetrics["response_time"])
 }
 
-// func TestComputeSysMetrics(t *testing.T) {
-// 	defer resetMetrics()
-
-// 	servMetrics := make(map[string]data.MetricData)
-// 	servMetrics["service1"] = data.MetricData{
-// 		BaseMetrics: map[string]float64{
-// 			enum.METRIC_CPU_AVG.ToString(): 0.4,
-// 			enum.METRIC_MEM_AVG.ToString(): 0.4,
-// 		},
-// 	}
-// 	servMetrics["service2"] = data.MetricData{
-// 		BaseMetrics: map[string]float64{
-// 			enum.METRIC_CPU_AVG.ToString(): 0.6,
-// 			enum.METRIC_MEM_AVG.ToString(): 0.6,
-// 		},
-// 	}
-// 	servMetrics["service3"] = data.MetricData{
-// 		BaseMetrics: map[string]float64{
-// 			enum.METRIC_CPU_AVG.ToString(): 0.8,
-// 			enum.METRIC_MEM_AVG.ToString(): 0.8,
-// 		},
-// 	}
-
-// 	sysMet := computeSysMetrics(servMetrics)
-// 	assert.NotEmpty(t, sysMet)
-// 	assert.InEpsilon(t, 0.6, sysMet.BaseMetrics[enum.METRIC_CPU_AVG.ToString()], 0.0001)
-// }
-
 func TestComputeSysMetrics(t *testing.T) {
 	defer resetMetrics()
 
@@ -219,26 +197,24 @@ func TestComputeSysMetrics(t *testing.T) {
 	instMetrics["instance1_1"] = data.MetricData{
 		BaseMetrics: map[string]float64{
 			enum.METRIC_CPU_AVG.ToString(): 0.4,
-			enum.METRIC_MEM_AVG.ToString(): 0.4,
 		},
 	}
 	instMetrics["instance1_2"] = data.MetricData{
 		BaseMetrics: map[string]float64{
 			enum.METRIC_CPU_AVG.ToString(): 0.6,
-			enum.METRIC_MEM_AVG.ToString(): 0.6,
 		},
 	}
 	instMetrics["instance2_1"] = data.MetricData{
 		BaseMetrics: map[string]float64{
 			enum.METRIC_CPU_AVG.ToString(): 0.8,
-			enum.METRIC_MEM_AVG.ToString(): 0.8,
 		},
 	}
 
-	res.CreateMockResources(4, "1G", 0, "0G")
+	res.CreateMockResources(4, "1G", 0, "512M")
 	sysMet := computeSysMetrics(instMetrics)
 	assert.NotEmpty(t, sysMet)
 	assert.InEpsilon(t, 0.65, sysMet.BaseMetrics[enum.METRIC_CPU_AVG.ToString()], 0.0001)
+	assert.Equal(t, 0.5, sysMet.BaseMetrics[enum.METRIC_MEM_AVG.ToString()])
 }
 
 func TestResetMetrics(t *testing.T) {

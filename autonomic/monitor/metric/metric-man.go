@@ -150,9 +150,15 @@ func computeInstancesMetrics() map[string]data.MetricData {
 		cpuPerc := computeInstanceCpuPerc(instCpus, sysCpus)
 		baseMetrics[enum.METRIC_CPU_AVG.ToString()] = cpuPerc
 
-		// MEMORY - TODO
-		memPerc := 0.0
-		baseMetrics[enum.METRIC_MEM_AVG.ToString()] = memPerc
+		// MEMORY
+		service, _ := srv.GetServiceById(instance)
+		instMemLimit := res.GetResources().Memory.Total
+		if service.Docker.Memory != "" {
+			instMemLimit, _ = utils.RAMInBytes(service.Docker.Memory)
+		}
+		instMem := metrics.BaseMetrics[enum.METRIC_MEM_INST.ToString()]
+		instMemPerc := computeInstanceMemPerc(instMem, float64(instMemLimit))
+		baseMetrics[enum.METRIC_MEM_AVG.ToString()] = instMemPerc
 
 		instMetrics[instance] = data.MetricData{
 			BaseMetrics: baseMetrics,
@@ -206,6 +212,13 @@ func computeInstanceCpuPerc(instCpus []float64, sysCpus []float64) float64 {
 	return 0.0
 }
 
+func computeInstanceMemPerc(instMem []float64, memLimit float64) float64 {
+	instMemMean := utils.Mean(instMem)
+	instMemPerc := instMemMean / memLimit
+
+	return instMemPerc
+}
+
 func computeServicesMetrics(instMetrics map[string]data.MetricData) map[string]data.MetricData {
 	servicesAvg := make(map[string]data.MetricData, len(servicesMetrics))
 
@@ -214,8 +227,8 @@ func computeServicesMetrics(instMetrics map[string]data.MetricData) map[string]d
 		// CPU
 		cpuAvg := computeServiceCpuPerc(service, instMetrics)
 		baseMetrics[enum.METRIC_CPU_AVG.ToString()] = cpuAvg
-		// MEMORY -TODO
-		memAvg := 0.0
+		// MEMORY
+		memAvg := computeServiceMemPerc(service, instMetrics)
 		baseMetrics[enum.METRIC_MEM_AVG.ToString()] = memAvg
 
 		userMetrics := make(map[string]float64, len(metrics.UserMetrics))
@@ -235,16 +248,23 @@ func computeServicesMetrics(instMetrics map[string]data.MetricData) map[string]d
 	return servicesAvg
 }
 
-// Returns CPU percentage average, total.
 func computeServiceCpuPerc(name string, instMetrics map[string]data.MetricData) float64 {
+	return computeServiceMetricPerc(name, enum.METRIC_CPU_AVG, instMetrics)
+}
+
+func computeServiceMemPerc(name string, instMetrics map[string]data.MetricData) float64 {
+	return computeServiceMetricPerc(name, enum.METRIC_MEM_AVG, instMetrics)
+}
+
+func computeServiceMetricPerc(name string, metric enum.Metric, instMetrics map[string]data.MetricData) float64 {
 
 	service, _ := srv.GetServiceByName(name)
 	values := make([]float64, 0)
 
 	if len(service.Instances.Running) > 0 {
 		for _, id := range service.Instances.Running {
-			instCpuAvg := instMetrics[id].BaseMetrics[enum.METRIC_CPU_AVG.ToString()]
-			values = append(values, instCpuAvg)
+			instMetricAvg := instMetrics[id].BaseMetrics[metric.ToString()]
+			values = append(values, instMetricAvg)
 		}
 	}
 
@@ -255,7 +275,7 @@ func computeSysMetrics(instMetrics map[string]data.MetricData) data.MetricData {
 	// TODO - improve by adding capacity
 	baseMetrics := make(map[string]float64)
 	cpuSys := 0.0
-	memSys := make([]float64, 0, len(instMetrics))
+	memSys := 0.0
 	for instance, metrics := range instMetrics {
 		service, err := srv.GetServiceById(instance)
 		if err != nil {
@@ -263,18 +283,20 @@ func computeSysMetrics(instMetrics map[string]data.MetricData) data.MetricData {
 				"instance": instance,
 			}).Errorln("Cannot find service by instance")
 		} else {
+			// CPU
 			instCpus := service.Docker.CPUnumber
 			instCpuValue := metrics.BaseMetrics[enum.METRIC_CPU_AVG.ToString()] * float64(instCpus)
-			// CPU
 			cpuSys += instCpuValue
 
 			// MEM
-			// TODO
+			totalMem := res.GetResources().Memory.Total
+			usedMem := res.GetResources().Memory.Used
+			memSys = float64(usedMem) / float64(totalMem)
 		}
 	}
 
 	baseMetrics[enum.METRIC_CPU_AVG.ToString()] = cpuSys / float64(res.GetResources().CPU.Total)
-	baseMetrics[enum.METRIC_MEM_AVG.ToString()] = utils.Mean(memSys)
+	baseMetrics[enum.METRIC_MEM_AVG.ToString()] = memSys
 	sysMetrics := data.MetricData{
 		BaseMetrics: baseMetrics,
 	}
