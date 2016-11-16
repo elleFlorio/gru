@@ -31,7 +31,7 @@ Currently Gru can work in a cluster of nodes, automagically scaling services ins
 Gru needs a running instance of an etcd server (https://github.com/coreos/etcd) for agents discovery and influxdb (https://influxdb.com/) to store metrics data.
 
 ## Documentation (Work in Progress)
-These are the steps you need to follow to run the current version of Gru in your system.
+These are the steps you need to follow to run the current version of Gru in your system. This is not a documentation of all the aspects involved, but it should be enough to understand a little better the project and maybe test it.
 Please remember that currently Gru is able only to autoscale your services containers and it's under active development.
 
 ### Requirements
@@ -217,6 +217,7 @@ The user can provide some analytics that should be computed by Gru Agents for th
 ```
 
 This is an example of a possible `response_time_ratio` analytic, used to understand if a service has a response time that is too high.
+```
 {
 	"Name": "resp_time_ratio",
 	"Expr": "execution_time / MAX_RESP_TIME",
@@ -227,6 +228,7 @@ This is an example of a possible `response_time_ratio` analytic, used to underst
 		"MAX_RESP_TIME"
 	]
 }
+```
 
 #### Policy configuration
 This configuration file allows to set the parameters of the policies implemented in the system, as well as enable or disable them.
