@@ -50,6 +50,7 @@ docker run -d -p 4001:4001 -p 2380:2380 -p 2379:2379 --name etcd quay.io/coreos/
 -name etcd0 \
 -advertise-client-urls http://${HostIP}:2379,http://${HostIP}:4001 \
 -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
+```
 
 **InfluxDB** is not required, but recommended. It doesn't requires a particular configuration, you just need to create a database that will be used to store the metrics sent by Gru Agents.
 
