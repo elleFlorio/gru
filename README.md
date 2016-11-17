@@ -28,7 +28,7 @@ Develop your contenerized application with no worries: Gru will integrate seamle
 The project is at an early stage of development.
 I don't suggest to try it by now, however below you can find the documentation to run it in your local machine or cluster.
 Currently Gru can work in a cluster of nodes, automagically scaling services instances according to traffic load.
-Gru needs a running instance of an etcd server (https://github.com/coreos/etcd) for agents discovery and influxdb (https://influxdb.com/) to store metrics data.
+Gru needs a running instance of an [etcd](https://github.com/coreos/etcd) for agents discovery and [InfluxDB](https://influxdb.com/) to store metrics data.
 
 ## Documentation (Work in Progress)
 These are the steps you need to follow to run the current version of Gru in your system. This is not a documentation of all the aspects involved, but it should be enough to understand a little better the project and maybe test it.
@@ -38,11 +38,11 @@ Please remember that currently Gru is able only to autoscale your services conta
 Gru needs some external components and some environment variables to run. Gru has been developed and tested in linux, so the best thing is if you use the same environment.
 
 #### External components
-* Docker - https://www.docker.com/
-* etcd - https://github.com/coreos/etcd
-* InfluxDB (optional) - https://www.influxdata.com/time-series-platform/influxdb/
+* [Docker](https://www.docker.com/)
+* [etcd](https://github.com/coreos/etcd)
+* [InfluxDB](https://www.influxdata.com/time-series-platform/influxdb/) (optional)
 
-**Docker** is the obvious requirement and can be used also to run an instance of the Gru Agent (more on this later)
+**Docker** is the obvious requirement and can be used also to run an instance of the Gru Agent (more on this later).
 
 **etcd** can be run in a Docker container. This is the command to run a local instance of etcd to test Gru:
 ```
@@ -76,8 +76,8 @@ Gru can be run in two ways:
 * Downloading and compiling the sources in this repo.
 * Using the Docker image `elleflorio/gru` (use `dev` tag for the development branch image) **[suggested method]**.
 
-In the latter case, Docker should be configured to listen on a specific port (usually 2375) for commands.
-To configure properly Docker in linux, follow these instruction (credits to https://github.com/felixgborrego/docker-ui-chrome-app/wiki/linux).
+In the latter case, Docker should be configured to listen on a specific port (usually :2375) for commands.
+To configure properly Docker in linux, follow these instruction (credits to [docker-ui](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/linux)).
 
 #### How to enable Docker Remote API on Linux
 We'll need to enable the Docker Remote API, but first make sure Docker daemon is up an running using ```docker info```.
@@ -148,8 +148,8 @@ Using the command `gru manage` it is possible to manage a cluster of nodes. Here
 Gru needs some parameters to be configured correctly. The configuration is stored inside etcd in the form of strings as represented in the following tree:
 ```
 /gru/ 
-	|­­­---<cluster>/ 
-		|­­­---uuid:string (Cluster ID) 
+	|---<cluster>/ 
+		|---uuid:string (Cluster ID) 
 		|---nodes/ 
 			|---<node> 
 				|---configuration:string 
@@ -163,8 +163,7 @@ Gru needs some parameters to be configured correctly. The configuration is store
 		|--- analytics/ 
 			|---<analytic>:string (Analytics configuration)
 ```
-The configuration is expressed in the JSON format and can be set into etcd using a web interface called **Gru Configuration Manager** available here:
-https://github.com/elleFlorio/gruConfigurationManager
+The configuration is expressed in the JSON format and can be set into etcd using a web interface called [**Gru Configuration Manager**](https://github.com/elleFlorio/gruConfigurationManager).
 A Docker image is available to easily run the configuration manager: `elleflorio/grucm`.
 
 The configuration is composed of several files that are described here:
@@ -317,8 +316,8 @@ gru create myCluster
 We create our configurations and upload it using the Gru Configuration Manager, and the result is the following Cluster configuration:
 ```
 /gru/ 
-	|­­­---myCluster/ 
-		|­­­---uuid:<myCluster_ID> 
+	|---myCluster/ 
+		|---uuid:<myCluster_ID> 
 		|---nodes/ 
 			|---<empty>
 		|---config 
