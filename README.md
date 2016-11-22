@@ -37,23 +37,6 @@ Please remember that currently Gru is able only to autoscale your services conta
 ### Requirements
 Gru needs some external components and some environment variables to run. Gru has been developed and tested in linux, so the best thing is if you use the same environment.
 
-#### External components
-* [Docker](https://www.docker.com/)
-* [etcd](https://github.com/coreos/etcd)
-* [InfluxDB](https://www.influxdata.com/time-series-platform/influxdb/) (optional)
-
-**Docker** is the obvious requirement and can be used also to run an instance of the Gru Agent (more on this later).
-
-**etcd** can be run in a Docker container. This is the command to run a local instance of etcd to test Gru:
-```
-docker run -d -p 4001:4001 -p 2380:2380 -p 2379:2379 --name etcd quay.io/coreos/etcd \
--name etcd0 \
--advertise-client-urls http://${HostIP}:2379,http://${HostIP}:4001 \
--listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
-```
-
-**InfluxDB** is not required, but recommended. It doesn't requires a particular configuration, you just need to create a database that will be used to store the metrics sent by Gru Agents.
-
 #### Environment Variables
 Gru needs some environment variables to be set in order to work properly.
 * HostIP: the IP of the host machine. Here we assume that etcd and InfluxDB are running inside the same host. A smart trick is to set it automatically using this command:
@@ -70,6 +53,23 @@ export INFLUX_ADDR=http://$HostIP:8086
 export INFLUX_USER=<db_user>
 export INFLUX_PWD=<db_pwd>
 ```
+
+#### External components
+* [Docker](https://www.docker.com/)
+* [etcd](https://github.com/coreos/etcd)
+* [InfluxDB](https://www.influxdata.com/time-series-platform/influxdb/) (optional)
+
+**Docker** is the obvious requirement and can be used also to run an instance of the Gru Agent (more on this later).
+
+**etcd** can be run in a Docker container. This is the command to run a local instance of etcd to test Gru:
+```
+docker run -d -p 4001:4001 -p 2380:2380 -p 2379:2379 --name etcd quay.io/coreos/etcd \
+-name etcd0 \
+-advertise-client-urls http://${HostIP}:2379,http://${HostIP}:4001 \
+-listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
+```
+
+**InfluxDB** is not required, but recommended. It doesn't requires a particular configuration, you just need to create a database that will be used to store the metrics sent by Gru Agents.
 
 ### Run Gru
 Gru can be run in two ways:
