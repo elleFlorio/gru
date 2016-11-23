@@ -165,6 +165,25 @@ func getFriendsData(friends map[string]string) ([]data.Shared, error) {
 	return friendsData, err
 }
 
+func sendDataToFriends(friends map[string]string) {
+	var err error
+	local, err := data.GetSharedLocal()
+	if err != nil {
+		log.WithField("err", err).Errorln("Cannot get local shared data to send")
+		return
+	}
+
+	encoded := data.SharedToByte(local)
+
+	for _, address := range friends {
+		friendRoute := address + c_ROUTE_SHARED
+		_, err := network.DoRequest("POST", friendRoute, encoded)
+		if err != nil {
+			log.WithField("address", address).Warnln("Error sending data to friends")
+		}
+	}
+}
+
 func mergeSharedData(friendsData []data.Shared) (data.Shared, error) {
 	sharedStored, err := data.GetSharedCluster()
 	if err != nil {

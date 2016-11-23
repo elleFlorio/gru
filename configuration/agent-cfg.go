@@ -30,8 +30,9 @@ type StorageConfig struct {
 }
 
 type MetricConfig struct {
-	MetricService string                 `json:"metricservice"`
-	Configuration map[string]interface{} `json:"configuration"`
+	MetricService    string                 `json:"metricservice"`
+	LoopTimeInterval int                    `json:"looptimeinterval"`
+	Configuration    map[string]interface{} `json:"configuration"`
 }
 
 type DiscoveryConfig struct {

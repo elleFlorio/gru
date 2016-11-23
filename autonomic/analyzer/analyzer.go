@@ -109,6 +109,10 @@ func computeClusterShared(local data.Shared) data.Shared {
 	}
 
 	toMerge := []data.Shared{local, storedCluster}
+
+	friendShared := data.GetFriendsData()
+	toMerge = append(toMerge, friendShared...)
+
 	cluster, err := data.MergeShared(toMerge)
 	if err != nil {
 		return local

@@ -77,7 +77,7 @@ func StartMetricCollector() {
 }
 
 func startCollector() {
-	interval := cfg.GetAgentAutonomic().LoopTimeInterval + c_AUTO_LOOP_EPSILON
+	interval := cfg.GetAgentMetric().LoopTimeInterval
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
 	for {

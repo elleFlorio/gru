@@ -3,6 +3,7 @@ package data
 import (
 	"encoding/json"
 	"errors"
+	"sync"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
@@ -11,6 +12,33 @@ import (
 	"github.com/elleFlorio/gru/storage"
 	"github.com/elleFlorio/gru/utils"
 )
+
+var (
+	friendsData utils.LkList
+	m_friends   = &sync.RWMutex{}
+)
+
+func InitializeFriendsData(limit int) {
+	friendsData = utils.CreateLkList(limit)
+}
+
+func AddFriendData(friend string, value Shared) {
+	defer m_friends.Unlock()
+
+	m_friends.Lock()
+	friendsData.PushValue(friend, value)
+}
+
+func GetFriendsData() []Shared {
+	defer m_friends.RUnlock()
+
+	values := make([]Shared, friendsData.Limit)
+	m_friends.RLock()
+	for _, value := range friendsData.GetValues() {
+		values = append(values, value.(Shared))
+	}
+	return values
+}
 
 func SaveStats(stats GruStats) {
 	err := saveData(stats, enum.STATS, enum.LOCAL)
@@ -184,7 +212,6 @@ func getData(dataType enum.Datatype, dataOwner enum.DataOwner) (interface{}, err
 	}
 
 	return data, nil
-
 }
 
 func ByteToStats(data []byte) (GruStats, error) {
@@ -196,7 +223,6 @@ func ByteToStats(data []byte) (GruStats, error) {
 	}
 
 	return stats, nil
-
 }
 
 func ByteToAnalytics(data []byte) (GruAnalytics, error) {
@@ -208,7 +234,6 @@ func ByteToAnalytics(data []byte) (GruAnalytics, error) {
 	}
 
 	return analytics, nil
-
 }
 
 func ByteToPolicy(data []byte) (Policy, error) {
@@ -220,7 +245,6 @@ func ByteToPolicy(data []byte) (Policy, error) {
 	}
 
 	return policy, nil
-
 }
 
 func ByteToShared(data []byte) (Shared, error) {
@@ -232,7 +256,16 @@ func ByteToShared(data []byte) (Shared, error) {
 	}
 
 	return info, nil
+}
 
+func SharedToByte(data Shared) []byte {
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		log.WithField("err", err).Warnln("Cannot convert shared data to byte")
+		return []byte{}
+	}
+
+	return encoded
 }
 
 func MergeShared(toMerge []Shared) (Shared, error) {
@@ -312,74 +345,6 @@ func MergeShared(toMerge []Shared) (Shared, error) {
 	merged.System = sysMerged
 
 	return merged, nil
-
-	// var loadAvg float64
-	// var cpuAvg float64
-	// var memAvg float64
-	// var resourcesAvg float64
-
-	// for _, name := range service.List() {
-	// 	loadAvg = 0.0
-	// 	cpuAvg = 0.0
-	// 	memAvg = 0.0
-	// 	resourcesAvg = 0.0
-	// 	counter := 0.0
-	// 	for _, info := range toMerge {
-	// 		if srv, ok := info.Service[name]; ok {
-	// 			if srv.Active {
-	// 				loadAvg += srv.Load
-	// 				cpuAvg += srv.Cpu
-	// 				memAvg += srv.Memory
-	// 				resourcesAvg += srv.Resources
-
-	// 				counter++
-	// 			}
-	// 		}
-	// 	}
-
-	// 	if counter > 0 {
-	// 		loadAvg /= counter
-	// 		cpuAvg /= counter
-	// 		memAvg /= counter
-	// 		resourcesAvg /= counter
-
-	// 		mergedService := ServiceShared{
-	// 			Load:      loadAvg,
-	// 			Cpu:       cpuAvg,
-	// 			Memory:    memAvg,
-	// 			Resources: resourcesAvg,
-	// 			Active:    true,
-	// 		}
-
-	// 		merged.Service[name] = mergedService
-	// 	}
-	// }
-
-	// cpuAvg = 0.0
-	// memAvg = 0.0
-	// resourcesAvg = 0.0
-	// healthAvg := 0.0
-	// activeServices := []string{}
-	// for _, info := range toMerge {
-	// 	cpuAvg += info.System.Cpu
-	// 	memAvg += info.System.Memory
-	// 	healthAvg += info.System.Health
-	// 	activeServices = checkAndAppend(activeServices, info.System.ActiveServices)
-	// }
-
-	// lenght := float64(len(toMerge))
-	// cpuAvg /= lenght
-	// memAvg /= lenght
-	// healthAvg /= lenght
-
-	// mergedSystem := SystemShared{
-	// 	Cpu:            cpuAvg,
-	// 	Memory:         memAvg,
-	// 	Health:         healthAvg,
-	// 	ActiveServices: activeServices,
-	// }
-
-	// merged.System = mergedSystem
 }
 
 func checkAndAppend(list []string, toAppend []string) []string {
