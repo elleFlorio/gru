@@ -280,3 +280,16 @@ func SetServiceConstraints(service string, constraints map[string]float64) {
 
 	srv.Constraints = constraints
 }
+
+// TODO - this is not the best solution, needs improvements
+func GetActiveServices() []*cfg.Service {
+	active := make([]*cfg.Service, 0)
+	for _, name := range List() {
+		if IsServiceActive(name) {
+			toAdd, _ := GetServiceByName(name)
+			active = append(active, toAdd)
+		}
+	}
+
+	return active
+}

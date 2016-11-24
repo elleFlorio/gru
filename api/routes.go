@@ -133,6 +133,13 @@ var routes = Routes{
 		GetSharedData,
 	},
 
+	Route{
+		"SharedData",
+		"POST",
+		"/gru/v1/shared",
+		PostSharedData,
+	},
+
 	//COMMANDS
 	Route{
 		"ExecCommands",

@@ -3,10 +3,12 @@ package agent
 import (
 	"github.com/elleFlorio/gru/autonomic"
 	cfg "github.com/elleFlorio/gru/configuration"
+	"github.com/elleFlorio/gru/data"
 )
 
 func Initialize() {
 	autonomic.UpdatePlannerStrategy(cfg.GetAgentAutonomic().PlannerStrategy)
+	data.InitializeFriendsData(cfg.GetAgentCommunication().MaxFriends)
 }
 
 func StartMonitoring() {
@@ -22,5 +24,5 @@ func UpdateStrategy() {
 }
 
 func startAutonomicManager() {
-	autonomic.RunLoop(cfg.GetAgentAutonomic().LoopTimeInterval)
+	autonomic.RunLoop()
 }

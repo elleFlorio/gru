@@ -20,8 +20,6 @@ const c_ROUTE_SHARED string = "/gru/v1/shared"
 
 var (
 	ErrInvalidFriendsNumber error = errors.New("Friends number should be > 0")
-	ErrInvalidDataType      error = errors.New("Invalid data type to retrieve")
-	ErrNoPeers              error = errors.New("There are no peers to reach")
 	ErrNoFriends            error = errors.New("There are no friends to reach")
 )
 
@@ -29,73 +27,27 @@ func init() {
 	rand.Seed(int64(time.Now().Nanosecond()))
 }
 
-func Start(nFriends int, timeInterval int) {
-	go start(nFriends, timeInterval)
-}
-
-func start(nFriends int, timeInterval int) {
-	ticker := time.NewTicker(time.Duration(timeInterval) * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			err := updateFriendsData(nFriends)
-			if err != nil {
-				log.WithField("err", err).Debugln("Cannot update friends data")
-			}
-		}
-	}
-}
-
-func updateFriendsData(nFriends int) error {
+func UpdateFriends() {
 	var err error
-	log.Debugln("Updating friends data")
-	err = clearFriendsData()
-	if err != nil {
-		return err
-	}
+	nFriends := cfg.GetAgentCommunication().MaxFriends
+
+	log.Debugln("Updating friends...")
 
 	peers := getAllPeers()
 	log.WithField("peers", len(peers)).Debugln("Number of peers")
 	if len(peers) == 0 {
-		return ErrNoPeers
+		log.Warnln("There are no peers to reach")
+		return
 	}
 
 	friends, err := chooseRandomFriends(peers, nFriends)
 	if err != nil {
-		return err
+		log.WithField("err", err).Warnln("Error choosing friends to update")
+		return
 	}
 	log.WithField("friends", friends).Debugln("Friends to connect with")
 
-	friendsData, err := getFriendsData(friends)
-	if err != nil {
-		return err
-	}
-
-	clusterData, err := mergeSharedData(friendsData)
-	if err != nil {
-		return err
-	}
-
-	data.SaveSharedCluster(clusterData)
-
-	return nil
-}
-
-func clearFriendsData() error {
-	allData, err := storage.GetAllData(enum.SHARED)
-	if err != nil {
-		log.Errorln("Error cleaning up friends data")
-		return err
-	}
-
-	for key, _ := range allData {
-		if key != enum.CLUSTER.ToString() && key != enum.LOCAL.ToString() {
-			log.WithField("friend", key).Debugln("cleared friend data")
-			storage.DeleteData(key, enum.SHARED)
-		}
-	}
-
-	return nil
+	sendDataToFriends(friends)
 }
 
 func getAllPeers() map[string]string {
@@ -182,21 +134,4 @@ func sendDataToFriends(friends map[string]string) {
 			log.WithField("address", address).Warnln("Error sending data to friends")
 		}
 	}
-}
-
-func mergeSharedData(friendsData []data.Shared) (data.Shared, error) {
-	sharedStored, err := data.GetSharedCluster()
-	if err != nil {
-		log.WithField("err", err).Debugln("Cannot get stored shared data")
-		return data.MergeShared(friendsData)
-	}
-
-	toMerge := append(friendsData, sharedStored)
-	sharedCluster, err := data.MergeShared(toMerge)
-	if err != nil {
-		log.WithField("err", err).Debugln("Cannot merge friends data")
-		return data.Shared{}, err
-	}
-
-	return sharedCluster, nil
 }

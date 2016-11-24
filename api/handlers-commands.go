@@ -11,7 +11,6 @@ import (
 
 	"github.com/elleFlorio/gru/agent"
 	ch "github.com/elleFlorio/gru/channels"
-	com "github.com/elleFlorio/gru/communication"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/service"
 )
@@ -93,7 +92,6 @@ func executeCommand(cmd Command) {
 func startCommand(cmd Command) {
 	switch cmd.Target {
 	case "agent":
-		startCommunication()
 		startAgent()
 	case "service":
 		name := cmd.Object.(string)
@@ -127,13 +125,6 @@ func deactivateNode() {
 	log.Debugln("Deactivating node")
 	cfg.ToggleActiveNode()
 	cfg.WriteNodeActive(cfg.GetNodeConfig().Remote, false)
-}
-
-func startCommunication() {
-	com.Start(
-		cfg.GetAgentCommunication().MaxFriends,
-		cfg.GetAgentCommunication().LoopTimeInterval,
-	)
 }
 
 func startService(name string) {

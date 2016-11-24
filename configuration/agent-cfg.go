@@ -15,9 +15,10 @@ type DockerConfig struct {
 }
 
 type AutonomicConfig struct {
-	LoopTimeInterval int    `json:"looptimeinterval"`
-	PlannerStrategy  string `json:"plannerstrategy"`
-	EnableLogReading bool   `json:"enableLogReading"`
+	LoopTimeInterval  int    `json:"looptimeinterval"`
+	EnableDynamicLoop bool   `json:"enabledynamicloop"`
+	PlannerStrategy   string `json:"plannerstrategy"`
+	EnableLogReading  bool   `json:"enablelogreading"`
 }
 
 type CommunicationConfig struct {

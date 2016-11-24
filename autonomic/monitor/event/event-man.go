@@ -2,16 +2,20 @@ package event
 
 import (
 	"errors"
+	"math"
 	"sync"
 
 	log "github.com/elleFlorio/gru/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 
 	chn "github.com/elleFlorio/gru/channels"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
 	"github.com/elleFlorio/gru/enum"
 	res "github.com/elleFlorio/gru/resources"
 	srv "github.com/elleFlorio/gru/service"
 )
+
+const c_MILLISEC = 1000
 
 var (
 	events    data.EventStats
@@ -40,6 +44,7 @@ func HandleCreateEvent(e Event) {
 
 func HanldeStartEvent(e Event) {
 	addInstance(e.Service, e.Instance, e.Status)
+	updateAutoLoopTimeInterval()
 }
 
 func HandlePromoteEvent(e Event) {
@@ -48,6 +53,7 @@ func HandlePromoteEvent(e Event) {
 
 func HandleStopEvent(e Event) {
 	stopInstance(e.Service, e.Instance)
+	updateAutoLoopTimeInterval()
 }
 
 func HandleRemoveEvent(e Event) {
@@ -159,5 +165,24 @@ func notifyRemoval() {
 		chn.GetRemovalChannel() <- struct{}{}
 		log.Debugln("Removal notified")
 		chn.SetRemovalNotification(false)
+	}
+}
+
+func updateAutoLoopTimeInterval() {
+	if cfg.GetAgentAutonomic().EnableDynamicLoop {
+		interval := 0.0
+		for _, service := range srv.GetActiveServices() {
+			if mrp, ok := service.Constraints["MAX_RESP_TIME"]; ok {
+				if mrp > interval {
+					interval = mrp
+				}
+			} else {
+				log.WithField("service", service.Name).Warnln("No MAX_RESP_TIME constraint")
+			}
+		}
+
+		if interval > 0.0 {
+			cfg.GetAgentAutonomic().LoopTimeInterval = int(math.Ceil(interval / c_MILLISEC))
+		}
 	}
 }

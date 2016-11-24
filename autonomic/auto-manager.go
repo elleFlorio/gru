@@ -10,16 +10,21 @@ import (
 	"github.com/elleFlorio/gru/autonomic/monitor"
 	"github.com/elleFlorio/gru/autonomic/planner"
 	chn "github.com/elleFlorio/gru/channels"
+	com "github.com/elleFlorio/gru/communication"
+	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/metric"
 )
 
 var (
 	ch_err  chan error
 	ch_stop chan struct{}
+
+	interval int
 )
 
 func init() {
 	ch_err = chn.GetAutonomicErrChannel()
+	interval = cfg.GetAgentAutonomic().LoopTimeInterval
 }
 
 func UpdatePlannerStrategy(plannerStrategy string) {
@@ -31,11 +36,11 @@ func Start() {
 	executor.ListenToActionMessages()
 }
 
-func RunLoop(loopTimeInterval int) {
+func RunLoop() {
 	// Start the metric collector
 	metric.StartMetricCollector()
 	// Set the ticker for the periodic execution
-	ticker := time.NewTicker(time.Duration(loopTimeInterval) * time.Second)
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	log.Infoln("Running autonomic loop")
 	for {
 		select {
@@ -44,6 +49,10 @@ func RunLoop(loopTimeInterval int) {
 			analytics := analyzer.Run(stats)
 			policy := planner.Run(analytics)
 			executor.Run(policy)
+			com.UpdateFriends()
+			if checkNewInterval() {
+				ticker = time.NewTicker(time.Duration(interval) * time.Second)
+			}
 
 			log.Infoln("-------------------------")
 
@@ -51,4 +60,13 @@ func RunLoop(loopTimeInterval int) {
 			log.Debugln("Error running autonomic loop")
 		}
 	}
+}
+
+func checkNewInterval() bool {
+	if interval != cfg.GetAgentAutonomic().LoopTimeInterval {
+		interval = cfg.GetAgentAutonomic().LoopTimeInterval
+		return true
+	}
+
+	return false
 }
