@@ -22,8 +22,7 @@ type AutonomicConfig struct {
 }
 
 type CommunicationConfig struct {
-	LoopTimeInterval int `json:"looptimeinterval"`
-	MaxFriends       int `json:"maxfriends"`
+	MaxFriends int `json:"maxfriends"`
 }
 
 type StorageConfig struct {
