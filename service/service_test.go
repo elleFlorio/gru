@@ -254,3 +254,13 @@ func TestGetServiceInstanceStatus(t *testing.T) {
 	status = GetServiceInstanceStatus("pippo", "pippo")
 	assert.Equal(t, enum.UNKNOWN, status)
 }
+
+func TestGetActiveServices(t *testing.T) {
+	defer cfg.CleanServices()
+	cfg.SetServices(CreateMockServices())
+
+	active := GetActiveServices()
+	assert.Len(t, active, 2)
+	assert.Equal(t, "service1", active[0].Name)
+	assert.Equal(t, "service2", active[1].Name)
+}

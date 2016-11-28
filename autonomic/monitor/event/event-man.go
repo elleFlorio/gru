@@ -170,19 +170,24 @@ func notifyRemoval() {
 
 func updateAutoLoopTimeInterval() {
 	if cfg.GetAgentAutonomic().EnableDynamicLoop {
-		interval := 0.0
-		for _, service := range srv.GetActiveServices() {
-			if mrp, ok := service.Constraints["MAX_RESP_TIME"]; ok {
-				if mrp > interval {
-					interval = mrp
-				}
-			} else {
-				log.WithField("service", service.Name).Warnln("No MAX_RESP_TIME constraint")
-			}
-		}
-
-		if interval > 0.0 {
-			cfg.GetAgentAutonomic().LoopTimeInterval = int(math.Ceil(interval / c_MILLISEC))
+		upd := computeAutoTimeInterval(srv.GetActiveServices())
+		if upd > 0 {
+			cfg.GetAgentAutonomic().LoopTimeInterval = upd
 		}
 	}
+}
+
+func computeAutoTimeInterval(services []*cfg.Service) int {
+	interval := 0.0
+	for _, service := range services {
+		if mrp, ok := service.Constraints["MAX_RESP_TIME"]; ok {
+			if mrp > interval {
+				interval = mrp
+			}
+		} else {
+			log.WithField("service", service.Name).Warnln("No MAX_RESP_TIME constraint")
+		}
+	}
+
+	return int(math.Ceil(interval / c_MILLISEC))
 }

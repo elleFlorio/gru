@@ -32,7 +32,7 @@ func AddFriendData(friend string, value Shared) {
 func GetFriendsData() []Shared {
 	defer m_friends.RUnlock()
 
-	values := make([]Shared, friendsData.Limit)
+	values := make([]Shared, 0, friendsData.Limit)
 	m_friends.RLock()
 	for _, value := range friendsData.GetValues() {
 		values = append(values, value.(Shared))

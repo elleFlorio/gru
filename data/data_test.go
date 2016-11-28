@@ -16,6 +16,26 @@ func init() {
 	storage.New("internal")
 	//simply check if the functions return without errors
 	StoreRandomMockPolicy()
+	//Initialize friends list
+	InitializeFriendsData(5)
+}
+
+func TestAddFriendData(t *testing.T) {
+	defer friendsData.ClearList()
+
+	fdata := CreateMockShared()
+	AddFriendData("f1", fdata)
+	assert.Len(t, friendsData.GetValues(), 1)
+}
+
+func TestGetFriendsData(t *testing.T) {
+	defer friendsData.ClearList()
+
+	fdata := CreateMockShared()
+	AddFriendData("f1", fdata)
+	value := GetFriendsData()
+	assert.Len(t, value, 1)
+	assert.Equal(t, fdata, value[0])
 }
 
 func TestSaveStats(t *testing.T) {
@@ -186,7 +206,7 @@ func TestGetPolicy(t *testing.T) {
 	assert.Equal(t, expected, policy)
 }
 
-func TestGeShared(t *testing.T) {
+func TestGetShared(t *testing.T) {
 	defer storage.DeleteAllData(enum.SHARED)
 	var err error
 	expected := CreateMockShared()

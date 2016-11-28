@@ -10,9 +10,7 @@ import (
 	"github.com/elleFlorio/gru/cluster"
 	cfg "github.com/elleFlorio/gru/configuration"
 	"github.com/elleFlorio/gru/data"
-	"github.com/elleFlorio/gru/enum"
 	"github.com/elleFlorio/gru/network"
-	"github.com/elleFlorio/gru/storage"
 )
 
 // api
@@ -88,33 +86,6 @@ func chooseRandomFriends(peers map[string]string, n int) (map[string]string, err
 	}
 
 	return friends, nil
-}
-
-func getFriendsData(friends map[string]string) ([]data.Shared, error) {
-	var err error
-	friendsData := make([]data.Shared, 0, len(friends))
-
-	for friend, address := range friends {
-		friendRoute := address + c_ROUTE_SHARED
-		friendData, err := network.DoRequest("GET", friendRoute, nil)
-		if err != nil {
-			log.WithField("address", address).Debugln("Error retrieving friend stats")
-		}
-		err = storage.StoreData(friend, friendData, enum.SHARED)
-		if err != nil {
-			log.WithField("err", err).Debugln("Error storing friends data")
-		}
-
-		sharedData, err := data.ByteToShared(friendData)
-		if err != nil {
-			log.WithField("address", address).Debugln("Friend data not stored")
-		} else {
-			friendsData = append(friendsData, sharedData)
-		}
-
-	}
-
-	return friendsData, err
 }
 
 func sendDataToFriends(friends map[string]string) {

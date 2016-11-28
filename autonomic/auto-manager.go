@@ -52,6 +52,7 @@ func RunLoop() {
 			com.UpdateFriends()
 			if checkNewInterval() {
 				ticker = time.NewTicker(time.Duration(interval) * time.Second)
+				log.WithField("interval", interval).Debugln("Updated autonomic loop time interval")
 			}
 
 			log.Infoln("-------------------------")

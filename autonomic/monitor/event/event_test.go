@@ -157,6 +157,24 @@ func createEvent(etype string, esrv string, eimg string, einst string, estat enu
 	}
 }
 
+func TestComputeAutoTimeInterval(t *testing.T) {
+	resetMockServices()
+	services := srv.GetActiveServices()
+	interval := computeAutoTimeInterval(services)
+	assert.Equal(t, 6, interval)
+
+	services[1].Constraints["MAX_RESP_TIME"] = 10520
+	interval = computeAutoTimeInterval(services)
+	assert.Equal(t, 11, interval)
+
+	services[1].Constraints = make(map[string]float64)
+	interval = computeAutoTimeInterval(services)
+	assert.Equal(t, 2, interval)
+
+	interval = computeAutoTimeInterval([]*cfg.Service{})
+	assert.Equal(t, 0, interval)
+}
+
 func resetMockServices() {
 	mockServices := srv.CreateMockServices()
 	cfg.SetServices(mockServices)
