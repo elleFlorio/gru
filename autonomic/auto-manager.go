@@ -24,7 +24,6 @@ var (
 
 func init() {
 	ch_err = chn.GetAutonomicErrChannel()
-	interval = cfg.GetAgentAutonomic().LoopTimeInterval
 }
 
 func UpdatePlannerStrategy(plannerStrategy string) {
@@ -40,6 +39,7 @@ func RunLoop() {
 	// Start the metric collector
 	metric.StartMetricCollector()
 	// Set the ticker for the periodic execution
+	interval = cfg.GetAgentAutonomic().LoopTimeInterval
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	log.Infoln("Running autonomic loop")
 	for {
@@ -64,8 +64,9 @@ func RunLoop() {
 }
 
 func checkNewInterval() bool {
-	if interval != cfg.GetAgentAutonomic().LoopTimeInterval {
-		interval = cfg.GetAgentAutonomic().LoopTimeInterval
+	currentInterval := cfg.GetCurrentAutonomicInterval()
+	if interval != currentInterval {
+		interval = currentInterval
 		return true
 	}
 

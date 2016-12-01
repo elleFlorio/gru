@@ -16,19 +16,30 @@ const (
 )
 
 var (
-	agent       Agent
-	node        Node
-	services    []Service = []Service{}
-	policy      Policy
-	expressions map[string]AnalyticExpr
+	agent               Agent
+	currentAutoInterval int
+	node                Node
+	services            []Service = []Service{}
+	policy              Policy
+	expressions         map[string]AnalyticExpr
 )
 
 func init() {
 	expressions = make(map[string]AnalyticExpr)
+	currentAutoInterval = 0
 }
 
 func SetAgent(cfg Agent) {
 	agent = cfg
+	currentAutoInterval = cfg.Autonomic.LoopTimeInterval
+}
+
+func SetCurrentAutonomicInterval(interval int) {
+	currentAutoInterval = interval
+}
+
+func SetDefaultAutonomicInterval() {
+	currentAutoInterval = agent.Autonomic.LoopTimeInterval
 }
 
 func GetAgent() *Agent {
@@ -76,6 +87,10 @@ func getAgentSubConfig(subCfg string) interface{} {
 	}
 
 	return nil
+}
+
+func GetCurrentAutonomicInterval() int {
+	return currentAutoInterval
 }
 
 func SetNode(cfg Node) {

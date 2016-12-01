@@ -170,9 +170,15 @@ func notifyRemoval() {
 
 func updateAutoLoopTimeInterval() {
 	if cfg.GetAgentAutonomic().EnableDynamicLoop {
-		upd := computeAutoTimeInterval(srv.GetActiveServices())
+		services := srv.GetActiveServices()
+		if len(services) < 1 {
+			cfg.SetDefaultAutonomicInterval()
+			log.WithField("value", cfg.GetCurrentAutonomicInterval()).Debugln("No running services. autonomic loop time interval set to default")
+		}
+		upd := computeAutoTimeInterval(services)
 		if upd > 0 {
-			cfg.GetAgentAutonomic().LoopTimeInterval = upd
+			cfg.SetCurrentAutonomicInterval(upd)
+			log.WithField("value", upd).Debugln("Computed new autonomic loop time interval")
 		}
 	}
 }
